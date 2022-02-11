@@ -11,16 +11,26 @@
   outputs = { self, nixpkgs, flake-utils, fenix, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        apiSpec = "api/api.yml";
+        docOutput = "doc/index.html";
 
-        rust = fenix.packages."${system}".fromToolchainFile {
-          file = ./rust-toolchain.toml;
-        };
+        pkgs = import nixpkgs { };
+
+        rust = fenix.packages."${system}".fromToolchainFile { file = ./rust-toolchain.toml; };
       in
       {
         devShell = pkgs.mkShell {
           buildInputs = [
             rust
+
+            pkgs.redoc-cli
+
+            (pkgs.writeShellScriptBin "build-doc" ''
+              ${pkgs.redoc-cli}/bin/redoc-cli bundle "${apiSpec}" -o "${docOutput}"
+            '')
+            (pkgs.writeShellScriptBin "watch-doc" ''
+              ${pkgs.fd}/bin/fd | ${pkgs.ripgrep}/bin/rg 'api.yml' | ${pkgs.entr}/bin/entr -rs '${pkgs.redoc-cli}/bin/redoc-cli serve "${apiSpec}"'
+            '')
           ];
         };
       }
