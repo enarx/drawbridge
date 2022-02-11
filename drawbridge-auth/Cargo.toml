@@ -1,0 +1,9 @@
+[package]
+name = "auth"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[dependencies]
+axum = "0.4.8"
+tower = "0.4.12"

@@ -1,0 +1,13 @@
+[package]
+name = "drawbridge"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+axum = "0.4.8"
+tree = { path = "./drawbridge-tree" }
+tags = { path = "./drawbridge-tags" }
+auth = { path = "./drawbridge-auth" }
