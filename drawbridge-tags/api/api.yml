@@ -1,0 +1,86 @@
+openapi: 3.1.0
+
+info:
+  title: Tag store
+  description: |
+    Tag store associates arbitrary printable strings with arbitrary URIs.
+  version: 0.1.0
+
+paths:
+  /:
+    $ref: '#/components/pathItems/Tag'
+
+  /{tag}:
+    $ref: '#/components/pathItems/TagName'
+
+components:
+  schemas:
+    Tag:
+      description: An immutable mapping to a URI.
+      type: string
+      pattern: ^[a-zA-Z0-9-.]+$
+      example: v1.2.3
+
+  pathItems:
+    Tag:
+      get:
+        description: List available tags.
+        responses:
+          '200':
+            description: Available tags sorted lexicographically
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Tag'
+                  example:
+                    - v0.5.3
+                    - v1.2.3
+                    - v1.2.4
+                    - v2.0.1-rc1
+  
+    TagName:
+      parameters:
+        - name: tag
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Tag'
+      head:
+        description: Check whether a tag exists.
+        responses:
+          '200':
+            description: Tag exists
+          '404':
+            description: Tag does not exist
+      get:
+        description: Get a URI associated with a tag.
+        responses:
+          '200':
+            description: URI associated with the tag
+            content:
+              text/plain:
+                schema:
+                  type: string
+                  format: uri
+          '404':
+            description: Tag does not exist
+      post:
+        description: Associate a URI with a tag.
+        requestBody:
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: uri
+        responses:
+          '200':
+            description: Tag associated with a URI
+      delete:
+        description: Yank a tag.
+        responses:
+          '200':
+            description: Tag yanked
+          '404':
+            description: Tag does not exist

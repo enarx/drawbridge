@@ -1,0 +1,288 @@
+openapi: 3.1.0
+
+info:
+  title: Tree store.
+  description: |
+    Tree store is a content-addressable store of arbitrary data.
+  version: 0.1.0
+
+paths:
+  /:
+    $ref: '#/components/pathItems/Tree'
+
+  /{tree}:
+    $ref: '#/components/pathItems/TreeHash'
+
+  /{tree}/{path}:
+    $ref: '#/components/pathItems/TreeHashPath'
+
+components:
+  schemas:
+    ContentHash:
+      description: |
+        [SRI-like](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity) [base64url-encoded](https://www.base64url.com/) hash.
+
+        Note that `:` is used as the delimiter.
+
+        For any given node, hash is computed over JSON-encoded object with lexicographically-sorted keys
+        with the following contents without whitespace characters:
+        ```
+        {
+          "contentHash": <hash of raw node contents>,
+          "contentLength": <length of raw node contents>,
+          "contentType": <media type>,
+        }
+        ```
+      type: string
+      contentEncoding: base64url 
+      pattern: ^sha(256|384|512):[a-zA-Z0-9-_]+$
+      example: sha384:oqVuAfXRKap7fdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC
+
+    ContentLength:
+      description: Node content length in bytes.
+      type: integer
+      format: int64
+      example: 42
+
+    ContentType:
+      description: Node media type.
+      type: string
+      pattern: ^(application|audio|image|text)/[a-zA-Z0-9-_.,+]+$
+      example: application/vnd.drawbridge.directory.v1+json
+
+    DirectoryNode:
+      description: A directory node.
+      type: object
+      required:
+        - contentHash
+        - contentLength
+        - contentType
+      properties:
+        contentHash:
+          $ref: '#/components/schemas/ContentHash'
+          description: Hash of JSON-encoded directory contents with lexicographically-sorted keys without whitespace characters.
+        contentLength:
+          $ref: '#/components/schemas/ContentLength'
+          description: Byte length of JSON-encoded directory contents without whitespace characters.
+        contentType:
+          $ref: '#/components/schemas/ContentType'
+          description: Directory content type.
+          pattern:
+          enum:
+            - application/vnd.drawbridge.directory.v1+json
+
+    FileNode:
+      description: A file node.
+      type: object
+      required:
+        - contentHash
+        - contentLength
+        - contentType
+      properties:
+        contentHash:
+          $ref: '#/components/schemas/ContentHash'
+          description: Hash of raw file contents.
+        contentLength:
+          $ref: '#/components/schemas/ContentLength'
+          description: File content length in bytes.
+        contentType:
+          $ref: '#/components/schemas/ContentType'
+          description: Any content type other than `application/vnd.drawbridge.directory.v1+json`.
+          example:
+            contentType: text/plain
+
+    Node:
+      description: A node.
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/DirectoryNode'
+        - $ref: '#/components/schemas/FileNode'
+      discriminator:
+        propertyName: contentType
+        mapping:
+          application/vnd.drawbridge.directory.v1+json: '#/components/schemas/DirectoryNode'
+          '*/*': '#/components/schemas/FileNode'
+
+    FileContents:
+      description: File contents.
+      example: Hello world!
+
+    DirectoryContents:
+      description: |
+        Directory contents.
+
+        Keys are node names.
+      type: object
+      pattern: ^[a-zA-Z0-9-_.,]+$
+      additionalProperties:
+        $ref: '#/components/schemas/Node'
+      example:
+        assets:
+          contentHash: sha384:DH01Tx3ixOrDYbNcjqw-H53EIFSI232hbotDTy1E_NU6+qodYhdrswrXoEfx_nnx
+          contentLength: 134
+          contentType: application/vnd.drawbridge.directory.v1+json
+        Enarx.toml:
+          contentHash: sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC
+          contentLength: 42
+          contentType: text/plain
+
+  parameters:
+    ContentLength:
+      name: Content-Length
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentLength'
+
+    ContentType:
+      name: Content-Type
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentType'
+
+    TreeHash:
+      name: tree
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentHash'
+
+  pathItems:
+    tree:
+      get:
+        description: List available trees.
+        responses:
+          '200':
+            description: Available trees sorted lexicographically
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ContentHash'
+                  example:
+                    - sha384:lkRsCaXRKap5edfaAX5uykJ4-O7FoO6I_tvx8rv7FNOlEXl0iNzQgl0uw3ItX6uB
+                    - sha384:oqVuAfXRKap7fdgcC-Y5uykM6R9GqQ_8Kuxy9rx7HNQlGYl1kPzQho1wx4JwY8wC
+
+    TreeHash:
+      parameters:
+        - $ref: '#/components/parameters/TreeHash'
+      head:
+        description: Check whether a tree exists.
+        responses:
+          '200':
+            description: Tree exists
+          '404':
+            description: Tree does not exist
+      get:
+        description: Get tree contents.
+        responses:
+          '200':
+            description: Tree contents
+            headers:
+              Content-Length:
+                required: true
+                schema:
+                  $ref: '#/components/schemas/ContentLength'
+              Content-Type:
+                required: true
+                schema:
+                  $ref: '#/components/schemas/ContentType'
+            content:
+              application/vnd.drawbridge.directory.v1+json:
+                schema:
+                  $ref: '#/components/schemas/DirectoryContents'
+              '*/*':
+                schema:
+                  $ref: '#/components/schemas/FileContents'
+          '404':
+            description: Tree does not exist
+      post:
+        description: Upload tree contents.
+        parameters:
+          - $ref: '#/components/parameters/ContentLength'
+          - $ref: '#/components/parameters/ContentType'
+        requestBody:
+          content:
+            application/vnd.drawbridge.directory.v1+json:
+              schema:
+                $ref: '#/components/schemas/DirectoryContents'
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FileContents'
+        responses:
+          '200':
+            description: Tree uploaded and all contents are available
+          '202':
+            description: Tree uploaded, but some contents are unavailable
+      delete:
+        description: Yank a tree
+        responses:
+          '200':
+            description: Tree yanked
+          '404':
+            description: Tree does not exist
+
+    TreeHashPath:
+      parameters:
+        - $ref: '#/components/parameters/TreeHash'
+        - name: path
+          in: path
+          required: true
+          schema:
+            description: Slash-delimited path to a node in a tree consisting of consequent node hashes.
+            type: string
+            contentEncoding: base64url 
+            pattern: ^(sha(256|384|512):[a-zA-Z0-9-_]+/)*sha(256|384|512):[a-zA-Z0-9-_]+$
+            example: sha384:foTsCdXPKap7bddcCY5uykM6-L9GqN8K_qvw6rx6GMPkFXk0jOyPgn1wx4JwY8vB/sha384:DH01Tx3ixOrDYbNcjqw-H53EIFSI232hbotDTy1E_NU6+qodYhdrswrXoEfx_nnx
+      head:
+        description: Check whether a tree path exists.
+        responses:
+          '200':
+            description: Tree path exists
+          '404':
+            description: Tree or path within it does not exist
+      get:
+        description: Get tree path contents.
+        responses:
+          '200':
+            description: Tree path contents
+            headers:
+              Content-Length:
+                required: true
+                schema:
+                  $ref: '#/components/schemas/ContentLength'
+              Content-Type:
+                required: true
+                schema:
+                  $ref: '#/components/schemas/ContentType'
+            content:
+              application/vnd.drawbridge.directory.v1+json:
+                schema:
+                  $ref: '#/components/schemas/DirectoryContents'
+              '*/*':
+                schema:
+                  $ref: '#/components/schemas/FileContents'
+          '404':
+            description: Tree or path within it does not exist
+      post:
+        description: Upload tree path contents.
+        parameters:
+          - $ref: '#/components/parameters/ContentLength'
+          - $ref: '#/components/parameters/ContentType'
+        requestBody:
+          content:
+            application/vnd.drawbridge.directory.v1+json:
+              schema:
+                $ref: '#/components/schemas/DirectoryContents'
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FileContents'
+        responses:
+          '200':
+            description: Tree path uploaded and all contents are available
+          '202':
+            description: Tree path uploaded, but some contents are unavailable
+          '404':
+            description: Tree or path within it preceeding the node being uploaded does not exist

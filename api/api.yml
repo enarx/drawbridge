@@ -1,0 +1,88 @@
+openapi: 3.1.0
+
+info:
+  title: Drawbridge
+  description: |
+    Drawbridge is a combination of:
+      - Content-addressable store of arbitrary data
+      - Immutable tag store mapping arbitrary strings to arbitrary URIs
+
+    Definition of items used by the Drawbridge:
+    - Hash: [SRI-like](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity) [base64url-encoded](https://www.base64url.com/) hash.
+
+      Note that `:` is used as the delimiter.
+
+      For example:
+      ```
+      sha384:oqVuAfXRKap7fdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC
+      ```
+    - Node: either a file or a directory, where directory is a collection of nodes.
+      - All nodes have a [`Content-Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) associated with them.
+        - Value of `"application/vnd.drawbridge.directory.v1+json"` identifies a directory node.
+        - All other values identify a file node.
+      - All nodes have a [`Content-Length`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) associated with them.
+        - Value for directory nodes is equal to byte length of JSON-encoded directory contents without whitespace characters.
+        - Value for file nodes is equal to byte length of raw file contents.
+      - All nodes have contents associated with them:
+        - For directory nodes: key-value object with keys representing the node names and values representing node metadata.
+        - For file nodes: raw file contents of an arbitrary [`Content-Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) other than `"application/vnd.drawbridge.directory.v1+json"`
+      - All nodes have a hash associated with them, which is computed over JSON-encoded object with lexicographically-sorted keys
+        with the following contents without whitespace characters:
+        - For directory nodes:
+            ```
+            {
+              "contentHash": <SRI-like hash of JSON-encoded directory contents with lexicographically-sorted keys without whitespace characters>,
+              "contentLength": <byte length of JSON-encoded directory contents without whitespace characters>,
+              "contentType": "application/vnd.drawbridge.directory.v1+json",
+            }
+            ```
+            For example, `sha384` hash computed over following directory node metadata:
+            ```
+            {"contentHash":"sha384:DH01Tx3ixOrDYbNcjqw-H53EIFSI232hbotDTy1E_NU6+qodYhdrswrXoEfx_nnx","contentLength":134,"contentType":"application/vnd.drawbridge.directory.v1+json"}
+            ```
+            is equal to:
+            ```
+            sha384:NzMwY2RmNzlkNjc4OGE1ZGJlN2E2MmU5NDQyZjAxMjY0OWY3ZGRiMjFhMWQwNGUyNTAxY2RlODlhZTQ0ODNiYjA5Y2VhOTU0N2FhZGZiMGY3ODllNzAxMTg3ODBlY2JjCg
+            ```
+        - For file nodes:
+            ```
+            {
+              "contentHash": <SRI-like hash of raw file contents>,
+              "contentLength": <byte length of raw file contents>,
+              "contentType": <arbitrary media type other than "application/vnd.drawbridge.directory.v1+json">,
+            }
+            ```
+            For example, `sha384` hash computed over following directory node metadata:
+            ```
+            {"contentHash":"sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC","contentLength":42,"contentType":"text/plain"}
+            ```
+            is equal to:
+            ```
+            sha384:NjAwNGI0M2VlMGYxNjY3MGI4YWUxMzc3MzcyZmM0Y2RmN2E3YjVjOTMzNjkxMTZlMTg5ZmM3MWYzODcxNDhmYmY5MTExZWJiN2NhNWM3Njg3OTI1YzYzMzQwZDQ4ZDdmCg
+            ```
+      - A node can only be uploaded once. After the node is uploaded, it cannot be reuploaded.
+      - A node may belong to multiple trees.
+      - A node in a directory is identified by a case-sensitive name consisting of alphanumeric characters, dashes and underscores
+        and must represent valid URL string, which is unique within a directory.
+    - Tree: a top-level node uniquely identified by it's hash.
+      - A tree is uniquely identified by it's hash, which is computed over the contents of the tree. The tree is therefore content-addressable and represents a [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) by definition.
+      - A tree can be yanked, which means that it cannot be downloaded anymore.
+    - Tag: an immutable mapping of a printable string, usually SemVer to an arbitrary URI.
+      - An existing tag can be yanked, which means that it cannot be resolved anymore.
+  version: 0.1.0
+
+paths:
+  /_tree:
+    $ref: '../drawbridge-tree/api/api.yml#/components/pathItems/Tree'
+
+  /_tree/{tree}:
+    $ref: '../drawbridge-tree/api/api.yml#/components/pathItems/TreeHash'
+
+  /_tree/{tree}/{path}:
+    $ref: '../drawbridge-tree/api/api.yml#/components/pathItems/TreeHashPath'
+
+  /_tag:
+    $ref: '../drawbridge-tags/api/api.yml#/components/pathItems/Tag'
+
+  /_tag/{tag}:
+    $ref: '../drawbridge-tags/api/api.yml#/components/pathItems/TagName'
