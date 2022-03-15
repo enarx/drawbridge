@@ -1,0 +1,9 @@
+[package]
+name = "tree"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[dependencies]
+axum = "0.4.5"
+tower = "0.4.12"
