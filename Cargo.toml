@@ -1,0 +1,12 @@
+[package]
+name = "drawbridge"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[workspace]
+members = [ 
+    "drawbridge-auth",
+    "drawbridge-tags",
+    "drawbridge-tree"
+]
