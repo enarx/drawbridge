@@ -7,7 +7,12 @@ edition = "2021"
 [workspace]
 
 [dependencies]
+# Internal dependencies
+drawbridge-auth = { path = "./crates/auth" }
+drawbridge-tags = { path = "./crates/tags" }
+drawbridge-tree = { path = "./crates/tree" }
+
+# External dependencies
 axum = "0.4.8"
-tree = { path = "./drawbridge-tree" }
-tags = { path = "./drawbridge-tags" }
-auth = { path = "./drawbridge-auth" }
+tokio = { version = "1.17.0", features = ["full"] }
+tower = "0.4.12"

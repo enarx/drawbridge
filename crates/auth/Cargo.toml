@@ -1,5 +1,5 @@
 [package]
-name = "auth"
+name = "drawbridge-auth"
 version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"
