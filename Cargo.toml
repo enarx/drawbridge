@@ -5,8 +5,9 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [workspace]
-members = [ 
-    "drawbridge-auth",
-    "drawbridge-tags",
-    "drawbridge-tree"
-]
+
+[dependencies]
+axum = "0.4.8"
+tree = { path = "./drawbridge-tree" }
+tags = { path = "./drawbridge-tags" }
+auth = { path = "./drawbridge-auth" }
