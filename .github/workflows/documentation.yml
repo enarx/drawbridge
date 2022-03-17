@@ -1,0 +1,33 @@
+name: Documentation
+
+on: [ push, pull_request ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v18
+      with:
+        extra_nix_config: |
+          access-tokens = github.com=${{ github.token }}
+    - uses: cachix/cachix-action@v12
+      with:
+        name: enarx
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - run: nix build -L --show-trace '.#doc' -o doc/index.html
+    - run: cp --remove-destination $(readlink -f doc/index.html) doc/index.html
+    - uses: actions/upload-artifact@v3
+      with:
+        name: doc
+        path: doc/index.html
+    - uses: JamesIves/github-pages-deploy-action@v4.4.1
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      with:
+        branch: gh-pages
+        folder: doc
