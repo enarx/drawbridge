@@ -1,11 +1,10 @@
-use axum::Server;
+use cap_async_std::net::{Ipv4Addr, SocketAddr};
+use tide::Result;
 
-#[tokio::main]
-async fn main() {
-    let app = drawbridge::new();
-
-    Server::bind(&"0.0.0.0:8000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap()
+#[async_std::main]
+async fn main() -> Result<()> {
+    drawbridge::new()
+        .listen(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8000)))
+        .await?;
+    Ok(())
 }

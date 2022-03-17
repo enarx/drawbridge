@@ -1,10 +1,14 @@
-use axum::handler::Handler;
-use axum::http::StatusCode;
-use axum::Router;
+use tide::{Request, Response, Server, StatusCode};
 
-pub fn new() -> Router {
-    Router::new().fallback(
-        (|| async { (StatusCode::NOT_IMPLEMENTED, "Tree handling not implemented") })
-            .into_service(),
-    )
+pub fn new() -> Server<()> {
+    async fn not_implemented<E>(_: Request<()>) -> Result<Response, E> {
+        Ok(Response::builder(StatusCode::NotImplemented)
+            .body("Tree handling not implemented")
+            .build())
+    }
+
+    let mut srv = Server::new();
+    srv.at("/").all(not_implemented);
+    srv.at("/*").all(not_implemented);
+    srv
 }

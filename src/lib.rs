@@ -1,13 +1,20 @@
-use axum::routing::any_service;
-use axum::Router;
+use tide::{Response, Server, StatusCode};
 
 use drawbridge_tags::new as tags;
 use drawbridge_tree::new as tree;
 
-pub fn new() -> Router {
-    Router::new()
-        .nest("/_tree", any_service(tree()))
-        .nest("/_tags", any_service(tags()))
+pub fn new() -> Server<()> {
     // TODO: Add auth
-    // TODO: Figure out how to handle namespacing
+    // TODO: Add namespacing
+    let mut srv = Server::new();
+    srv.at("/_tags").nest(tags());
+    srv.at("/_tags/").nest(tags());
+    srv.at("/_tree").nest(tree());
+    srv.at("/_tree/").nest(tree());
+    srv.at("/*").all(|_| async move {
+        Ok(Response::builder(StatusCode::NotFound)
+            .body("Route not found")
+            .build())
+    });
+    srv
 }
