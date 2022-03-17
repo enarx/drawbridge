@@ -7,7 +7,10 @@
     self,
     nixify,
     ...
-  }:
+  }: let
+    apiSpec = "api/api.yml";
+    docOutput = "doc/index.html";
+  in
     with nixify.lib;
       rust.mkFlake {
         src = ./.;
@@ -28,14 +31,43 @@
           devShells,
           pkgs,
           ...
-        }:
+        }: let
+          nix = "${pkgs.nix}/bin/nix --extra-experimental-features flakes --extra-experimental-features nix-command";
+
+          build-doc = pkgs.writeShellScriptBin "build-doc" ''
+            ${nix} build '.#doc' -o '${docOutput}'
+          '';
+          watch-doc = pkgs.writeShellScriptBin "watch-doc" ''
+            ${pkgs.fd}/bin/fd | ${pkgs.ripgrep}/bin/rg 'api.yml' | ${pkgs.entr}/bin/entr -rs "${pkgs.redoc-cli}/bin/redoc-cli serve '${apiSpec}'"
+          '';
+        in
           extendDerivations {
             buildInputs = [
               pkgs.openssl
               pkgs.pkg-config
+              pkgs.redoc-cli
+
+              build-doc
+              watch-doc
             ];
           }
           devShells;
+
+        withPackages = {
+          packages,
+          pkgs,
+          ...
+        }:
+          packages
+          // {
+            doc = pkgs.stdenv.mkDerivation {
+              name = "doc";
+              src = self;
+              buildInputs = [pkgs.redoc-cli];
+              buildPhase = "redoc-cli bundle '${apiSpec}' -o index.html";
+              installPhase = "mv index.html $out";
+            };
+          };
       }
       // {
         nixosModules = let
