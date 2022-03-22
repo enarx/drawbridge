@@ -5,4 +5,3 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [dependencies]
-axum = "0.4.8"

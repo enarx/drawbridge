@@ -9,10 +9,10 @@ edition = "2021"
 [dependencies]
 # Internal dependencies
 drawbridge-auth = { path = "./crates/auth" }
+drawbridge-core = { path = "./crates/core" }
 drawbridge-tags = { path = "./crates/tags" }
 drawbridge-tree = { path = "./crates/tree" }
 
 # External dependencies
-axum = "0.4.8"
-tokio = { version = "1.17.0", features = ["full"] }
-tower = "0.4.12"
+async-h1 = "2.3.3"
+async-std = "1.11.0"

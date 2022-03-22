@@ -1,5 +1,2 @@
-use axum::Router;
-
-pub fn new() -> Router {
-    Router::new()
-}
+// SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
+// SPDX-License-Identifier: Apache-2.0
