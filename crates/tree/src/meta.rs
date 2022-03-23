@@ -10,13 +10,16 @@ use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Meta {
-    pub hash: Node,
+    #[serde(rename = "contentLength")]
+    pub size: u64,
 
     #[serde(deserialize_with = "deserialize")]
     #[serde(serialize_with = "serialize")]
+    #[serde(rename = "contentType")]
     pub mime: Mime,
 
-    pub size: u64,
+    #[serde(rename = "eTag")]
+    pub hash: Node,
 }
 
 fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Mime, D::Error> where {
@@ -42,5 +45,35 @@ impl FromRequest for Meta {
         let mime = Mime::from_request(req).await?;
 
         Ok(Meta { hash, mime, size })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use serde_json::json;
+
+    #[test]
+    fn serialization() {
+        const HASH: &str =
+            "sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC";
+        const SIZE: u64 = 42;
+        const MIME: &str = "text/plain";
+
+        assert_eq!(
+            serde_json::to_string(&Meta {
+                hash: HASH.parse().unwrap(),
+                size: SIZE,
+                mime: MIME.parse().unwrap(),
+            })
+            .unwrap(),
+            json!({
+                "contentLength": SIZE,
+                "contentType": MIME,
+                "eTag": HASH,
+            })
+            .to_string(),
+        )
     }
 }
