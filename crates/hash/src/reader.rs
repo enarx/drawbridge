@@ -75,4 +75,15 @@ mod tests {
             Ok(..) => panic!("unexpected success"),
         }
     }
+
+    #[async_std::test]
+    async fn meta_hash() {
+        // printf "sha384:%s" $(printf '%s' '{"contentLength":42,"contentType":"text/plain","eTag":"sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"}' | openssl dgst -sha384 -binary | openssl base64 -A | tr '/' '_' | tr '+' '-')
+        const HASH: &str =
+            "sha384:hF8t6NZNTsnhhFcVjYeIc1kkavoZ3HIaWI_a7Z-l1odHq32xX3YaeFPyo4Jjf6Be";
+        let hash: Hash = HASH.parse().unwrap();
+        let meta = r#"{"contentLength":42,"contentType":"text/plain","eTag":"sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"}"#;
+        let mut read = hash.reader(meta.as_bytes());
+        copy(&mut read, &mut sink()).await.unwrap();
+    }
 }
