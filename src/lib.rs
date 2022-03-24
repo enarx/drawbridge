@@ -5,11 +5,13 @@ use std::str::FromStr;
 
 use drawbridge_http::http::{self, Error, Request, Response, StatusCode};
 use drawbridge_http::{async_trait, Handler};
-use drawbridge_tree::{Memory, Service as Tree};
+use drawbridge_tags as tag;
+use drawbridge_tree as tree;
 
 #[derive(Clone, Default)]
 pub struct Service {
-    tree: Tree<Memory>,
+    tree: tree::Service<tree::Memory>,
+    tag: tag::Service<tag::Memory>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,8 +83,7 @@ impl Handler<()> for Service {
 
         match comp {
             "tree" => Ok(self.tree.handle(req).await),
-            // TODO: use tag service
-            //"tag" => Ok(self.tag.handle(req).await),
+            "tag" => Ok(self.tag.handle(req).await),
             _ => Err(no_route()),
         }
     }
