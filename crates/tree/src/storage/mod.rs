@@ -29,8 +29,9 @@ pub trait Storage: Send + Sync {
 #[cfg(test)]
 mod tests {
     use async_std::io::{copy, sink};
+    use drawbridge_hash::Hash;
 
-    use crate::{crypto::Hash, meta::Meta, node::Node, path::Path};
+    use crate::{meta::Meta, node::Node, path::Path};
 
     use super::{Memory, Storage};
 

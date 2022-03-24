@@ -5,7 +5,7 @@ mod hash;
 mod reader;
 mod writer;
 
-pub use hash::Hash;
+pub use hash::{Error, Hash};
 pub use reader::Reader;
 pub use writer::Writer;
 

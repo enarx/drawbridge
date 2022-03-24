@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-mod crypto;
 mod meta;
 mod node;
 mod path;
@@ -13,7 +12,6 @@ use async_std::io::{copy, sink};
 use drawbridge_core::http::{Body, Method, Request, Response, StatusCode};
 use drawbridge_core::{async_trait, Handler, IntoResponse, Json};
 
-use self::crypto::Hash;
 use self::meta::Meta;
 use self::node::Node;
 use self::path::Path;

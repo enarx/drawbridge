@@ -6,10 +6,9 @@ use std::str::FromStr;
 
 use drawbridge_core::http::{Request, StatusCode};
 use drawbridge_core::{async_trait, FromRequest};
+use drawbridge_hash::{Error, Hash};
 
-use serde::{de::Error, Deserialize, Serialize};
-
-use super::Hash;
+use serde::{de::Error as _, Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct Node {
@@ -70,7 +69,7 @@ impl From<Hash> for Node {
 }
 
 impl FromStr for Node {
-    type Err = <Hash as FromStr>::Err;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hash = s.parse()?;

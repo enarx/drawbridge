@@ -459,6 +459,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "drawbridge-hash"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "base64",
+ "drawbridge-core",
+ "sha2 0.10.2",
+]
+
+[[package]]
 name = "drawbridge-tags"
 version = "0.1.0"
 
@@ -467,11 +477,10 @@ name = "drawbridge-tree"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "base64",
  "drawbridge-core",
+ "drawbridge-hash",
  "serde",
  "serde_json",
- "sha2 0.10.2",
  "tempfile",
 ]
 

@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use drawbridge_core::http::{Request, StatusCode};
 use drawbridge_core::{async_trait, FromRequest};
+use drawbridge_hash::Error;
 
 #[derive(Clone)]
 pub struct Path(Vec<Node>);
@@ -23,20 +24,8 @@ impl DerefMut for Path {
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    Empty,
-    Node(<Node as FromStr>::Err),
-}
-
-impl From<<Node as FromStr>::Err> for Error {
-    fn from(err: <Node as FromStr>::Err) -> Self {
-        Self::Node(err)
-    }
-}
-
 impl FromStr for Path {
-    type Err = Error;
+    type Err = Option<Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hashes = s
@@ -46,7 +35,7 @@ impl FromStr for Path {
             .collect::<Result<Vec<_>, _>>()?;
 
         if hashes.is_empty() {
-            return Err(Error::Empty);
+            return Err(None);
         }
 
         Ok(Self(hashes))
