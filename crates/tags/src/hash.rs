@@ -8,7 +8,9 @@ use drawbridge_hash::Error;
 use drawbridge_http::http::{Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
-#[derive(Clone)]
+use serde::Serialize;
+
+#[derive(Clone, Serialize)]
 pub struct Hash(drawbridge_hash::Hash);
 
 impl Deref for Hash {

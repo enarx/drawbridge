@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
@@ -10,7 +11,7 @@ use drawbridge_http::{async_trait, FromRequest};
 use semver::{Error, Version};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Tag(Version);
 
 impl Deref for Tag {
@@ -43,5 +44,19 @@ impl FromRequest for Tag {
         req.url().path()[1..]
             .parse()
             .or(Err(StatusCode::BadRequest))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::Tag;
+
+    #[test]
+    fn parse_string() {
+        let test_value: Tag = "1.2.3-beta".parse().unwrap();
+        assert_eq!(test_value.major, 1);
+        assert_eq!(test_value.minor, 2);
+        assert_eq!(test_value.patch, 3);
+        assert_eq!(test_value.pre.to_string(), "beta");
     }
 }
