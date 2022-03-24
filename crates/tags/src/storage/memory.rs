@@ -29,18 +29,25 @@ impl Storage for Memory {
     type Error = StatusCode;
 
     async fn tags(&self) -> Result<Vec<Tag>, Self::Error> {
-        todo!()
+        let our_map = self.0.read().await;
+        Ok(our_map.keys().cloned().collect())
     }
 
     async fn del(&self, tag: Tag) -> Result<(), Self::Error> {
-        todo!()
+        let mut our_map = self.0.write().await;
+        our_map.remove(&tag).ok_or(StatusCode::NotFound)?;
+        Ok(())
     }
 
     async fn get(&self, tag: Tag) -> Result<Hash, Self::Error> {
-        todo!()
+        let our_map = self.0.read().await;
+        let x = our_map.get(&tag).ok_or(StatusCode::NotFound)?;
+        Ok(x.clone())
     }
 
     async fn put(&self, tag: Tag, hash: Hash) -> Result<(), Self::Error> {
-        todo!()
+        let mut our_map = self.0.write().await;
+        our_map.insert(tag, hash);
+        Ok(())
     }
 }

@@ -5,6 +5,8 @@ use drawbridge_hash::Error;
 use drawbridge_http::http::{Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
+use serde::Serialize;
+
 #[derive(Clone)]
 pub struct Hash(drawbridge_hash::Hash);
 
@@ -27,6 +29,12 @@ impl FromStr for Hash {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse().map(Self)
+    }
+}
+
+impl Serialize for Hash {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.to_string().serialize(serializer)
     }
 }
 

@@ -6,8 +6,9 @@ use drawbridge_http::{async_trait, FromRequest};
 
 use semver;
 use serde::{Deserialize, Serialize};
+use std::hash;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, hash::Hash)]
 pub struct Tag(semver::Version);
 
 impl Eq for Tag {}
@@ -59,5 +60,21 @@ impl FromRequest for Tag {
         req.url().path()[1..]
             .parse()
             .or(Err(StatusCode::BadRequest))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::Tag;
+
+    use std::str::FromStr;
+
+    #[test]
+    fn parse_string() {
+        let test_value = Tag::from_str("1.2.3-beta").unwrap();
+        assert_eq!(test_value.major, 1);
+        assert_eq!(test_value.minor, 2);
+        assert_eq!(test_value.patch, 3);
+        assert_eq!(test_value.pre.to_string(), "beta");
     }
 }

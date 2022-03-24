@@ -40,8 +40,7 @@ impl<T: Clone + Storage> Service<T> {
     }
 
     async fn get(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
-        // TODO: Perform a GET
-        Ok(())
+        Ok(Json(self.0.get(tag).await?))
     }
 
     async fn put(&self, tag: Tag, hash: Hash) -> Result<impl IntoResponse, T::Error> {
