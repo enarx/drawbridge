@@ -23,7 +23,7 @@ pub struct Writer<T> {
 
 impl<T: Write + Unpin> Write for Writer<T> {
     fn poll_write(
-        mut self: std::pin::Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> std::task::Poll<Result<usize>> {
@@ -38,17 +38,11 @@ impl<T: Write + Unpin> Write for Writer<T> {
         })
     }
 
-    fn poll_flush(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> std::task::Poll<Result<()>> {
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> std::task::Poll<Result<()>> {
         Pin::new(&mut self.writer).poll_flush(cx)
     }
 
-    fn poll_close(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> std::task::Poll<Result<()>> {
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> std::task::Poll<Result<()>> {
         Pin::new(&mut self.writer).poll_close(cx)
     }
 }

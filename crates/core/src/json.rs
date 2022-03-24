@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Serialize};
 pub struct Json<T>(pub T);
 
 #[async_trait]
-impl<'de, T: DeserializeOwned> FromRequest for Json<T> {
+impl<T: DeserializeOwned> FromRequest for Json<T> {
     type Error = StatusCode;
 
     async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
