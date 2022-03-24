@@ -210,6 +210,15 @@ impl IntoResponse for StatusCode {
 }
 
 #[async_trait]
+impl IntoResponse for http_types::Error {
+    async fn into_response(self) -> Response {
+        let mut response = Response::new(self.status());
+        response.set_body(self.into_inner().to_string());
+        response
+    }
+}
+
+#[async_trait]
 impl<B: Send> IntoResponse for B
 where
     Response: Appender<B, BodyType>,
