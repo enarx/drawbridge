@@ -3,7 +3,7 @@
 
 use drawbridge::Service;
 use drawbridge_core::http::Result;
-use drawbridge_core::Handler;
+use drawbridge_core::{Handler, IntoResponse};
 
 use async_std::net::TcpListener;
 use async_std::prelude::*;
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
             eprintln!("CON: {}", stream.peer_addr()?);
 
             async_h1::accept(stream, |req| async {
-                Ok(service.clone().handle(req).await)
+                Ok(service.clone().handle(req).await.into_response().await)
             })
             .await
         });
