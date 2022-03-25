@@ -454,6 +454,7 @@ dependencies = [
  "async-std",
  "base64",
  "drawbridge-http",
+ "serde",
  "sha2 0.10.2",
 ]
 

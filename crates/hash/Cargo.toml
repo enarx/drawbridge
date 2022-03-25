@@ -13,4 +13,5 @@ drawbridge-http = { path = "../http" }
 # External Dependencies
 async-std = { version = "1.8.0", features = ["attributes"] }
 base64 = "0.13.0"
+serde = "1.0.136"
 sha2 = "0.10.2"

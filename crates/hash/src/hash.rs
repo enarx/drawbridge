@@ -4,6 +4,7 @@
 use core::ops::{Deref, DerefMut};
 use core::str::FromStr;
 
+use serde::{de::Error as _, Deserialize, Serialize};
 use sha2::digest::{generic_array::GenericArray, OutputSizeUser};
 use sha2::{Sha224, Sha256, Sha384, Sha512};
 
@@ -134,5 +135,19 @@ impl FromStr for Hash {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Inner::from_str(s).map(Self)
+    }
+}
+
+impl Serialize for Hash {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Hash {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(|_| D::Error::custom("invalid hash"))
     }
 }
