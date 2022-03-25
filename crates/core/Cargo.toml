@@ -1,0 +1,11 @@
+[package]
+name = "drawbridge-core"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[dependencies]
+# Internal dependencies
+drawbridge-tags = { path = "../tags" }
+drawbridge-tree = { path = "../tree" }
+drawbridge-web = { path = "../web" }

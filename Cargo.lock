@@ -437,15 +437,22 @@ version = "0.1.0"
 dependencies = [
  "async-h1",
  "async-std",
- "drawbridge-auth",
- "drawbridge-tags",
- "drawbridge-tree",
+ "drawbridge-core",
  "drawbridge-web",
 ]
 
 [[package]]
 name = "drawbridge-auth"
 version = "0.1.0"
+
+[[package]]
+name = "drawbridge-core"
+version = "0.1.0"
+dependencies = [
+ "drawbridge-tags",
+ "drawbridge-tree",
+ "drawbridge-web",
+]
 
 [[package]]
 name = "drawbridge-hash"

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use drawbridge::Service;
+use drawbridge_core::Service;
 use drawbridge_web::http::Result;
 use drawbridge_web::Handler;
 
