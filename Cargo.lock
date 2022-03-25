@@ -438,9 +438,9 @@ dependencies = [
  "async-h1",
  "async-std",
  "drawbridge-auth",
- "drawbridge-core",
  "drawbridge-tags",
  "drawbridge-tree",
+ "drawbridge-web",
 ]
 
 [[package]]
@@ -448,23 +448,12 @@ name = "drawbridge-auth"
 version = "0.1.0"
 
 [[package]]
-name = "drawbridge-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "http-types",
- "mime",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "drawbridge-hash"
 version = "0.1.0"
 dependencies = [
  "async-std",
  "base64",
- "drawbridge-core",
+ "drawbridge-web",
  "sha2 0.10.2",
 ]
 
@@ -477,11 +466,22 @@ name = "drawbridge-tree"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "drawbridge-core",
  "drawbridge-hash",
+ "drawbridge-web",
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "drawbridge-web"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "http-types",
+ "mime",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

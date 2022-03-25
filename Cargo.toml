@@ -9,9 +9,9 @@ edition = "2021"
 [dependencies]
 # Internal dependencies
 drawbridge-auth = { path = "./crates/auth" }
-drawbridge-core = { path = "./crates/core" }
 drawbridge-tags = { path = "./crates/tags" }
 drawbridge-tree = { path = "./crates/tree" }
+drawbridge-web = { path = "./crates/web" }
 
 # External dependencies
 async-h1 = "2.3.3"

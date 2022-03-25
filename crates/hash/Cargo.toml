@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 # Internal Dependencies
-drawbridge-core = { path = "../core" }
+drawbridge-web = { path = "../web" }
 
 # External Dependencies
 async-std = { version = "1.8.0", features = ["attributes"] }

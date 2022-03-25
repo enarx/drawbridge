@@ -4,9 +4,9 @@
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use drawbridge_core::http::{Request, StatusCode};
-use drawbridge_core::{async_trait, FromRequest};
 use drawbridge_hash::{Error, Hash};
+use drawbridge_web::http::{Request, StatusCode};
+use drawbridge_web::{async_trait, FromRequest};
 
 use serde::{de::Error as _, Deserialize, Serialize};
 

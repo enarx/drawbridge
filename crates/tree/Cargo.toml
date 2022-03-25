@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 # Internal Dependencies
-drawbridge-core = { path = "../core" }
+drawbridge-web = { path = "../web" }
 drawbridge-hash = { path = "../hash" }
 
 # External Dependencies

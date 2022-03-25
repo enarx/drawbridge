@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use drawbridge_core::http::{Request, Response, StatusCode};
-use drawbridge_core::{async_trait, Handler};
 use drawbridge_tree::{Memory, Service as Tree};
+use drawbridge_web::http::{Request, Response, StatusCode};
+use drawbridge_web::{async_trait, Handler};
 
 #[derive(Clone, Default)]
 pub struct Service {
