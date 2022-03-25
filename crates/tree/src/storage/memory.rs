@@ -7,8 +7,8 @@ use crate::{meta::Meta, node::Node, path::Path};
 use std::collections::BTreeMap;
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
-use drawbridge_core::async_trait;
-use drawbridge_core::http::{Body, StatusCode};
+use drawbridge_http::async_trait;
+use drawbridge_http::http::{Body, StatusCode};
 
 use async_std::io::{Read, ReadExt};
 use async_std::sync::RwLock;

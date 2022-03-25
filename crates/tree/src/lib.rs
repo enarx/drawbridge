@@ -12,8 +12,8 @@ mod storage;
 pub use storage::Memory;
 
 use async_std::io::{copy, sink};
-use drawbridge_core::http::{Body, Method, Request, Response, StatusCode};
-use drawbridge_core::{async_trait, Handler, IntoResponse, Json};
+use drawbridge_http::http::{Body, Method, Request, Response, StatusCode};
+use drawbridge_http::{async_trait, Handler, IntoResponse, Json};
 
 use self::meta::Meta;
 use self::node::Node;

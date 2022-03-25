@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 # Internal dependencies
 drawbridge-auth = { path = "./crates/auth" }
-drawbridge-core = { path = "./crates/core" }
+drawbridge-http = { path = "./crates/http" }
 drawbridge-tags = { path = "./crates/tags" }
 drawbridge-tree = { path = "./crates/tree" }
 

@@ -3,8 +3,8 @@
 
 use super::Node;
 
-use drawbridge_core::http::{Mime, Request, StatusCode};
-use drawbridge_core::{async_trait, FromRequest};
+use drawbridge_http::http::{Mime, Request, StatusCode};
+use drawbridge_http::{async_trait, FromRequest};
 
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 

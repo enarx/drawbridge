@@ -3,9 +3,9 @@ use super::Node;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use drawbridge_core::http::{Request, StatusCode};
-use drawbridge_core::{async_trait, FromRequest};
 use drawbridge_hash::Error;
+use drawbridge_http::http::{Request, StatusCode};
+use drawbridge_http::{async_trait, FromRequest};
 
 #[derive(Clone)]
 pub struct Path(Vec<Node>);

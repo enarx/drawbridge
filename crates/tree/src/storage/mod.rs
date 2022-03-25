@@ -7,8 +7,8 @@ pub use memory::Memory;
 
 use crate::{meta::Meta, node::Node, path::Path};
 
-use drawbridge_core::http::{Body, StatusCode};
-use drawbridge_core::{async_trait, IntoResponse};
+use drawbridge_http::http::{Body, StatusCode};
+use drawbridge_http::{async_trait, IntoResponse};
 
 use async_std::io::Read;
 

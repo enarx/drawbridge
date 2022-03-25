@@ -3,8 +3,8 @@
 
 use std::str::FromStr;
 
-use drawbridge_core::http::{self, Error, Request, Response, StatusCode};
-use drawbridge_core::{async_trait, Handler};
+use drawbridge_http::http::{self, Error, Request, Response, StatusCode};
+use drawbridge_http::{async_trait, Handler};
 use drawbridge_tree::{Memory, Service as Tree};
 
 #[derive(Clone, Default)]

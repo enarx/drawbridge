@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use drawbridge::Service;
-use drawbridge_core::http::Result;
-use drawbridge_core::{Handler, IntoResponse};
+use drawbridge_http::http::Result;
+use drawbridge_http::{Handler, IntoResponse};
 
 use async_std::net::TcpListener;
 use async_std::prelude::*;
