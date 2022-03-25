@@ -437,10 +437,8 @@ version = "0.1.0"
 dependencies = [
  "async-h1",
  "async-std",
- "drawbridge-auth",
  "drawbridge-http",
- "drawbridge-tags",
- "drawbridge-tree",
+ "drawbridge-name",
 ]
 
 [[package]]
@@ -467,6 +465,15 @@ dependencies = [
  "mime",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "drawbridge-name"
+version = "0.1.0"
+dependencies = [
+ "drawbridge-http",
+ "drawbridge-tags",
+ "drawbridge-tree",
 ]
 
 [[package]]
