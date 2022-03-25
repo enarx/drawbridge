@@ -5,13 +5,17 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [workspace]
+members = [
+    "crates/auth",
+    "crates/hash",
+    "crates/tags",
+    "crates/tree",
+]
 
 [dependencies]
 # Internal dependencies
-drawbridge-auth = { path = "./crates/auth" }
 drawbridge-http = { path = "./crates/http" }
-drawbridge-tags = { path = "./crates/tags" }
-drawbridge-tree = { path = "./crates/tree" }
+drawbridge-name = { path = "./crates/name" }
 
 # External dependencies
 async-h1 = "2.3.3"

@@ -1,0 +1,11 @@
+[package]
+name = "drawbridge-name"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[dependencies]
+# Internal dependencies
+drawbridge-http = { path = "../http" }
+drawbridge-tags = { path = "../tags" }
+drawbridge-tree = { path = "../tree" }

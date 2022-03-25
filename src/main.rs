@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use drawbridge::Service;
 use drawbridge_http::http::Result;
 use drawbridge_http::{Handler, IntoResponse};
+use drawbridge_name::Service;
 
 use async_std::net::TcpListener;
 use async_std::prelude::*;
