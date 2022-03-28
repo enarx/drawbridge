@@ -7,7 +7,7 @@
 mod meta;
 mod node;
 mod path;
-mod storage;
+pub mod storage;
 
 pub use storage::Memory;
 

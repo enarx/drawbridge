@@ -4,7 +4,6 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
-mod hash;
 mod storage;
 mod tag;
 
@@ -13,9 +12,7 @@ pub use storage::Memory;
 use drawbridge_http::http::{Method, Request, Response, StatusCode};
 use drawbridge_http::{async_trait, Handler, IntoResponse, Json};
 
-use self::hash::Hash;
 use self::storage::Storage;
-use self::tag::Tag;
 
 #[derive(Clone, Default)]
 pub struct Service<T: Clone + Storage>(T);
@@ -31,20 +28,20 @@ impl<T: Clone + Storage> Service<T> {
         Ok(Json(self.0.tags().await?))
     }
 
-    async fn delete(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
+    async fn delete(&self, tag: String) -> Result<impl IntoResponse, T::Error> {
         self.0.del(tag).await
     }
 
-    async fn head(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
+    async fn head(&self, tag: String) -> Result<impl IntoResponse, T::Error> {
         self.0.get(tag).await.map(|_| ())
     }
 
-    async fn get(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
+    async fn get(&self, tag: String) -> Result<impl IntoResponse, T::Error> {
         Ok(Json(self.0.get(tag).await?))
     }
 
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<impl IntoResponse, T::Error> {
-        self.0.put(tag, hash).await
+    async fn put(&self, tag: String, entry: Vec<u8>) -> Result<impl IntoResponse, T::Error> {
+        self.0.put(tag, entry).await
     }
 }
 

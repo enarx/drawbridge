@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::Storage;
-use crate::hash::Hash;
-use crate::tag::Tag;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -16,7 +14,7 @@ use async_std::sync::RwLock;
 ///
 /// This is mostly for testing.
 #[derive(Clone)]
-pub struct Memory(Arc<RwLock<HashMap<Tag, Hash>>>);
+pub struct Memory(Arc<RwLock<HashMap<String, Vec<u8>>>>);
 
 impl Default for Memory {
     fn default() -> Self {
@@ -28,26 +26,26 @@ impl Default for Memory {
 impl Storage for Memory {
     type Error = StatusCode;
 
-    async fn tags(&self) -> Result<Vec<Tag>, Self::Error> {
+    async fn tags(&self) -> Result<Vec<String>, Self::Error> {
         let lock = self.0.read().await;
         Ok(lock.keys().cloned().collect())
     }
 
-    async fn del(&self, tag: Tag) -> Result<(), Self::Error> {
+    async fn del(&self, tag: String) -> Result<(), Self::Error> {
         let mut lock = self.0.write().await;
         lock.remove(&tag).ok_or(StatusCode::NotFound)?;
         Ok(())
     }
 
-    async fn get(&self, tag: Tag) -> Result<Hash, Self::Error> {
+    async fn get(&self, tag: String) -> Result<Vec<u8>, Self::Error> {
         let lock = self.0.read().await;
         let x = lock.get(&tag).ok_or(StatusCode::NotFound)?;
         Ok(x.clone())
     }
 
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<(), Self::Error> {
+    async fn put(&self, tag: String, entry: Vec<u8>) -> Result<(), Self::Error> {
         let mut lock = self.0.write().await;
-        lock.insert(tag, hash);
+        lock.insert(tag, entry);
         Ok(())
     }
 }
