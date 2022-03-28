@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::Storage;
+use super::{Directory, Storage};
 use crate::{meta::Meta, node::Node, path::Path};
 
-use std::collections::BTreeMap;
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use drawbridge_http::async_trait;
@@ -81,7 +80,7 @@ impl Default for Memory {
             HashMap::new(),
             Meta {
                 hash: HASH.parse().unwrap(),
-                mime: crate::DIRECTORY.parse().unwrap(),
+                mime: Directory::TYPE.parse().unwrap(),
                 size: 0,
             },
             Vec::new(),
@@ -164,19 +163,18 @@ impl Storage for Memory {
         }
 
         // If this is a file, we are done.
-        if meta.mime.essence() != crate::DIRECTORY {
+        if meta.mime.essence() != Directory::TYPE {
             map.insert(last.clone(), Segment::File(meta, data));
             return Ok(());
         }
 
         // Create a directory entry.
-        let dir: BTreeMap<String, Node> =
-            serde_json::from_slice(&data).map_err(|_| StatusCode::BadRequest)?;
+        let dir: Directory = serde_json::from_slice(&data).map_err(|_| StatusCode::BadRequest)?;
 
         // Populate children nodes with unknown states.
         let mut new = HashMap::new();
-        for node in dir.values() {
-            new.insert(node.clone(), Segment::None);
+        for entry in dir.values() {
+            new.insert(entry.hash.clone().into(), Segment::None);
         }
 
         // Insert the directory.
