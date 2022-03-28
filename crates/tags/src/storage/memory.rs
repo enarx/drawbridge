@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::Storage;
-use crate::hash::Hash;
+use crate::entry::Entry;
 use crate::tag::Tag;
 
 use std::{collections::HashMap, sync::Arc};
@@ -16,7 +16,7 @@ use async_std::sync::RwLock;
 ///
 /// This is mostly for testing.
 #[derive(Clone)]
-pub struct Memory(Arc<RwLock<HashMap<Tag, Hash>>>);
+pub struct Memory(Arc<RwLock<HashMap<Tag, Entry>>>);
 
 impl Default for Memory {
     fn default() -> Self {
@@ -39,15 +39,15 @@ impl Storage for Memory {
         Ok(())
     }
 
-    async fn get(&self, tag: Tag) -> Result<Hash, Self::Error> {
+    async fn get(&self, tag: Tag) -> Result<Entry, Self::Error> {
         let lock = self.0.read().await;
         let x = lock.get(&tag).ok_or(StatusCode::NotFound)?;
         Ok(x.clone())
     }
 
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<(), Self::Error> {
+    async fn put(&self, tag: Tag, entry: Entry) -> Result<(), Self::Error> {
         let mut lock = self.0.write().await;
-        lock.insert(tag, hash);
+        lock.insert(tag, entry);
         Ok(())
     }
 }

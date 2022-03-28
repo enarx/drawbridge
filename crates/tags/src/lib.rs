@@ -4,7 +4,7 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
-mod hash;
+mod entry;
 mod storage;
 mod tag;
 
@@ -13,7 +13,7 @@ pub use storage::Memory;
 use drawbridge_http::http::{Method, Request, Response, StatusCode};
 use drawbridge_http::{async_trait, Handler, IntoResponse, Json};
 
-use self::hash::Hash;
+use self::entry::Entry;
 use self::storage::Storage;
 use self::tag::Tag;
 
@@ -43,7 +43,7 @@ impl<T: Clone + Storage> Service<T> {
         Ok(Json(self.0.get(tag).await?))
     }
 
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<impl IntoResponse, T::Error> {
+    async fn put(&self, tag: Tag, hash: Entry) -> Result<impl IntoResponse, T::Error> {
         self.0.put(tag, hash).await
     }
 }
