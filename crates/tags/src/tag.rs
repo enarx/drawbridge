@@ -1,21 +1,27 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use io::Error;
 use std::hash::Hash;
+use std::io;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 use drawbridge_http::http::{Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
-use semver::{Error, Version};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Tag(Version);
+pub struct Tag(String);
+
+impl Tag {
+    pub const TYPE_ENTRY: &'static str = "application/vnd.drawbridge.tag.v1+json";
+    pub const TYPE_JOSE: &'static str = "application/jose+json";
+}
 
 impl Deref for Tag {
-    type Target = Version;
+    type Target = String;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -32,7 +38,7 @@ impl FromStr for Tag {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        s.parse().map(Self)
+        Ok(Tag(String::from(s)))
     }
 }
 
@@ -50,13 +56,12 @@ impl FromRequest for Tag {
 #[cfg(test)]
 mod test {
     use crate::Tag;
+    use std::str::FromStr;
 
     #[test]
-    fn parse_string() {
-        let test_value: Tag = "1.2.3-beta".parse().unwrap();
-        assert_eq!(test_value.major, 1);
-        assert_eq!(test_value.minor, 2);
-        assert_eq!(test_value.patch, 3);
-        assert_eq!(test_value.pre.to_string(), "beta");
+    fn tag_test() {
+        let test_string = "foo_bar_baz";
+        let test_tag = Tag::from_str(test_string).unwrap();
+        assert_eq!(test_string, test_tag);
     }
 }

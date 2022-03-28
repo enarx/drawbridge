@@ -5,7 +5,7 @@ mod memory;
 
 pub use memory::Memory;
 
-use crate::hash::Hash;
+use crate::entry::Entry;
 use crate::tag::Tag;
 
 use drawbridge_http::http::StatusCode;
@@ -18,17 +18,15 @@ pub trait Storage: Send + Sync {
     async fn tags(&self) -> Result<Vec<Tag>, Self::Error>;
 
     async fn del(&self, tag: Tag) -> Result<(), Self::Error>;
-    async fn get(&self, tag: Tag) -> Result<Hash, Self::Error>;
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<(), Self::Error>;
+    async fn get(&self, tag: Tag) -> Result<Entry, Self::Error>;
+    async fn put(&self, tag: Tag, entry: Entry) -> Result<(), Self::Error>;
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Hash, Memory, Storage, Tag};
+    use super::{Entry, Hash, Memory, Storage, Tag};
 
     use std::str::FromStr;
-
-    const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
 
     #[async_std::test]
     async fn basic() {
@@ -36,12 +34,12 @@ mod test {
         assert!(m.tags().await.unwrap().is_empty());
 
         let tag = Tag::from_str("1.2.3").unwrap();
-        let hash = Hash::from_str(HASH).unwrap();
+        let entry = Entry::from_str("123").unwrap();
 
-        m.put(tag.clone(), hash).await.unwrap();
-        let hash_retrieved = m.get(tag.clone()).await.unwrap();
+        m.put(tag.clone(), entry).await.unwrap();
+        let entry_retrieved = m.get(tag.clone()).await.unwrap();
 
-        assert_eq!(HASH, hash_retrieved.to_string());
+        assert_eq!("123", entry_retrieved.to_string());
         assert_eq!(vec![tag], m.tags().await.unwrap());
     }
 }
