@@ -7,10 +7,52 @@ pub use memory::Memory;
 
 use crate::{meta::Meta, node::Node, path::Path};
 
+use std::collections::BTreeMap;
+use std::ops::{Deref, DerefMut};
+
+use drawbridge_hash::Hash;
 use drawbridge_http::http::{Body, StatusCode};
 use drawbridge_http::{async_trait, IntoResponse};
 
 use async_std::io::Read;
+use serde::Deserialize;
+
+/// A directory
+#[derive(Clone, Default, PartialEq, Eq, Deserialize)]
+pub struct Directory(BTreeMap<String, Entry>);
+
+impl Directory {
+    pub const TYPE: &'static str = "application/vnd.drawbridge.directory.v1+json";
+}
+
+impl Deref for Directory {
+    type Target = BTreeMap<String, Entry>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Directory {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A directory entry
+///
+/// Note that this type is designed to be extensible. Therefore, the fields
+/// here represent the minimum required fields. Other fields may be present.
+#[derive(Clone, PartialEq, Eq, Deserialize)]
+pub struct Entry {
+    /// The hash of this entry
+    pub hash: Hash,
+}
+
+impl Entry {
+    #[allow(dead_code)]
+    pub const TYPE: &'static str = "application/vnd.drawbridge.entry.v1+json";
+}
 
 #[async_trait]
 pub trait Storage: Send + Sync {
@@ -31,9 +73,8 @@ mod tests {
     use async_std::io::{copy, sink};
     use drawbridge_hash::Hash;
 
+    use super::*;
     use crate::{meta::Meta, node::Node, path::Path};
-
-    use super::{Memory, Storage};
 
     async fn prep(mime: &str, mut data: &[u8]) -> (Node, Meta) {
         const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
@@ -61,9 +102,10 @@ mod tests {
         let cdata = &b"foo"[..];
         let (cnode, cmeta) = prep("application/octet-stream", cdata).await;
 
-        let pdata = format!(r#"{{"foo":"{}"}}"#, cnode);
-        let pdata = pdata.as_bytes();
-        let (pnode, pmeta) = prep(crate::DIRECTORY, pdata).await;
+        let pdata = serde_json::json!({"foo": {"hash": cnode}});
+        let pdata = serde_json::to_vec(&pdata).unwrap();
+        let pdata = &pdata[..];
+        let (pnode, pmeta) = prep(Directory::TYPE, pdata).await;
 
         let ppath: Path = format!("/{}", pnode).parse().unwrap();
         let cpath: Path = format!("/{}/{}", pnode, cnode).parse().unwrap();

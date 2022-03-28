@@ -20,8 +20,6 @@ use self::node::Node;
 use self::path::Path;
 use self::storage::Storage;
 
-pub const DIRECTORY: &str = "application/vnd.drawbridge.directory.v1+json";
-
 #[derive(Clone, Default)]
 pub struct Service<T: Clone + Storage>(T);
 
