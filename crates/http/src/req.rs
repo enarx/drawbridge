@@ -20,30 +20,39 @@ impl FromRequest for Body {
     }
 }
 
-pub fn parse_header<T>(req: &Request, name: &str) -> Result<T>
+pub trait FromHeader: FromStr + Sync
 where
-    T: FromStr,
-    T::Err: Display,
+    Self::Err: Display,
 {
-    req.header(name)
-        .ok_or_else(|| {
-            Error::from_str(StatusCode::BadRequest, format!("`{}` header not set", name))
-        })?
-        .as_str()
-        .parse()
-        .map_err(|e| {
-            Error::from_str(
-                StatusCode::BadRequest,
-                format!("Could not parse `{}` header value: {}", name, e),
-            )
-        })
+    const NAME: &'static str;
 }
 
 #[async_trait]
-impl FromRequest for Mime {
+impl<T: FromHeader> FromRequest for T
+where
+    T::Err: Display,
+{
     async fn from_request(req: &mut Request) -> Result<Self> {
-        parse_header(req, "Content-Type")
+        req.header(T::NAME)
+            .ok_or_else(|| {
+                Error::from_str(
+                    StatusCode::BadRequest,
+                    format!("`{}` header not set", T::NAME),
+                )
+            })?
+            .as_str()
+            .parse()
+            .map_err(|e| {
+                Error::from_str(
+                    StatusCode::BadRequest,
+                    format!("Could not parse `{}` header value: {}", T::NAME, e),
+                )
+            })
     }
+}
+
+impl FromHeader for Mime {
+    const NAME: &'static str = "Content-Type";
 }
 
 macro_rules! mkfr {

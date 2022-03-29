@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::str::FromStr;
+
 use super::Node;
 
 use drawbridge_http::http::{self, Mime, Request};
-use drawbridge_http::{async_trait, parse_header, FromRequest};
+use drawbridge_http::{async_trait, FromHeader, FromRequest};
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -32,13 +34,26 @@ fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Erro
     mime.to_string().serialize(serializer)
 }
 
+struct Size(u64);
+
+impl FromStr for Size {
+    type Err = <u64 as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse().map(Self)
+    }
+}
+
+impl FromHeader for Size {
+    const NAME: &'static str = "Content-Length";
+}
+
 #[async_trait]
 impl FromRequest for Meta {
     async fn from_request(req: &mut Request) -> http::Result<Self> {
-        let size = parse_header(req, "Content-Length")?;
         let hash = Node::from_request(req).await?;
         let mime = Mime::from_request(req).await?;
-
+        let size = Size::from_request(req).await?.0;
         Ok(Meta { hash, mime, size })
     }
 }

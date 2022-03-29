@@ -5,8 +5,7 @@ use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 use drawbridge_hash::{Error, Hash};
-use drawbridge_http::http::{self, Request};
-use drawbridge_http::{async_trait, parse_header, FromRequest};
+use drawbridge_http::FromHeader;
 
 use serde::{de::Error as _, Deserialize, Serialize};
 
@@ -92,9 +91,6 @@ impl<'de> Deserialize<'de> for Node {
     }
 }
 
-#[async_trait]
-impl FromRequest for Node {
-    async fn from_request(req: &mut Request) -> http::Result<Self> {
-        parse_header(req, "ETag")
-    }
+impl FromHeader for Node {
+    const NAME: &'static str = "ETag";
 }
