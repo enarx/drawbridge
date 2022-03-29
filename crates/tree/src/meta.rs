@@ -3,10 +3,10 @@
 
 use super::Node;
 
-use drawbridge_http::http::{Mime, Request, StatusCode};
-use drawbridge_http::{async_trait, FromRequest};
+use drawbridge_http::http::{self, Mime, Request};
+use drawbridge_http::{async_trait, parse_header, FromRequest};
 
-use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Meta {
@@ -22,11 +22,10 @@ pub struct Meta {
     pub hash: Node,
 }
 
-fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Mime, D::Error> where {
-    let err = D::Error::custom("invalid mime type");
-    let mime = String::deserialize(deserializer)?;
-    let mime = mime.parse().map_err(|_| err)?;
-    Ok(mime)
+fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Mime, D::Error> {
+    String::deserialize(deserializer)?
+        .parse()
+        .map_err(|_| D::Error::custom("invalid mime type"))
 }
 
 fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Error> {
@@ -35,12 +34,8 @@ fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Erro
 
 #[async_trait]
 impl FromRequest for Meta {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
-        let size = req.header("Content-Length").ok_or(StatusCode::BadRequest)?;
-        let size = size.as_str().parse().or(Err(StatusCode::BadRequest))?;
-
+    async fn from_request(req: &mut Request) -> http::Result<Self> {
+        let size = parse_header(req, "Content-Length")?;
         let hash = Node::from_request(req).await?;
         let mime = Mime::from_request(req).await?;
 

@@ -11,8 +11,8 @@ use std::collections::BTreeMap;
 use std::ops::{Deref, DerefMut};
 
 use drawbridge_hash::Hash;
-use drawbridge_http::http::{Body, StatusCode};
-use drawbridge_http::{async_trait, IntoResponse};
+use drawbridge_http::async_trait;
+use drawbridge_http::http::{Body, Result};
 
 use async_std::io::Read;
 use serde::Deserialize;
@@ -56,14 +56,12 @@ impl Entry {
 
 #[async_trait]
 pub trait Storage: Send + Sync {
-    type Error: IntoResponse + From<StatusCode>;
+    async fn roots(&self) -> Result<Vec<Node>>;
+    async fn wants(&self, path: Path) -> Result<Vec<Node>>;
 
-    async fn roots(&self) -> Result<Vec<Node>, Self::Error>;
-    async fn wants(&self, path: Path) -> Result<Vec<Node>, Self::Error>;
-
-    async fn del(&self, path: Path) -> Result<(), Self::Error>;
-    async fn get(&self, path: Path) -> Result<(Meta, Body), Self::Error>;
-    async fn put<T>(&self, path: Path, meta: Meta, body: T) -> Result<(), Self::Error>
+    async fn del(&self, path: Path) -> Result<()>;
+    async fn get(&self, path: Path) -> Result<(Meta, Body)>;
+    async fn put<T>(&self, path: Path, meta: Meta, body: T) -> Result<()>
     where
         T: Send + Read + Unpin;
 }

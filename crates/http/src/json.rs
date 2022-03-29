@@ -4,33 +4,40 @@
 use super::{res::BodyType, Appender, FromRequest};
 
 use async_trait::async_trait;
-use http_types::{Request, Response, StatusCode};
+use http_types::{Error, Request, Response, Result, StatusCode};
 use serde::{de::DeserializeOwned, Serialize};
 
 pub struct Json<T>(pub T);
 
 #[async_trait]
 impl<T: DeserializeOwned> FromRequest for Json<T> {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
-        let err = StatusCode::BadRequest;
-        let buf = req.take_body().into_bytes().await.or(Err(err))?;
-        let x = serde_json::from_slice::<T>(&buf);
-        let y: T = x.or(Err(err))?;
-        Ok(Json(y))
+    async fn from_request(req: &mut Request) -> Result<Self> {
+        let buf = req.take_body().into_bytes().await.map_err(|e| {
+            Error::from_str(
+                StatusCode::BadRequest,
+                format!("Could not read request body: {}", e),
+            )
+        })?;
+        serde_json::from_slice(&buf).map(Self).map_err(|e| {
+            Error::from_str(
+                StatusCode::BadRequest,
+                format!("Could not parse request body: {}", e),
+            )
+        })
     }
 }
 
 impl<T: Serialize> Appender<Json<T>, BodyType> for Response {
-    fn append(mut self, item: Json<T>) -> Result<Self, Self> {
+    fn append(mut self, item: Json<T>) -> Result<Self> {
         serde_json::to_vec(&item.0)
-            .map_err(|_| StatusCode::InternalServerError.into())
             .map(|buf| {
                 self.append_header("Content-Length", buf.len().to_string());
                 self.append_header("Content-Type", "application/json");
                 self.set_body(buf);
                 self
+            })
+            .map_err(|_| {
+                Error::from_str(StatusCode::InternalServerError, "Could not encode response")
             })
     }
 }

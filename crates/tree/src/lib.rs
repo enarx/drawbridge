@@ -12,7 +12,7 @@ mod storage;
 pub use storage::Memory;
 
 use async_std::io::{copy, sink};
-use drawbridge_http::http::{Body, Method, Request, Response, StatusCode};
+use drawbridge_http::http::{Body, Error, Method, Request, Response, Result, StatusCode};
 use drawbridge_http::{async_trait, Handler, IntoResponse, Json};
 
 use self::meta::Meta;
@@ -30,45 +30,50 @@ impl<T: Clone + Storage> From<T> for Service<T> {
 }
 
 impl<T: Clone + Storage> Service<T> {
-    async fn roots(&self) -> Result<impl IntoResponse, T::Error> {
-        Ok(Json(self.0.roots().await?))
+    async fn roots(&self) -> Result<impl IntoResponse> {
+        self.0.roots().await.map(Json)
     }
 
-    async fn options(&self, path: Path) -> Result<impl IntoResponse, T::Error> {
-        Ok(Json(self.0.wants(path).await?))
+    async fn options(&self, path: Path) -> Result<impl IntoResponse> {
+        self.0.wants(path).await.map(Json)
     }
 
-    async fn delete(&self, path: Path) -> Result<impl IntoResponse, T::Error> {
+    async fn delete(&self, path: Path) -> Result<impl IntoResponse> {
         self.0.del(path).await
     }
 
-    async fn head(&self, path: Path) -> Result<impl IntoResponse, T::Error> {
-        let (meta, ..) = self.0.get(path).await?;
-        let head = [
-            ("Content-Length", meta.size.to_string()),
-            ("Content-Type", meta.mime.to_string()),
-        ];
-
-        Ok((head, ()))
+    async fn head(&self, path: Path) -> Result<impl IntoResponse> {
+        self.0.get(path).await.map(|(meta, ..)| {
+            (
+                [
+                    ("Content-Length", meta.size.to_string()),
+                    ("Content-Type", meta.mime.to_string()),
+                ],
+                (),
+            )
+        })
     }
 
-    async fn get(&self, path: Path) -> Result<impl IntoResponse, T::Error> {
-        let (meta, data) = self.0.get(path).await?;
-        let head = [
-            ("Content-Length", meta.size.to_string()),
-            ("Content-Type", meta.mime.to_string()),
-        ];
-
-        Ok((head, data))
+    async fn get(&self, path: Path) -> Result<impl IntoResponse> {
+        self.0.get(path).await.map(|(meta, data)| {
+            (
+                [
+                    ("Content-Length", meta.size.to_string()),
+                    ("Content-Type", meta.mime.to_string()),
+                ],
+                data,
+            )
+        })
     }
 
-    async fn put(&self, path: Path, meta: Meta, body: Body) -> Result<impl IntoResponse, T::Error> {
+    async fn put(&self, path: Path, meta: Meta, body: Body) -> Result<impl IntoResponse> {
         // Validate that the final Node is the measurement of the Meta.
-        let buf = serde_json::to_vec(&meta).map_err(|_| StatusCode::InternalServerError)?;
+        let buf = serde_json::to_vec(&meta)
+            .map_err(|_| Error::from_str(StatusCode::InternalServerError, ""))?;
         let mut rdr = (*path[path.len() - 1]).clone().reader(&buf[..]);
         copy(&mut rdr, &mut sink())
             .await
-            .map_err(|_| StatusCode::BadRequest)?;
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))?;
 
         // Validate the measurement of the body as it is read.
         let body = (*meta.hash).clone().reader(body);
@@ -81,7 +86,7 @@ impl<T: Clone + Storage> Service<T> {
 impl<T: Clone + Storage> Handler<()> for Service<T> {
     type Response = Response;
 
-    async fn handle(self, req: Request) -> Self::Response {
+    async fn handle(self, req: Request) -> Result<Self::Response> {
         let path = req.url().path().trim_start_matches('/');
         let meth = req.method();
 
@@ -94,7 +99,7 @@ impl<T: Clone + Storage> Handler<()> for Service<T> {
             (.., Method::Get) => (|p| self.get(p)).handle(req).await,
             (.., Method::Put) => (|p, m, b| self.put(p, m, b)).handle(req).await,
 
-            _ => StatusCode::MethodNotAllowed.into(),
+            _ => Err(Error::from_str(StatusCode::MethodNotAllowed, "")),
         }
     }
 }

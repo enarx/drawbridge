@@ -5,8 +5,8 @@ use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 use drawbridge_hash::{Error, Hash};
-use drawbridge_http::http::{Request, StatusCode};
-use drawbridge_http::{async_trait, FromRequest};
+use drawbridge_http::http::{self, Request};
+use drawbridge_http::{async_trait, parse_header, FromRequest};
 
 use serde::{de::Error as _, Deserialize, Serialize};
 
@@ -94,10 +94,7 @@ impl<'de> Deserialize<'de> for Node {
 
 #[async_trait]
 impl FromRequest for Node {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
-        let etag = req.header("ETag").ok_or(StatusCode::BadRequest)?;
-        etag.as_str().parse().or(Err(StatusCode::BadRequest))
+    async fn from_request(req: &mut Request) -> http::Result<Self> {
+        parse_header(req, "ETag")
     }
 }
