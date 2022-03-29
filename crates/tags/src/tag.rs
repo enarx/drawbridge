@@ -5,10 +5,10 @@ use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use drawbridge_http::http::{Request, StatusCode};
+use drawbridge_http::http::{self, Error, Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
-use semver::{Error, Version};
+use semver::{self, Version};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl DerefMut for Tag {
 }
 
 impl FromStr for Tag {
-    type Err = Error;
+    type Err = semver::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse().map(Self)
@@ -38,12 +38,10 @@ impl FromStr for Tag {
 
 #[async_trait]
 impl FromRequest for Tag {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
+    async fn from_request(req: &mut Request) -> http::Result<Self> {
         req.url().path()[1..]
             .parse()
-            .or(Err(StatusCode::BadRequest))
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))
     }
 }
 

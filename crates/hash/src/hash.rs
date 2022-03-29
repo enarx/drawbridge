@@ -115,6 +115,17 @@ pub enum Error {
     Decode(base64::DecodeError),
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingColon => write!(f, "colon delimiter is missing"),
+            Self::InvalidLength => write!(f, "hash length is invalid"),
+            Self::UnknownAlgorithm => write!(f, "unknown hashing algorithm"),
+            Self::Decode(e) => write!(f, "invalid base64: {}", e),
+        }
+    }
+}
+
 impl From<base64::DecodeError> for Error {
     fn from(value: base64::DecodeError) -> Self {
         Self::Decode(value)

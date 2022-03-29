@@ -4,8 +4,7 @@
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use drawbridge_hash::Error;
-use drawbridge_http::http::{Request, StatusCode};
+use drawbridge_http::http::{self, Error, Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
 use serde::Serialize;
@@ -28,7 +27,7 @@ impl DerefMut for Hash {
 }
 
 impl FromStr for Hash {
-    type Err = Error;
+    type Err = drawbridge_hash::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse().map(Self)
@@ -37,13 +36,11 @@ impl FromStr for Hash {
 
 #[async_trait]
 impl FromRequest for Hash {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
+    async fn from_request(req: &mut Request) -> http::Result<Self> {
         req.body_string()
             .await
-            .or(Err(StatusCode::BadRequest))?
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))?
             .parse()
-            .or(Err(StatusCode::BadRequest))
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))
     }
 }

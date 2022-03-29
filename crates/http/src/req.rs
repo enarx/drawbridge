@@ -1,36 +1,48 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{convert::Infallible, future::Future};
+use crate::res::IntoResponse;
+
+use std::{fmt::Display, future::Future, str::FromStr};
 
 use async_trait::async_trait;
-use http_types::{Body, Mime, Request, Response, StatusCode};
-
-use crate::res::IntoResponse;
+use http_types::{Body, Error, Mime, Request, Response, Result, StatusCode};
 
 #[async_trait]
 pub trait FromRequest: Sized {
-    type Error: IntoResponse;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error>;
+    async fn from_request(req: &mut Request) -> Result<Self>;
 }
 
 #[async_trait]
 impl FromRequest for Body {
-    type Error = Infallible;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
+    async fn from_request(req: &mut Request) -> Result<Self> {
         Ok(req.take_body())
     }
 }
 
+pub fn parse_header<T>(req: &Request, name: &str) -> Result<T>
+where
+    T: FromStr,
+    T::Err: Display,
+{
+    req.header(name)
+        .ok_or_else(|| {
+            Error::from_str(StatusCode::BadRequest, format!("`{}` header not set", name))
+        })?
+        .as_str()
+        .parse()
+        .map_err(|e| {
+            Error::from_str(
+                StatusCode::BadRequest,
+                format!("Could not parse `{}` header value: {}", name, e),
+            )
+        })
+}
+
 #[async_trait]
 impl FromRequest for Mime {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
-        let mime = req.header("Content-Type").ok_or(StatusCode::BadRequest)?;
-        mime.as_str().parse().or(Err(StatusCode::BadRequest))
+    async fn from_request(req: &mut Request) -> Result<Self> {
+        parse_header(req, "Content-Type")
     }
 }
 
@@ -41,15 +53,10 @@ macro_rules! mkfr {
         where
             $($arg: Send + FromRequest),*
         {
-            type Error = Response;
-
             #[allow(non_snake_case)]
-            async fn from_request(_req: &mut Request) -> Result<Self, Self::Error> {
+            async fn from_request(_req: &mut Request) -> Result<Self> {
                 $(
-                    let $arg = match $arg::from_request(_req).await {
-                        Err(e) => return Err(e.into_response().await),
-                        Ok(x) => x,
-                    };
+                    let $arg = $arg::from_request(_req).await?;
                 )*
 
                 Ok(($($arg,)*))
@@ -72,7 +79,7 @@ mkfr!(A0, A1, A2, A3, A4, A5, A6, A7);
 pub trait Handler<T: FromRequest> {
     type Response: IntoResponse;
 
-    async fn handle(self, req: Request) -> Self::Response;
+    async fn handle(self, req: Request) -> Result<Self::Response>;
 }
 
 macro_rules! mkh {
@@ -82,22 +89,20 @@ macro_rules! mkh {
         impl<T, F, O, $($arg),*> Handler<($($arg,)*)> for T
         where
             T: Send + FnOnce($($arg),*) -> F,
-            F: Send + Future<Output = O>,
+            F: Send + Future<Output = Result<O>>,
             O: Send + IntoResponse,
             $($arg: Send + FromRequest),*
         {
             type Response = Response;
 
             #[allow(non_snake_case)]
-            async fn handle(self, mut _req: Request) -> Self::Response {
+            async fn handle(self, mut _req: Request) -> Result<Self::Response> {
                 $(
-                    let $arg = match $arg::from_request(&mut _req).await {
-                        Err(e) => return e.into_response().await,
-                        Ok(x) => x,
-                    };
+                    let $arg = $arg::from_request(&mut _req).await?;
                 )*
 
-                self($($arg,)*).await.into_response().await
+                let res = self($($arg,)*).await?;
+                Ok(res.into_response().await)
             }
         }
     };

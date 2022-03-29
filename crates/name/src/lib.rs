@@ -58,9 +58,9 @@ impl FromStr for Namespace {
 
 #[async_trait]
 impl Handler<()> for Service {
-    type Response = http::Result<Response>;
+    type Response = Response;
 
-    async fn handle(self, mut req: Request) -> Self::Response {
+    async fn handle(self, mut req: Request) -> http::Result<Self::Response> {
         fn no_route() -> Error {
             Error::from_str(StatusCode::NotFound, "Route not found")
         }
@@ -85,8 +85,8 @@ impl Handler<()> for Service {
         let _: Namespace = namespace;
 
         match comp {
-            "tree" => Ok(self.tree.handle(req).await),
-            "tag" => Ok(self.tag.handle(req).await),
+            "tree" => self.tree.handle(req).await,
+            "tag" => self.tag.handle(req).await,
             _ => Err(no_route()),
         }
     }

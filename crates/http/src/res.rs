@@ -6,7 +6,7 @@ use std::convert::Infallible;
 
 use async_trait::async_trait;
 use http_types::headers::{HeaderName, ToHeaderValues};
-use http_types::{Body, Response, StatusCode};
+use http_types::{Body, Response, Result, StatusCode};
 
 pub use sealed::{BodyType, HeadType};
 
@@ -21,7 +21,7 @@ mod sealed {
 }
 
 pub trait Appender<I, T: sealed::Type>: Sized {
-    fn append(self, item: I) -> Result<Self, Self>;
+    fn append(self, item: I) -> Result<Self>;
 }
 
 impl<N: Copy, V: Copy> Appender<&[(N, V)], HeadType> for Response
@@ -29,7 +29,7 @@ where
     N: Into<HeaderName>,
     V: ToHeaderValues,
 {
-    fn append(mut self, item: &[(N, V)]) -> Result<Self, Self> {
+    fn append(mut self, item: &[(N, V)]) -> Result<Self> {
         for (n, v) in item {
             self.append_header(*n, *v);
         }
@@ -43,7 +43,7 @@ where
     N: Into<HeaderName>,
     V: ToHeaderValues,
 {
-    fn append(mut self, item: [(N, V); X]) -> Result<Self, Self> {
+    fn append(mut self, item: [(N, V); X]) -> Result<Self> {
         for (n, v) in item {
             self.append_header(n, v);
         }
@@ -57,7 +57,7 @@ where
     N: Into<HeaderName>,
     V: ToHeaderValues,
 {
-    fn append(mut self, item: Vec<(N, V)>) -> Result<Self, Self> {
+    fn append(mut self, item: Vec<(N, V)>) -> Result<Self> {
         for (n, v) in item {
             self.append_header(n, v);
         }
@@ -71,7 +71,7 @@ where
     N: Into<HeaderName>,
     V: ToHeaderValues,
 {
-    fn append(mut self, item: HashMap<N, V>) -> Result<Self, Self> {
+    fn append(mut self, item: HashMap<N, V>) -> Result<Self> {
         for (n, v) in item {
             self.append_header(n, v);
         }
@@ -85,7 +85,7 @@ where
     N: Into<HeaderName>,
     V: ToHeaderValues,
 {
-    fn append(mut self, item: BTreeMap<N, V>) -> Result<Self, Self> {
+    fn append(mut self, item: BTreeMap<N, V>) -> Result<Self> {
         for (n, v) in item {
             self.append_header(n, v);
         }
@@ -95,48 +95,48 @@ where
 }
 
 impl Appender<Body, BodyType> for Response {
-    fn append(mut self, item: Body) -> Result<Self, Self> {
+    fn append(mut self, item: Body) -> Result<Self> {
         self.set_body(item);
         Ok(self)
     }
 }
 
 impl Appender<(), BodyType> for Response {
-    fn append(self, _item: ()) -> Result<Self, Self> {
+    fn append(self, _item: ()) -> Result<Self> {
         Ok(self)
     }
 }
 
 impl Appender<&[u8], BodyType> for Response {
-    fn append(mut self, item: &[u8]) -> Result<Self, Self> {
+    fn append(mut self, item: &[u8]) -> Result<Self> {
         self.set_body(item);
         Ok(self)
     }
 }
 
 impl<const X: usize> Appender<[u8; X], BodyType> for Response {
-    fn append(mut self, item: [u8; X]) -> Result<Self, Self> {
+    fn append(mut self, item: [u8; X]) -> Result<Self> {
         self.set_body(&item[..]);
         Ok(self)
     }
 }
 
 impl Appender<Vec<u8>, BodyType> for Response {
-    fn append(mut self, item: Vec<u8>) -> Result<Self, Self> {
+    fn append(mut self, item: Vec<u8>) -> Result<Self> {
         self.set_body(item);
         Ok(self)
     }
 }
 
 impl Appender<&str, BodyType> for Response {
-    fn append(mut self, item: &str) -> Result<Self, Self> {
+    fn append(mut self, item: &str) -> Result<Self> {
         self.set_body(item);
         Ok(self)
     }
 }
 
 impl Appender<String, BodyType> for Response {
-    fn append(mut self, item: String) -> Result<Self, Self> {
+    fn append(mut self, item: String) -> Result<Self> {
         self.set_body(item);
         Ok(self)
     }
@@ -172,9 +172,9 @@ where
 
         // Append body first to allow manual header overrides.
         match response.append(self.2) {
-            Err(e) => return e,
+            Err(e) => return e.into_response().await,
             Ok(r) => match r.append(self.1) {
-                Err(e) => e,
+                Err(e) => e.into_response().await,
                 Ok(r) => r,
             },
         }
@@ -229,7 +229,7 @@ where
 }
 
 #[async_trait]
-impl<O: IntoResponse, E: IntoResponse> IntoResponse for Result<O, E> {
+impl<O: IntoResponse> IntoResponse for Result<O> {
     async fn into_response(self) -> Response {
         match self {
             Ok(x) => x.into_response().await,

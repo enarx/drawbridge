@@ -3,8 +3,7 @@ use super::Node;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-use drawbridge_hash::Error;
-use drawbridge_http::http::{Request, StatusCode};
+use drawbridge_http::http::{self, Error, Request, StatusCode};
 use drawbridge_http::{async_trait, FromRequest};
 
 #[derive(Clone)]
@@ -25,7 +24,7 @@ impl DerefMut for Path {
 }
 
 impl FromStr for Path {
-    type Err = Option<Error>;
+    type Err = Option<drawbridge_hash::Error>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hashes = s
@@ -44,9 +43,16 @@ impl FromStr for Path {
 
 #[async_trait]
 impl FromRequest for Path {
-    type Error = StatusCode;
-
-    async fn from_request(req: &mut Request) -> Result<Self, Self::Error> {
-        req.url().path().parse().map_err(|_| StatusCode::BadRequest)
+    async fn from_request(req: &mut Request) -> http::Result<Self> {
+        req.url().path().parse().map_err(|e| {
+            if let Some(e) = e {
+                Error::from_str(
+                    StatusCode::BadRequest,
+                    format!("Could not parse tree path: {}", e),
+                )
+            } else {
+                Error::from_str(StatusCode::BadRequest, "Tree path cannot be empty")
+            }
+        })
     }
 }

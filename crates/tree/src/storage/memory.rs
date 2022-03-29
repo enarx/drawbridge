@@ -7,7 +7,7 @@ use crate::{meta::Meta, node::Node, path::Path};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use drawbridge_http::async_trait;
-use drawbridge_http::http::{Body, StatusCode};
+use drawbridge_http::http::{Body, Error, Result, StatusCode};
 
 use async_std::io::{Read, ReadExt};
 use async_std::sync::RwLock;
@@ -20,47 +20,51 @@ enum Segment {
 }
 
 impl Segment {
-    fn unwind(&self, path: &[Node]) -> Result<&Segment, StatusCode> {
+    fn unwind(&self, path: &[Node]) -> Result<&Segment> {
         let mut here = self;
 
         for node in path.iter() {
             here = match here {
-                Segment::Directory(map, ..) => map.get(node).ok_or(StatusCode::NotFound)?,
-                Segment::File(..) => return Err(StatusCode::BadRequest),
-                Segment::None => return Err(StatusCode::NotFound),
+                Segment::Directory(map, ..) => map
+                    .get(node)
+                    .ok_or_else(|| Error::from_str(StatusCode::NotFound, ""))?,
+                Segment::File(..) => return Err(Error::from_str(StatusCode::BadRequest, "")),
+                Segment::None => return Err(Error::from_str(StatusCode::NotFound, "")),
             };
         }
 
         Ok(here)
     }
 
-    fn unwind_mut(&mut self, path: &[Node]) -> Result<&mut Segment, StatusCode> {
+    fn unwind_mut(&mut self, path: &[Node]) -> Result<&mut Segment> {
         let mut here = self;
 
         for node in path.iter() {
             here = match here {
-                Segment::Directory(map, ..) => map.get_mut(node).ok_or(StatusCode::NotFound)?,
-                Segment::File(..) => return Err(StatusCode::BadRequest),
-                Segment::None => return Err(StatusCode::NotFound),
+                Segment::Directory(map, ..) => map
+                    .get_mut(node)
+                    .ok_or_else(|| Error::from_str(StatusCode::NotFound, ""))?,
+                Segment::File(..) => return Err(Error::from_str(StatusCode::BadRequest, "")),
+                Segment::None => return Err(Error::from_str(StatusCode::NotFound, "")),
             };
         }
 
         Ok(here)
     }
 
-    fn map(&self, path: &[Node]) -> Result<&HashMap<Node, Segment>, StatusCode> {
+    fn map(&self, path: &[Node]) -> Result<&HashMap<Node, Segment>> {
         match self.unwind(path)? {
             Segment::Directory(map, ..) => Ok(map),
-            Segment::File(..) => Err(StatusCode::BadRequest),
-            Segment::None => Err(StatusCode::NotFound),
+            Segment::File(..) => Err(Error::from_str(StatusCode::BadRequest, "")),
+            Segment::None => Err(Error::from_str(StatusCode::NotFound, "")),
         }
     }
 
-    fn map_mut(&mut self, path: &[Node]) -> Result<&mut HashMap<Node, Segment>, StatusCode> {
+    fn map_mut(&mut self, path: &[Node]) -> Result<&mut HashMap<Node, Segment>> {
         match self.unwind_mut(path)? {
             Segment::Directory(map, ..) => Ok(map),
-            Segment::File(..) => Err(StatusCode::BadRequest),
-            Segment::None => Err(StatusCode::NotFound),
+            Segment::File(..) => Err(Error::from_str(StatusCode::BadRequest, "")),
+            Segment::None => Err(Error::from_str(StatusCode::NotFound, "")),
         }
     }
 }
@@ -90,47 +94,45 @@ impl Default for Memory {
 
 #[async_trait]
 impl Storage for Memory {
-    type Error = StatusCode;
-
-    async fn roots(&self) -> Result<Vec<Node>, Self::Error> {
+    async fn roots(&self) -> Result<Vec<Node>> {
         let lock = self.0.read().await;
         match &*lock {
             Segment::Directory(map, ..) => Ok(map.keys().cloned().collect()),
-            _ => Err(StatusCode::InternalServerError),
+            _ => Err(Error::from_str(StatusCode::InternalServerError, "")),
         }
     }
 
-    async fn wants(&self, path: Path) -> Result<Vec<Node>, Self::Error> {
+    async fn wants(&self, path: Path) -> Result<Vec<Node>> {
         let lock = self.0.read().await;
         let iter = lock.map(&path[..])?.iter();
         let none = iter.filter(|(_, v)| v == &&Segment::None).map(|(k, _)| k);
         Ok(none.cloned().collect())
     }
 
-    async fn del(&self, path: Path) -> Result<(), Self::Error> {
+    async fn del(&self, path: Path) -> Result<()> {
         if path.len() != 1 {
-            return Err(StatusCode::BadRequest);
+            return Err(Error::from_str(StatusCode::BadRequest, ""));
         }
 
         let mut lock = self.0.write().await;
         match lock.map_mut(&[])?.remove(&path[0]) {
             Some(..) => Ok(()),
-            None => Err(StatusCode::NotFound),
+            None => Err(Error::from_str(StatusCode::NotFound, "")),
         }
     }
 
-    async fn get(&self, path: Path) -> Result<(Meta, Body), Self::Error> {
+    async fn get(&self, path: Path) -> Result<(Meta, Body)> {
         let lock = self.0.read().await;
         let (meta, data) = match lock.unwind(&path)? {
             Segment::Directory(_, meta, data) => (meta, data),
             Segment::File(meta, data) => (meta, data),
-            Segment::None => return Err(StatusCode::NotFound),
+            Segment::None => return Err(Error::from_str(StatusCode::NotFound, "")),
         };
 
         Ok((meta.clone(), Body::from_bytes(data.clone())))
     }
 
-    async fn put<T>(&self, path: Path, meta: Meta, mut body: T) -> Result<(), Self::Error>
+    async fn put<T>(&self, path: Path, meta: Meta, mut body: T) -> Result<()>
     where
         T: Send + Read + Unpin,
     {
@@ -146,8 +148,8 @@ impl Storage for Memory {
         // Reject uploads if the node is unknown or already exists.
         match map.get(last) {
             Some(Segment::None) => (),
-            None => return Err(StatusCode::NotFound),
-            _ => return Err(StatusCode::BadRequest),
+            None => return Err(Error::from_str(StatusCode::NotFound, "")),
+            _ => return Err(Error::from_str(StatusCode::BadRequest, "")),
         }
 
         // Read the body into memory.
@@ -155,11 +157,11 @@ impl Storage for Memory {
         Pin::new(&mut body)
             .read_to_end(&mut data)
             .await
-            .map_err(|_| StatusCode::BadRequest)?;
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))?;
 
         // Validate the size against the Content-Length.
         if data.len() as u64 != meta.size {
-            return Err(StatusCode::BadRequest);
+            return Err(Error::from_str(StatusCode::BadRequest, ""));
         }
 
         // If this is a file, we are done.
@@ -169,7 +171,8 @@ impl Storage for Memory {
         }
 
         // Create a directory entry.
-        let dir: Directory = serde_json::from_slice(&data).map_err(|_| StatusCode::BadRequest)?;
+        let dir: Directory = serde_json::from_slice(&data)
+            .map_err(|_| Error::from_str(StatusCode::BadRequest, ""))?;
 
         // Populate children nodes with unknown states.
         let mut new = HashMap::new();

@@ -10,7 +10,7 @@ mod tag;
 
 pub use storage::Memory;
 
-use drawbridge_http::http::{Method, Request, Response, StatusCode};
+use drawbridge_http::http::{Error, Method, Request, Response, Result, StatusCode};
 use drawbridge_http::{async_trait, Handler, IntoResponse, Json};
 
 use self::hash::Hash;
@@ -27,23 +27,23 @@ impl<T: Clone + Storage> From<T> for Service<T> {
 }
 
 impl<T: Clone + Storage> Service<T> {
-    async fn tags(&self) -> Result<impl IntoResponse, T::Error> {
-        Ok(Json(self.0.tags().await?))
+    async fn tags(&self) -> Result<impl IntoResponse> {
+        self.0.tags().await.map(Json)
     }
 
-    async fn delete(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
+    async fn delete(&self, tag: Tag) -> Result<impl IntoResponse> {
         self.0.del(tag).await
     }
 
-    async fn head(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
+    async fn head(&self, tag: Tag) -> Result<impl IntoResponse> {
         self.0.get(tag).await.map(|_| ())
     }
 
-    async fn get(&self, tag: Tag) -> Result<impl IntoResponse, T::Error> {
-        Ok(Json(self.0.get(tag).await?))
+    async fn get(&self, tag: Tag) -> Result<impl IntoResponse> {
+        self.0.get(tag).await.map(Json)
     }
 
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<impl IntoResponse, T::Error> {
+    async fn put(&self, tag: Tag, hash: Hash) -> Result<impl IntoResponse> {
         self.0.put(tag, hash).await
     }
 }
@@ -52,7 +52,7 @@ impl<T: Clone + Storage> Service<T> {
 impl<T: Clone + Storage> Handler<()> for Service<T> {
     type Response = Response;
 
-    async fn handle(self, req: Request) -> Self::Response {
+    async fn handle(self, req: Request) -> Result<Self::Response> {
         let path = req.url().path().trim_start_matches('/');
         let meth = req.method();
 
@@ -64,7 +64,7 @@ impl<T: Clone + Storage> Handler<()> for Service<T> {
             (.., Method::Get) => (|t| self.get(t)).handle(req).await,
             (.., Method::Put) => (|t, h| self.put(t, h)).handle(req).await,
 
-            _ => StatusCode::MethodNotAllowed.into(),
+            _ => Err(Error::from_str(StatusCode::MethodNotAllowed, "")),
         }
     }
 }
