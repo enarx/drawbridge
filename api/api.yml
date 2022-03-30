@@ -3,82 +3,397 @@ openapi: 3.1.0
 info:
   title: Drawbridge
   description: |
-    Drawbridge is a combination of:
-      - Content-addressable store of arbitrary data (trees).
-      - Tag store mapping [semver version numbers](https://semver.org/) to tree node entries.
+    # Node
 
-    Definition of items used by the Drawbridge:
-    - Node entry: combination of a hash of the inherent properies of the node and arbirary exherent properties of the node (for example, `from`).
-    - Node: either a file or a directory, where directory is a collection of node entries.
-      - All nodes have contents associated with them:
-        - For directory nodes: key-value object with keys representing the node names and values representing node entries.
-        - For file nodes: raw file contents of an arbitrary [`Content-Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) other than `"application/vnd.drawbridge.directory.v1+json"`
-      - All nodes have a [`Content-Type`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) associated with them.
-        - Value of `"application/vnd.drawbridge.directory.v1+json"` identifies a directory node.
-        - All other values identify a file node.
-      - All nodes have a [`Content-Length`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) associated with them.
-        - Value for directory nodes is equal to byte length of JSON-encoded directory contents without whitespace characters.
-        - Value for file nodes is equal to byte length of raw file contents.
-      - All nodes have a [`Content-Digest`](https://www.ietf.org/archive/id/draft-ietf-httpbis-digest-headers-08.html#name-the-content-digest-field) associated with them.
-        - Value for directory nodes is equal to hash of JSON-encoded directory contents without whitespace characters.
-        - Value for file nodes is equal to hash of raw file contents.
-      - All nodes are uniquely identified by the hash of their inherent properties (metadata), which is computed over JSON-encoded object with lexicographically-sorted keys
-        with the following contents without whitespace characters:
-        - For directory nodes:
-            ```
-            {
-              "contentDigest": <object mapping digest algorithms to base64-encoded digests of JSON-encoded directory contents with lexicographically-sorted keys without whitespace characters>,
-              "contentLength": <byte length of JSON-encoded directory contents without whitespace characters>,
-              "contentType": "application/vnd.drawbridge.directory.v1+json",
-            }
-            ```
-            For example, `sha384` hash computed over following directory node metadata:
-            ```
-            {"contentDigest":{"sha384":"DH01Tx3ixOrDYbNcjqw-H53EIFSI232hbotDTy1E_NU6+qodYhdrswrXoEfx_nnx"},"contentLength":134,"contentType":"application/vnd.drawbridge.directory.v1+json"}
-            ```
-            is equal to:
-            ```
-            7GZOiJ7WwbJ2PKz3iZ2Vt_NHNz65guUjQZ_uo6o2LYkbO_Al8pImelhUBJCReJw-
-            ```
-        - For file nodes:
-            ```
-            {
-              "contentDigest": <object mapping digest algorithms to base64-encoded digests of raw file contents>,
-              "contentLength": <byte length of raw file contents>,
-              "contentType": <arbitrary media type other than "application/vnd.drawbridge.directory.v1+json">,
-            }
-            ```
-            For example, `sha384` hash computed over following directory node metadata:
-            ```
-            {"contentDigest":{"sha384":"mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"},"contentLength":42,"contentType":"text/plain"}
-            ```
-            is equal to:
-            ```
-            _a5zhtfOOuID4PIn0Epd8Agv46bBv53Xdizg02BGXtSk2B8YEdggchYqw-_PpDb_
-            ```
-      - A node can only be uploaded once. After the node is uploaded, it cannot be reuploaded.
-      - A node may belong to multiple trees.
-      - A node in a directory is identified by a case-sensitive name consisting of alphanumeric characters, dashes and underscores
-        and must represent valid URL string, which is unique within a directory.
-    - Tree: a top-level node uniquely identified by it's hash.
-      - A tree is uniquely identified by it's hash, which is computed over the contents of the tree. The tree is therefore content-addressable and represents a [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) by definition.
-      - A tree can be yanked, which means that it cannot be downloaded anymore.
-    - Tag: an immutable mapping of a [semver version number](https://semver.org/) to a tree hash.
-      - An existing tag can be yanked, which means that it cannot be resolved anymore.
+    - A node is either a file or a directory, where directory is a collection of [node entries](#section/Node/Entry).
+    - A node may belong to multiple directory nodes.
+    - A node in a directory is identified by a case-sensitive name consisting of alphanumeric characters, dashes and underscores and must represent valid URL string, which is unique within a directory.
+
+    ## Inherent properties
+
+    ### Contents
+
+    All nodes have contents associated with them.
+    
+    #### Directory node contents
+
+    Contents of a directory node is a key-value object with keys representing the node names and values representing [node entries](#section/Node/Entry).
+
+    For example:
+
+    ```
+    {
+      "assets": {
+        "digest": {
+          "sha256": "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg",
+          "sha384": "DH01Tx3ixOrDYbNcjqw+H53EIFSI232hbotDTy1E/NU6+qodYhdrswrXoEfx/nnx"
+        },
+        "from": "myassets:0.1.2"
+      },
+      "Enarx.toml": {
+        "digest": {
+          "sha256": "DodjLNRr1JB8UWMX622B/g+SGiPHZDAY8hKSiUtHBoE",
+          "sha384": "mqVuAfXRKap7bdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+        }
+      }
+    }
+    ```
+
+    #### File node contents
+
+    Contents of a file node is binary data of an arbitrary [media type](https://www.iana.org/assignments/media-types/media-types.xhtml) other than `"application/vnd.drawbridge.directory.v1+json"`
+
+
+    ### Media type
+
+    All nodes have a [media type](https://www.iana.org/assignments/media-types/media-types.xhtml) associated with them.
+
+    #### Directory node content type
+
+    `"application/vnd.drawbridge.directory.v1+json"` type identifies a directory node.
+
+    #### File node content type
+    
+    Any other type than `"application/vnd.drawbridge.directory.v1+json"` identifies a file node.
+
+
+    ### Content length
+
+    All nodes have a content length associated with them.
+
+    #### Directory node content length
+
+    Content length of a directory node is equal to byte length of JSON-encoded directory contents without whitespace characters.
+
+    #### File node content length
+    
+    Content length of a file nodes is equal to byte length of raw file contents.
+
+
+    ### Content digest
+    
+    All nodes have a content digest associated with them.
+
+    #### Directory node content digest
+
+    Content digest of a directory node is equal to hash of lexicographically-sorted JSON-encoded directory contents without whitespace characters.
+
+    For example, sha256 content digest of a directory with following contents:
+
+    ```
+    {
+      "assets": {
+        "digest": {
+          "sha256": "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg",
+          "sha384": "DH01Tx3ixOrDYbNcjqw+H53EIFSI232hbotDTy1E/NU6+qodYhdrswrXoEfx/nnx"
+        },
+        "from": "myassets:0.1.2"
+      },
+      "Enarx.toml": {
+        "digest": {
+          "sha256": "DodjLNRr1JB8UWMX622B/g+SGiPHZDAY8hKSiUtHBoE",
+          "sha384": "mqVuAfXRKap7bdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+        }
+      }
+    }
+    ```
+
+    is equal to `Z2oGasnuiV+nldtPLGf+wWDQ14nhUVjbeL8So4Zr1aA`
+
+    #### File node content digest
+    
+    Content digest of a file nodes is equal to hash of raw file contents.
+
+
+    ## Entry
+    
+    Node entry is a combination of exherent properties of the [node](#section/Node) (for example, `from`, representing the source from which it was mirrored, if applicable) and digest of its [inherent properties](#section/Node/Inherent-properties).
+
+    For example, `sha384` digest computed over following [inherent properties](#section/Node/Inherent-properties) of a file [node](#section/Node):
+
+    ```
+    {
+      "contentDigest": {
+        "sha384": "mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+      },
+      "contentLength": 42,
+      "contentType": "text/plain"
+    }
+    ```
+    is equal to:
+    ```
+    7QuaGUAIdLBb9ZzarCY0ybasXdU6QhQzMkXAIiS8UwjDZBLWLNSr4Vhz2Kh+/R9r
+    ```
+
+    # Tag
+
+    An immutable mapping of a [semver version string](https://semver.org/) to a [node entry](#section/Node/Entry).
+
+    # Tree
+
+    A [node entry](#section/Node/Entry) identified by a [tag](#section/Tag).
+
   version: 0.1.0
 
+components:
+  schemas:
+    SemVer:
+      description: A [semantic version](https://semver.org/) string.
+      type: string
+      pattern: ^[a-zA-Z0-9-.]+$ # TODO: Improve
+      example: 1.2.3
+
+    ContentDigest:
+      description: Node [content digest](https://www.ietf.org/archive/id/draft-ietf-httpbis-digest-headers-08.html#name-the-content-digest-field).
+      type: string
+      pattern: ^\*sha(224|256|384|512)=:[a-zA-Z0-9-_]{38,86}={0,2}:(\*,\*sha(224|256|384|512)=:[a-zA-Z0-9-_]{38,86}={0,2}:)*$
+      example: 'sha-256=:4REjxQ4yrqUVicfSKYNO/cF9zNj5ANbzgDZt3/h3Qxo=:,\sha-512=:WZDPaVn/7XgHaAy8pmojAkGWoRx2UFChF41A2svX+TaPm+AbwAgBWnrI\iYllu7BNNyealdVLvRwEmTHWXvJwew==:'
+
+    ContentLength:
+      description: Node content length in bytes.
+      type: integer
+      format: int64
+      example: 42
+
+    ContentType:
+      description: Node media type.
+      type: string
+      pattern: ^(application|audio|image|text)/[a-zA-Z0-9-_.,+]+$
+      example: application/vnd.drawbridge.directory.v1+json
+
+    Sha224Hash:
+      description: '[Base64-encoded](https://datatracker.ietf.org/doc/html/rfc4648#section-4) sha224 hash without padding.'
+      type: string
+      contentEncoding: base64
+      minLength: 38
+      maxLength: 38
+      example: kKPtnjKyqvTGHEEOuSVCYRnhqdxT1Chq3pmoCQ
+
+    Sha256Hash:
+      description: '[Base64-encoded](https://datatracker.ietf.org/doc/html/rfc4648#section-4) sha256 hash without padding.'
+      type: string
+      contentEncoding: base64
+      minLength: 43
+      maxLength: 43
+      example: n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg
+
+    Sha384Hash:
+      description: '[Base64-encoded](https://datatracker.ietf.org/doc/html/rfc4648#section-4) sha384 hash without padding.'
+      type: string
+      contentEncoding: base64
+      minLength: 64
+      maxLength: 64
+      example: DH01Tx3ixOrDYbNcjqw+H53EIFSI232hbotDTy1E/NU6+qodYhdrswrXoEfx/nnx
+
+    Sha512Hash:
+      description: '[Base64-encoded](https://datatracker.ietf.org/doc/html/rfc4648#section-4) sha512 hash without padding.'
+      type: string
+      contentEncoding: base64
+      minLength: 86
+      maxLength: 86
+      example: Pwpjrc6dKL0MgLLCchb4s9jvDfpOMRzgQ96yrfYtbttYBbxaaM/31ed2dw0tTghK8LAuOmfiUyxhsmToYQrG3g
+
+    FileContents:
+      description: File contents.
+      example: Hello world!
+
+    Entry:
+      description: A node entry.
+      type: object
+      required:
+        - digest
+      properties:
+        digest:
+          description: Digests of [inherent properties](#section/Node/Inherent-properties) of a [node](#section/Node).
+          type: object
+          properties:
+            sha224:
+              $ref: '#/components/schemas/Sha224Hash'
+            sha256:
+              $ref: '#/components/schemas/Sha256Hash'
+            sha384:
+              $ref: '#/components/schemas/Sha384Hash'
+            sha512:
+              $ref: '#/components/schemas/Sha512Hash'
+          additionalProperties: false
+
+    DirectoryContents:
+      description: |
+        Directory contents.
+
+        Keys are node names.
+      type: object
+      propertyNames:
+        pattern: ^[a-zA-Z0-9-_.,]+$
+      additionalProperties:
+        $ref: '#/components/schemas/Entry'
+      example:
+        assets:
+          digest: 
+            sha256: n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg
+            sha384: DH01Tx3ixOrDYbNcjqw+H53EIFSI232hbotDTy1E/NU6+qodYhdrswrXoEfx/nnx
+          from: myassets:0.1.2
+        Enarx.toml:
+          digest: 
+            sha256: DodjLNRr1JB8UWMX622B/g+SGiPHZDAY8hKSiUtHBoE
+            sha384: mqVuAfXRKap7bdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC
+
+  headers:
+    Content-Digest:
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentDigest'
+
+    Content-Length:
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentLength'
+
+  parameters:
+    Tag:
+      name: tag
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/SemVer'
+
+    Content-Digest:
+      name: Content-Digest
+      required: true
+      in: header
+      schema:
+        $ref: '#/components/schemas/ContentDigest'
+
+    Content-Length:
+      name: Content-Length
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentLength'
+
+    Content-Type:
+      name: Content-Type
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ContentType'
+
 paths:
-  /_tree/{algo}:
-    $ref: '../crates/tree/api/api.yml#/components/pathItems/Algo'
-
-  /_tree/{algo}/{hash}:
-    $ref: '../crates/tree/api/api.yml#/components/pathItems/AlgoHash'
-
-  /_tree/{algo}/{hash}/{path}:
-    $ref: '../crates/tree/api/api.yml#/components/pathItems/AlgoHashPath'
-
   /_tag:
-    $ref: '../crates/tags/api/api.yml#/components/pathItems/Tag'
+    get:
+      description: List available tags.
+      responses:
+        '200':
+          description: Available tags sorted lexicographically
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SemVer'
+                example:
+                  - 0.5.3
+                  - 1.2.3
+                  - 1.2.4
+                  - 2.0.1-rc1
 
   /_tag/{tag}:
-    $ref: '../crates/tags/api/api.yml#/components/pathItems/TagName'
+    parameters:
+      - $ref: '#/components/parameters/Tag'
+    head:
+      description: Check whether a tag exists.
+      responses:
+        '200':
+          description: Tag exists
+        '404':
+          description: Tag does not exist
+    get:
+      description: Get a tree node entry associated with a tag.
+      responses:
+        '200':
+          description: Tree node entry associated with the tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '404':
+          description: Tag does not exist
+    put:
+      description: Create a tag.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Entry'
+      responses:
+        '201':
+          description: Tag associated with a tree node entry
+        '204':
+          description: Tag already exists and matches the tree hash
+        '404':
+          description: Tree node does not exist
+    delete:
+      description: Yank a tag.
+      responses:
+        '204':
+          description: Tag yanked
+        '404':
+          description: Tag does not exist
+
+  /_tag/{tag}/tree/{path}:
+    parameters:
+      - $ref: '#/components/parameters/Tag'
+      - name: path
+        in: path
+        schema:
+          description: Slash-delimited file path to a node within a tree.
+          type: string
+          pattern: ^[a-zA-Z0-9-_.,]+(/[a-zA-Z0-9-_.,])+$
+          example: foo/bar/baz/file.txt
+    head:
+      description: Check whether a tree path exists.
+      responses:
+        '200':
+          description: Tree path exists
+        '404':
+          description: Tree or path within it does not exist
+    get:
+      description: Get tree path contents.
+      responses:
+        '200':
+          description: Tree path contents
+          headers:
+            Content-Digest:
+              $ref: '#/components/headers/Content-Digest'
+            Content-Length:
+              $ref: '#/components/headers/Content-Length'
+          content:
+            application/vnd.drawbridge.directory.v1+json:
+              schema:
+                $ref: '#/components/schemas/DirectoryContents'
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FileContents'
+        '404':
+          description: Tree or path within it does not exist
+    put:
+      description: Upload tree path contents.
+      parameters:
+        - $ref: '#/components/parameters/Content-Digest'
+        - $ref: '#/components/parameters/Content-Length'
+        - $ref: '#/components/parameters/Content-Type'
+      requestBody:
+        content:
+          application/vnd.drawbridge.directory.v1+json:
+            schema:
+              $ref: '#/components/schemas/DirectoryContents'
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/FileContents'
+      responses:
+        '201':
+          description: Tree path uploaded
+        '204':
+          description: Tree path already exists and matches uploaded contents
+        '404':
+          description: Tree or path within it preceeding the node being uploaded does not exist
