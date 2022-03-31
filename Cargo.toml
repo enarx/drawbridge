@@ -11,6 +11,7 @@ members = [
     "crates/tags",
     "crates/tree",
     "crates/byte",
+    "crates/jose",
 ]
 
 [dependencies]
