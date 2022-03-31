@@ -62,6 +62,12 @@ impl AsRef<[u8]> for Inner {
     }
 }
 
+impl std::fmt::Debug for Inner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
 impl AsMut<[u8]> for Inner {
     fn as_mut(&mut self) -> &mut [u8] {
         match self {
@@ -132,7 +138,7 @@ impl From<base64::DecodeError> for Error {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Hash(pub(super) Inner);
 
 impl std::fmt::Display for Hash {

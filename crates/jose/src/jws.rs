@@ -23,8 +23,8 @@ pub struct General<T = Bytes, P = BTreeMap<String, Value>, H = P>
 where
     Json<P>: for<'a> Deserialize<'a>,
 {
-    payload: T,
-    signatures: Vec<Signature<P, H>>,
+    pub payload: T,
+    pub signatures: Vec<Signature<P, H>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,10 +32,10 @@ pub struct Flattened<T = Bytes, P = BTreeMap<String, Value>, H = P>
 where
     Json<P>: for<'a> Deserialize<'a>,
 {
-    payload: T,
+    pub payload: T,
 
     #[serde(flatten)]
-    signature: Signature<P, H>,
+    pub signature: Signature<P, H>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,9 +43,9 @@ pub struct Signature<P = BTreeMap<String, Value>, H = P>
 where
     Json<P>: for<'a> Deserialize<'a>,
 {
-    protected: Option<Json<P>>,
-    header: Option<H>,
-    signature: Bytes,
+    pub protected: Option<Json<P>>,
+    pub header: Option<H>,
+    pub signature: Bytes,
 }
 
 #[cfg(test)]
