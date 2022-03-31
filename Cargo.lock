@@ -476,6 +476,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "drawbridge-jose"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "drawbridge-byte",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "drawbridge-name"
 version = "0.1.0"
 dependencies = [
