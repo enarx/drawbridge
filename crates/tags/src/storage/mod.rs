@@ -5,41 +5,52 @@ mod memory;
 
 pub use memory::Memory;
 
-use crate::hash::Hash;
-use crate::tag::Tag;
+use crate::tag::{Name, Value};
 
 use drawbridge_http::async_trait;
 use drawbridge_http::http::Result;
 
 #[async_trait]
 pub trait Storage: Send + Sync {
-    async fn tags(&self) -> Result<Vec<Tag>>;
+    async fn tags(&self) -> Result<Vec<Name>>;
 
-    async fn del(&self, tag: Tag) -> Result<()>;
-    async fn get(&self, tag: Tag) -> Result<Hash>;
-    async fn put(&self, tag: Tag, hash: Hash) -> Result<()>;
+    async fn del(&self, tag: Name) -> Result<()>;
+    async fn get(&self, tag: Name) -> Result<Value>;
+    async fn put(&self, tag: Name, data: Value) -> Result<()>;
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Hash, Memory, Storage, Tag};
+    use super::{Memory, Storage};
+    use crate::tag::{Kind, Name, Value};
 
+    use std::ops::Deref;
     use std::str::FromStr;
 
-    const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
+    use drawbridge_type::Entry;
 
     #[async_std::test]
     async fn basic() {
+        const ALGORITHM: &str = "sha-256";
+        const HASH: &str = "4REjxQ4yrqUVicfSKYNO/cF9zNj5ANbzgDZt3/h3Qxo=";
+        const NAME: &str = "example";
+
         let m = Memory::default();
         assert!(m.tags().await.unwrap().is_empty());
 
-        let tag = Tag::from_str("1.2.3").unwrap();
-        let hash = Hash::from_str(HASH).unwrap();
+        let tag = Name::from_str(NAME).unwrap();
+        let value = Value {
+            body: vec![],
+            kind: Kind::Unsigned(Entry {
+                digest: format!("{}=:{}:", ALGORITHM, HASH).parse().unwrap(),
+            }),
+            name: tag.clone(),
+        };
 
-        m.put(tag.clone(), hash).await.unwrap();
-        let hash_retrieved = m.get(tag.clone()).await.unwrap();
+        m.put(tag.clone(), value).await.unwrap();
+        let value_retrieved = m.get(tag.clone()).await.unwrap();
 
-        assert_eq!(HASH, hash_retrieved.to_string());
+        assert_eq!(&NAME.to_string(), value_retrieved.name.deref());
         assert_eq!(vec![tag], m.tags().await.unwrap());
     }
 }

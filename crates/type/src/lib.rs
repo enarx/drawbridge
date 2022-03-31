@@ -45,7 +45,7 @@ impl DerefMut for Directory {
 ///
 /// Note that this type is designed to be extensible. Therefore, the fields
 /// here represent the minimum required fields. Other fields may be present.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Entry {
     /// The hash of this entry
     pub digest: ContentDigest,
