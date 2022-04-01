@@ -12,6 +12,7 @@ members = [
     "crates/tree",
     "crates/byte",
     "crates/jose",
+    "crates/type",
 ]
 
 [dependencies]
@@ -22,3 +23,6 @@ drawbridge-name = { path = "./crates/name" }
 # External dependencies
 async-h1 = "2.3.3"
 async-std = "1.11.0"
+
+[patch.crates-io]
+http = { git = "https://github.com/npmccallum/http", rev = "0f4438e7f5107d8b06142894d2d9cd5186b721ab" }
