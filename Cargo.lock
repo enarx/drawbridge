@@ -446,6 +446,14 @@ name = "drawbridge-auth"
 version = "0.1.0"
 
 [[package]]
+name = "drawbridge-byte"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "serde",
+]
+
+[[package]]
 name = "drawbridge-hash"
 version = "0.1.0"
 dependencies = [
