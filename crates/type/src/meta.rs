@@ -10,6 +10,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use axum::{
     extract::{rejection::TypedHeaderRejection, FromRequest, RequestParts, TypedHeader},
     headers::{ContentLength, ContentType},
+    response::{IntoResponseParts, Response, ResponseParts},
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -42,29 +43,22 @@ impl<B: Send> FromRequest<B> for Meta {
     type Rejection = TypedHeaderRejection;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let hash = TypedHeader::<ContentDigest>::from_request(req).await?.0;
-        let mime = TypedHeader::<ContentType>::from_request(req).await?.0;
-        let size = TypedHeader::<ContentLength>::from_request(req).await?.0;
-
-        Ok(Meta {
-            hash,
-            mime: mime.into(),
-            size: size.0,
-        })
+        let hash = req.extract::<TypedHeader<ContentDigest>>().await?.0;
+        let size = req.extract::<TypedHeader<ContentLength>>().await?.0 .0;
+        let mime = req.extract::<TypedHeader<ContentType>>().await?.0.into();
+        Ok(Meta { hash, size, mime })
     }
 }
 
-impl IntoIterator for Meta {
-    type IntoIter = std::array::IntoIter<(&'static str, String), 3>;
-    type Item = (&'static str, String);
+#[cfg(feature = "axum")]
+impl IntoResponseParts for Meta {
+    type Error = Response;
 
-    fn into_iter(self) -> Self::IntoIter {
-        [
-            ("Content-Length", self.size.to_string()),
-            ("Content-Digest", self.hash.to_string()),
-            ("Content-Type", self.mime.to_string()),
-        ]
-        .into_iter()
+    fn into_response_parts(self, res: ResponseParts) -> Result<ResponseParts, Self::Error> {
+        let hash = TypedHeader(self.hash);
+        let size = TypedHeader(ContentLength(self.size));
+        let mime = TypedHeader(ContentType::from(self.mime));
+        (hash, size, mime).into_response_parts(res)
     }
 }
 
