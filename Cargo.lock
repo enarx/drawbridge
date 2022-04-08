@@ -555,7 +555,6 @@ dependencies = [
  "drawbridge-jose",
  "drawbridge-tree",
  "drawbridge-type",
- "http-types",
  "semver 1.0.7",
  "serde",
  "serde_json",
