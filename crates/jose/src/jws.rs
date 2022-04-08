@@ -8,6 +8,10 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+impl Jws {
+    pub const TYPE: &'static str = "application/jose+json";
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Jws<T = Bytes, P = BTreeMap<String, Value>, H = P>
