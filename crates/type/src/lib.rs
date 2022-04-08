@@ -12,10 +12,11 @@ pub use self::meta::Meta;
 
 use digest::ContentDigest;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// A directory
 ///
@@ -49,9 +50,12 @@ impl DerefMut for Directory {
 pub struct Entry {
     /// The hash of this entry
     pub digest: ContentDigest,
+
+    /// Custom fields
+    #[serde(flatten)]
+    pub custom: HashMap<String, Value>,
 }
 
 impl Entry {
-    #[allow(dead_code)]
     pub const TYPE: &'static str = "application/vnd.drawbridge.entry.v1+json";
 }
