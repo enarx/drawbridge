@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::Storage;
-use crate::tag::{Name, Value};
+use crate::Tag;
 
 use std::{collections::HashMap, sync::Arc};
 
+use async_std::sync::RwLock;
 use drawbridge_http::async_trait;
 use drawbridge_http::http::{Error, Result, StatusCode};
-
-use async_std::sync::RwLock;
 
 /// A memory-backed storage driver.
 ///
 /// This is mostly for testing.
 #[derive(Clone)]
-pub struct Memory(Arc<RwLock<HashMap<Name, Value>>>);
+pub struct Memory(Arc<RwLock<HashMap<String, Tag>>>);
 
 impl Default for Memory {
     fn default() -> Self {
@@ -25,29 +24,29 @@ impl Default for Memory {
 
 #[async_trait]
 impl Storage for Memory {
-    async fn tags(&self) -> Result<Vec<Name>> {
+    async fn names(&self) -> Result<Vec<String>> {
         let lock = self.0.read().await;
         Ok(lock.keys().cloned().collect())
     }
 
-    async fn del(&self, tag: Name) -> Result<()> {
+    async fn del(&self, name: String) -> Result<()> {
         let mut lock = self.0.write().await;
-        lock.remove(&tag)
+        lock.remove(&name)
             .ok_or_else(|| Error::from_str(StatusCode::NotFound, ""))?;
         Ok(())
     }
 
-    async fn get(&self, tag: Name) -> Result<Value> {
+    async fn get(&self, name: String) -> Result<Tag> {
         let lock = self.0.read().await;
         let x = lock
-            .get(&tag)
+            .get(&name)
             .ok_or_else(|| Error::from_str(StatusCode::NotFound, ""))?;
         Ok(x.clone())
     }
 
-    async fn put(&self, tag: Name, data: Value) -> Result<()> {
+    async fn put(&self, name: String, tag: Tag) -> Result<()> {
         let mut lock = self.0.write().await;
-        lock.insert(tag, data);
+        lock.insert(name, tag);
         Ok(())
     }
 }
