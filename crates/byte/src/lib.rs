@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
@@ -25,8 +26,20 @@ impl Config for UrlSafeNoPad {
     const CONFIG: base64::Config = base64::URL_SAFE_NO_PAD;
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bytes<T = Vec<u8>, C = Standard>(T, PhantomData<C>);
+
+impl<T: Debug, C> Debug for Bytes<T, C> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Bytes").field(&self.0).finish()
+    }
+}
+
+impl<T: Default, C> Default for Bytes<T, C> {
+    fn default() -> Self {
+        Self(Default::default(), PhantomData)
+    }
+}
 
 impl<T, C> Bytes<T, C> {
     pub fn into_inner(self) -> T {
