@@ -6,14 +6,13 @@ edition = "2021"
 
 [dependencies]
 # Internal Dependencies
-drawbridge-http = { path = "../http" }
 drawbridge-hash = { path = "../hash" }
 drawbridge-tree = { path = "../tree" }
-drawbridge-type = { path = "../type" }
+drawbridge-type = { path = "../type" , features = ["server"]}
 drawbridge-jose = { path = "../jose" }
 
-# External Dependencies
-async-std = { version = "1.8.0", features = ["attributes"] }
+axum = "0.5.0"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 semver = { version = "1.0.6", features = ["serde"] }
+tokio = { version = "1.17.0" }

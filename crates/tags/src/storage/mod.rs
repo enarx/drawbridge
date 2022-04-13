@@ -7,14 +7,15 @@ pub use memory::Memory;
 
 use crate::Tag;
 
-use drawbridge_http::async_trait;
-use drawbridge_http::http::Result;
+use axum::async_trait;
 
 #[async_trait]
 pub trait Storage: Send + Sync {
-    async fn names(&self) -> Result<Vec<String>>;
+    type Error;
 
-    async fn del(&self, name: String) -> Result<()>;
-    async fn get(&self, name: String) -> Result<Tag>;
-    async fn put(&self, name: String, tag: Tag) -> Result<()>;
+    async fn names(&self) -> Result<Vec<String>, Self::Error>;
+
+    async fn del(&self, name: String) -> Result<(), Self::Error>;
+    async fn get(&self, name: String) -> Result<Tag, Self::Error>;
+    async fn put(&self, name: String, tag: Tag) -> Result<(), Self::Error>;
 }

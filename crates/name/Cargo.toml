@@ -6,6 +6,9 @@ edition = "2021"
 
 [dependencies]
 # Internal dependencies
-drawbridge-http = { path = "../http" }
 drawbridge-tags = { path = "../tags" }
 drawbridge-tree = { path = "../tree" }
+
+# External dependencies
+axum = { version = "0.5.0" }
+tower = { version = "0.4.12" }

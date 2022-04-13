@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 # Internal Dependencies
-drawbridge-http = { path = "../http" }
 
 # External Dependencies
 base64 = "0.13.0"
