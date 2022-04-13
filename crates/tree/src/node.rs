@@ -4,8 +4,10 @@
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
+use axum::async_trait;
+use axum::body::Body;
+use axum::extract::{FromRequest, RequestParts};
 use drawbridge_hash::{Error, Hash};
-use drawbridge_http::FromHeader;
 
 use serde::{de::Error as _, Deserialize, Serialize};
 
@@ -91,6 +93,11 @@ impl<'de> Deserialize<'de> for Node {
     }
 }
 
-impl FromHeader for Node {
-    const NAME: &'static str = "ETag";
+#[async_trait]
+impl FromRequest<Body> for Node {
+    type Rejection = ();
+
+    async fn from_request(_: &mut RequestParts<Body>) -> Result<Self, Self::Rejection> {
+        todo!()
+    }
 }

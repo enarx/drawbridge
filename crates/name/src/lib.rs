@@ -6,16 +6,14 @@
 
 use std::str::FromStr;
 
-use drawbridge_http::http::{self, Error, Request, Response, StatusCode};
-use drawbridge_http::{async_trait, Handler};
 use drawbridge_tags as tag;
 use drawbridge_tree as tree;
 
-#[derive(Clone, Default)]
-pub struct Service {
-    tree: tree::Service<tree::Memory>,
-    tag: tag::Service<tag::Memory>,
-}
+use axum::body::Body;
+use axum::handler::Handler;
+use axum::http::{Request, StatusCode};
+use axum::Router;
+use tower::Service;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Namespace {
@@ -56,40 +54,42 @@ impl FromStr for Namespace {
     }
 }
 
-#[async_trait]
-impl Handler<()> for Service {
-    type Response = Response;
+pub fn app() -> Router {
+    Router::new().fallback(
+        (|mut req: Request<Body>| {
+            async {
+                fn no_route() -> (StatusCode, &'static str) {
+                    (StatusCode::NOT_FOUND, "Route not found")
+                }
 
-    async fn handle(self, mut req: Request) -> http::Result<Self::Response> {
-        fn no_route() -> Error {
-            Error::from_str(StatusCode::NotFound, "Route not found")
-        }
+                let uri = req.uri_mut();
+                let path = uri.path();
+                let (namespace, path) = path
+                    .strip_prefix('/')
+                    .expect("invalid URI")
+                    .split_once("/_")
+                    .ok_or_else(no_route)?;
 
-        let url = req.url_mut();
-        let path = url.path();
-        let (namespace, path) = path
-            .strip_prefix('/')
-            .expect("invalid URI")
-            .split_once("/_")
-            .ok_or_else(no_route)?;
+                let namespace = namespace
+                    .parse()
+                    .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-        let namespace = namespace
-            .parse()
-            .map_err(|e| Error::from_str(StatusCode::BadRequest, e))?;
+                let path = path.to_string();
+                let (comp, path) = path.split_once('/').unwrap_or((&path, ""));
+                *uri = format!("/_{}", path).parse().unwrap();
 
-        let path = path.to_string();
-        let (comp, path) = path.split_once('/').unwrap_or((&path, ""));
-        url.set_path(&format!("/{}", path));
+                // TODO: use `namespace`
+                let _: Namespace = namespace;
 
-        // TODO: use `namespace`
-        let _: Namespace = namespace;
-
-        match comp {
-            "tree" => self.tree.handle(req).await,
-            "tag" => self.tag.handle(req).await,
-            _ => Err(no_route()),
-        }
-    }
+                match comp {
+                    "tree" => Ok(tree::app().call(req).await),
+                    "tag" => Ok(tag::app().call(req).await),
+                    _ => Err(no_route()),
+                }
+            }
+        })
+        .into_service(),
+    )
 }
 
 #[cfg(test)]

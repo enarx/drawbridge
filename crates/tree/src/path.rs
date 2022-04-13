@@ -1,10 +1,12 @@
+use axum::async_trait;
+use axum::body::Body;
+use axum::extract::{FromRequest, RequestParts};
+use axum::http::StatusCode;
+
 use super::Node;
 
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-
-use drawbridge_http::http::{self, Error, Request, StatusCode};
-use drawbridge_http::{async_trait, FromRequest};
 
 #[derive(Clone)]
 pub struct Path(Vec<Node>);
@@ -42,17 +44,10 @@ impl FromStr for Path {
 }
 
 #[async_trait]
-impl FromRequest for Path {
-    async fn from_request(req: &mut Request) -> http::Result<Self> {
-        req.url().path().parse().map_err(|e| {
-            if let Some(e) = e {
-                Error::from_str(
-                    StatusCode::BadRequest,
-                    format!("Could not parse tree path: {}", e),
-                )
-            } else {
-                Error::from_str(StatusCode::BadRequest, "Tree path cannot be empty")
-            }
-        })
+impl FromRequest<Body> for Path {
+    type Rejection = (StatusCode, &'static str);
+
+    async fn from_request(_: &mut RequestParts<Body>) -> Result<Self, Self::Rejection> {
+        todo!()
     }
 }

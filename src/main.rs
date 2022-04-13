@@ -1,35 +1,18 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use drawbridge_http::http::Result;
-use drawbridge_http::{Handler, IntoResponse};
-use drawbridge_name::Service;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use async_std::net::TcpListener;
-use async_std::prelude::*;
-use async_std::task;
+use drawbridge_name as name;
 
-#[async_std::main]
-async fn main() -> Result<()> {
-    let service = Service::default();
+use axum::Server;
 
-    let listener = TcpListener::bind(("127.0.0.1", 8080)).await?;
-    eprintln!("LST: 127.0.0.1:8080");
+#[tokio::main]
+async fn main() {
+    let app = name::app();
 
-    let mut incoming = listener.incoming();
-    while let Some(stream) = incoming.next().await {
-        let stream = stream?;
-
-        let service = service.clone();
-        task::spawn(async move {
-            eprintln!("CON: {}", stream.peer_addr()?);
-
-            async_h1::accept(stream, |req| async {
-                Ok(service.clone().handle(req).await.into_response().await)
-            })
-            .await
-        });
-    }
-
-    Ok(())
+    Server::bind(&SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
