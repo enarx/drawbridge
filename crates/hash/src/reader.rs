@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use std::io::{Error, ErrorKind};
+use super::Hash;
+
+use std::io::{self, Error, ErrorKind};
 use std::pin::Pin;
 use std::task::Context;
 
-use async_std::io::{Read, Result};
-
+use futures::AsyncRead;
 use sha2::digest::Digest;
 use sha2::{Sha224, Sha256, Sha384, Sha512};
-
-use super::Hash;
 
 pub(super) enum Inner {
     Sha224(Sha224),
@@ -25,12 +24,12 @@ pub struct Reader<T> {
     pub(super) hash: Hash,
 }
 
-impl<T: Read + Unpin> Read for Reader<T> {
+impl<T: AsyncRead + Unpin> AsyncRead for Reader<T> {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut [u8],
-    ) -> std::task::Poll<Result<usize>> {
+    ) -> std::task::Poll<io::Result<usize>> {
         Pin::new(&mut self.reader).poll_read(cx, buf).map(|r| {
             let n = r?;
 
@@ -53,11 +52,11 @@ impl<T: Read + Unpin> Read for Reader<T> {
 
 #[cfg(test)]
 mod tests {
-    use async_std::io::{copy, sink};
-
     use super::*;
 
-    #[async_std::test]
+    use futures::io::{copy, sink};
+
+    #[tokio::test]
     async fn read_success() {
         const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
         let hash: Hash = HASH.parse().unwrap();
@@ -65,7 +64,7 @@ mod tests {
         copy(&mut read, &mut sink()).await.unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn read_failure() {
         const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
         let hash: Hash = HASH.parse().unwrap();
@@ -76,7 +75,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn meta_hash() {
         // printf "sha384:%s" $(printf '%s' '{"contentLength":42,"contentType":"text/plain","eTag":"sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"}' | openssl dgst -sha384 -binary | openssl base64 -A | tr '/' '_' | tr '+' '-')
         const HASH: &str =
