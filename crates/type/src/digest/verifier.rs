@@ -3,10 +3,11 @@
 
 use super::{ContentDigest, Reader};
 
-use std::io::{Error, ErrorKind};
-use std::{pin::Pin, task::Context};
+use std::io::{self, Error, ErrorKind};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use tokio::io::{AsyncRead, ReadBuf, Result};
+use futures::AsyncRead;
 
 /// A verifying reader
 ///
@@ -44,25 +45,22 @@ where
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> std::task::Poll<Result<()>> {
-        let len = buf.filled().len();
-        Pin::new(&mut self.reader).poll_read(cx, buf).map(|r| {
-            match buf.filled().len() - len {
-                // On EOF, validate the hash.
-                0 if buf.capacity() > 0 && self.reader.digests() != self.hashes => {
+        buf: &mut [u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.reader)
+            .poll_read(cx, buf)
+            .map(|r| match r? {
+                0 if self.reader.digests() != self.hashes => {
                     Err(Error::new(ErrorKind::InvalidData, "hash mismatch"))
                 }
-
-                _ => r,
-            }
-        })
+                n => Ok(n),
+            })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use tokio::io::{copy, sink};
+    use futures::io::{copy, sink};
 
     use super::*;
 

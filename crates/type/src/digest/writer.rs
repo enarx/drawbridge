@@ -3,11 +3,12 @@
 
 use super::{Algorithm, ContentDigest};
 
-use std::task::Context;
-use std::{pin::Pin, task::Poll};
+use std::io;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
+use futures::AsyncWrite;
 use sha2::digest::DynDigest;
-use tokio::io::{AsyncWrite, Result};
 
 /// A hashing writer
 ///
@@ -22,7 +23,7 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
-    ) -> Poll<Result<usize>> {
+    ) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.writer).poll_write(cx, buf).map_ok(|n| {
             for digest in &mut self.digests {
                 digest.1.update(&buf[..n]);
@@ -32,12 +33,12 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
         })
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Pin::new(&mut self.writer).poll_flush(cx)
     }
 
-    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
-        Pin::new(&mut self.writer).poll_shutdown(cx)
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.writer).poll_close(cx)
     }
 }
 
@@ -61,7 +62,7 @@ impl<T> Writer<T> {
 
 #[cfg(test)]
 mod tests {
-    use tokio::io::{copy, sink};
+    use futures::io::{copy, sink};
 
     use super::*;
 
