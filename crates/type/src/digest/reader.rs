@@ -3,11 +3,12 @@
 
 use super::{Algorithm, ContentDigest};
 
+use std::io;
 use std::pin::Pin;
-use std::task::Context;
+use std::task::{Context, Poll};
 
+use futures::AsyncRead;
 use sha2::digest::DynDigest;
-use tokio::io::{AsyncRead, ReadBuf, Result};
 
 /// A hashing reader
 ///
@@ -21,18 +22,16 @@ impl<T: AsyncRead + Unpin> AsyncRead for Reader<T> {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> std::task::Poll<Result<()>> {
-        let len = buf.filled().len();
+        buf: &mut [u8],
+    ) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.reader).poll_read(cx, buf).map(|r| {
-            r?;
+            let n = r?;
 
-            let filled = buf.filled();
             for digest in &mut self.digests {
-                digest.1.update(&filled[len..filled.len()]);
+                digest.1.update(&buf[..n]);
             }
 
-            Ok(())
+            Ok(n)
         })
     }
 }
@@ -57,7 +56,7 @@ impl<T> Reader<T> {
 
 #[cfg(test)]
 mod tests {
-    use tokio::io::{copy, sink};
+    use futures::io::{copy, sink};
 
     use super::*;
 
