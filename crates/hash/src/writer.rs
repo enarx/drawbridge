@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::io;
 use std::pin::Pin;
-use std::task::Context;
+use std::task::{Context, Poll};
 
-use async_std::io::{Result, Write};
-
+use futures::AsyncWrite;
 use sha2::digest::Digest;
 use sha2::{Sha224, Sha256, Sha384, Sha512};
 
@@ -21,12 +21,12 @@ pub struct Writer<T> {
     pub(super) inner: Inner,
 }
 
-impl<T: Write + Unpin> Write for Writer<T> {
+impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
     fn poll_write(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
-    ) -> std::task::Poll<Result<usize>> {
+    ) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.writer).poll_write(cx, buf).map_ok(|n| {
             match &mut self.inner {
                 Inner::Sha224(h) => h.update(&buf[..n]),
@@ -38,11 +38,11 @@ impl<T: Write + Unpin> Write for Writer<T> {
         })
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> std::task::Poll<Result<()>> {
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Pin::new(&mut self.writer).poll_flush(cx)
     }
 
-    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> std::task::Poll<Result<()>> {
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         Pin::new(&mut self.writer).poll_close(cx)
     }
 }

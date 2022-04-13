@@ -4,14 +4,15 @@ version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 # Internal Dependencies
 drawbridge-http = { path = "../http" }
 
 # External Dependencies
-async-std = { version = "1.8.0", features = ["attributes"] }
 base64 = "0.13.0"
 serde = "1.0.136"
 sha2 = "0.10.2"
+futures = "0.3.21"
+
+[dev-dependencies]
+tokio = { version = "1.8.0", features = ["macros", "rt"] }

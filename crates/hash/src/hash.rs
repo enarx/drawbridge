@@ -5,7 +5,8 @@ use core::ops::{Deref, DerefMut};
 use core::str::FromStr;
 
 use serde::{de::Error as _, Deserialize, Serialize};
-use sha2::digest::{generic_array::GenericArray, OutputSizeUser};
+use sha2::digest::generic_array::GenericArray;
+use sha2::digest::OutputSizeUser;
 use sha2::{Sha224, Sha256, Sha384, Sha512};
 
 #[derive(Clone, Default)]
