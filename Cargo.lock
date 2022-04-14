@@ -132,7 +132,7 @@ name = "drawbridge"
 version = "0.1.0"
 dependencies = [
  "axum",
- "drawbridge-name",
+ "drawbridge-repo",
  "tokio",
 ]
 
@@ -166,7 +166,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "drawbridge-name"
+name = "drawbridge-repo"
 version = "0.1.0"
 dependencies = [
  "axum",

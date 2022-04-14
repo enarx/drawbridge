@@ -3,13 +3,13 @@
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use drawbridge_name as name;
+use drawbridge_repo as repo;
 
 use axum::Server;
 
 #[tokio::main]
 async fn main() {
-    let app = name::app();
+    let app = repo::app();
 
     Server::bind(&SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))
         .serve(app.into_make_service())
