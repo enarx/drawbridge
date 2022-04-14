@@ -16,7 +16,7 @@ members = [
 
 [dependencies]
 # Internal dependencies
-drawbridge-name = { path = "./crates/name" }
+drawbridge-repo = { path = "./crates/repo" }
 
 # External dependencies
 axum = { version = "0.5.0" }
