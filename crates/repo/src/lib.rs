@@ -6,6 +6,7 @@
 
 use std::str::FromStr;
 
+use drawbridge_store as store;
 use drawbridge_tags as tag;
 use drawbridge_tree as tree;
 
@@ -83,7 +84,10 @@ pub fn app() -> Router {
 
                 match comp {
                     "tree" => Ok(tree::app().call(req).await),
-                    "tag" => Ok(tag::app().call(req).await),
+                    "tag" => {
+                        let s = store::Memory::default();
+                        Ok(tag::app(s).call(req).await)
+                    }
                     _ => Err(no_route()),
                 }
             }
