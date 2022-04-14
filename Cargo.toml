@@ -9,6 +9,7 @@ members = [
     "crates/byte",
     "crates/hash",
     "crates/jose",
+    "crates/store",
     "crates/tags",
     "crates/tree",
     "crates/type",

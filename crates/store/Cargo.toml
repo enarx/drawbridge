@@ -1,0 +1,16 @@
+[package]
+name = "drawbridge-store"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+
+[dependencies]
+# Internal Dependencies
+drawbridge-type = { path = "../type" }
+
+# External Dependencies
+async-trait = "0.1.53"
+futures = { version = "0.3.21" }
+
+[dev-dependencies]
+tokio = { version = "1.17.0", features = ["macros", "rt"] }
