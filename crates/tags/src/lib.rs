@@ -10,10 +10,10 @@ mod tag;
 pub use name::*;
 pub use tag::*;
 
-use drawbridge_store::{CreateCopyError, CreateError, GetError, Keys, Store};
-use drawbridge_type::Meta;
-
 use std::sync::Arc;
+
+use drawbridge_store::{Create, CreateCopyError, CreateError, Get, GetError, Keys};
+use drawbridge_type::Meta;
 
 use axum::body::StreamBody;
 use axum::extract::{BodyStream, Path};
@@ -44,9 +44,8 @@ impl App {
 
     async fn head<S>(s: Arc<RwLock<S>>, Path(tag): Path<Name>) -> impl IntoResponse
     where
-        S: Sync + Store<String>,
-        for<'a> &'a <S as Store<String>>::Read: AsyncRead,
-        for<'a> &'a mut <S as Store<String>>::Write: AsyncWrite,
+        S: Sync + Get<String>,
+        for<'a> &'a S::Item: AsyncRead,
     {
         s.read()
             .await
@@ -64,9 +63,8 @@ impl App {
 
     async fn get<S>(s: Arc<RwLock<S>>, Path(tag): Path<Name>) -> impl IntoResponse
     where
-        S: Sync + Store<String>,
-        for<'a> &'a <S as Store<String>>::Read: AsyncRead,
-        for<'a> &'a mut <S as Store<String>>::Write: AsyncWrite,
+        S: Sync + Get<String>,
+        for<'a> &'a S::Item: AsyncRead,
     {
         let s = s.read().await;
 
@@ -77,7 +75,7 @@ impl App {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
             }
         })?;
-        // TODO: Stream body
+        // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
         // probably there should be a way to write body within the closure
         let mut body = vec![];
         br.read_to_end(&mut body).await.map_err(|e| {
@@ -95,13 +93,11 @@ impl App {
         meta: Meta,
     ) -> impl IntoResponse
     where
-        S: Sync + Send + Store<String>,
-        for<'a> &'a <S as Store<String>>::Read: AsyncRead,
-        for<'a> &'a mut <S as Store<String>>::Write: AsyncWrite,
+        S: Sync + Send + Create<String>,
+        for<'a> &'a mut S::Item: AsyncWrite,
     {
-        // TODO: Validate body as it's being read
-        // TODO: Allow incomplete meta (compute length of body and digets)
-        // TODO: Allow incomplete meta (compute length of body and digests)
+        // TODO: Introduce tag validation middleware https://github.com/profianinc/drawbridge/issues/57
+        // TODO: Allow incomplete meta (compute length of body and digests) https://github.com/profianinc/drawbridge/issues/55
         let body = body.map_err(|e| io::Error::new(io::ErrorKind::Other, e));
         s.write()
             .await
@@ -126,10 +122,10 @@ impl App {
 
 pub fn app<S>(s: S) -> Router
 where
-    S: Sync + Send + Store<String> + Keys<String> + 'static,
+    S: Sync + Send + Get<String> + Create<String> + Keys<String> + 'static,
+    for<'a> &'a <S as Get<String>>::Item: AsyncRead,
+    for<'a> &'a mut <S as Create<String>>::Item: AsyncWrite,
     S::Stream: TryStream<Ok = String>,
-    for<'a> &'a <S as Store<String>>::Read: AsyncRead,
-    for<'a> &'a mut <S as Store<String>>::Write: AsyncWrite,
 {
     use axum::routing::*;
 

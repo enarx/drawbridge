@@ -28,7 +28,6 @@ where
     type Rejection = (StatusCode, Response);
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        // TODO: Rely on `Meta`
         let TypedHeader(content_type) = req
             .extract::<TypedHeader<ContentType>>()
             .await
