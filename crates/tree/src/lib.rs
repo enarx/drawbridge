@@ -10,11 +10,17 @@ mod storage;
 
 pub use storage::Memory;
 
+use node::Node;
+
+use std::sync::Arc;
+
 use axum::Router;
+use tokio::sync::RwLock;
 
-use self::node::Node;
-
-pub fn app() -> Router {
+pub fn app<S>(_: &mut Arc<RwLock<S>>) -> Router
+where
+    S: std::any::Any,
+{
     use axum::routing::*;
 
     Router::new()

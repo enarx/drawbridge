@@ -4,7 +4,9 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
+use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use drawbridge_store as store;
 use drawbridge_tags as tag;
@@ -14,9 +16,10 @@ use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Request, StatusCode};
 use axum::Router;
+use tokio::sync::RwLock;
 use tower::Service;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct Namespace {
     owner: String,
     groups: Vec<String>,
@@ -56,40 +59,36 @@ impl FromStr for Namespace {
 }
 
 pub fn app() -> Router {
+    let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
+    let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     Router::new().fallback(
-        (|mut req: Request<Body>| {
-            async {
-                fn no_route() -> (StatusCode, &'static str) {
-                    (StatusCode::NOT_FOUND, "Route not found")
-                }
+        (|mut req: Request<Body>| async move {
+            fn no_route() -> (StatusCode, &'static str) {
+                (StatusCode::NOT_FOUND, "Route not found")
+            }
 
-                let uri = req.uri_mut();
-                let path = uri.path();
-                let (namespace, path) = path
-                    .strip_prefix('/')
-                    .expect("invalid URI")
-                    .split_once("/_")
-                    .ok_or_else(no_route)?;
+            let uri = req.uri_mut();
+            let path = uri.path();
+            let (namespace, path) = path
+                .strip_prefix('/')
+                .expect("invalid URI")
+                .split_once("/_")
+                .ok_or_else(no_route)?;
 
-                let namespace = namespace
-                    .parse()
-                    .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+            let namespace = namespace
+                .parse()
+                .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-                let path = path.to_string();
-                let (comp, path) = path.split_once('/').unwrap_or((&path, ""));
-                *uri = format!("/_{}", path).parse().unwrap();
+            let path = path.to_string();
+            let (comp, path) = path.split_once('/').unwrap_or((&path, ""));
+            *uri = format!("/_{}", path).parse().unwrap();
 
-                // TODO: use `namespace`
-                let _: Namespace = namespace;
-
-                match comp {
-                    "tree" => Ok(tree::app().call(req).await),
-                    "tag" => {
-                        let s = store::Memory::default();
-                        Ok(tag::app(s).call(req).await)
-                    }
-                    _ => Err(no_route()),
-                }
+            match comp {
+                "tree" => Ok(tree::app(trees.entry(namespace).or_default())
+                    .call(req)
+                    .await),
+                "tag" => Ok(tag::app(tags.entry(namespace).or_default()).call(req).await),
+                _ => Err(no_route()),
             }
         })
         .into_service(),

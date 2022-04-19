@@ -120,7 +120,7 @@ impl App {
     }
 }
 
-pub fn app<S>(s: S) -> Router
+pub fn app<S>(s: &mut Arc<RwLock<S>>) -> Router
 where
     S: Sync + Send + Get<String> + Create<String> + Keys<String> + 'static,
     for<'a> &'a <S as Get<String>>::Item: AsyncRead,
@@ -128,8 +128,6 @@ where
     S::Stream: TryStream<Ok = String>,
 {
     use axum::routing::*;
-
-    let s = Arc::new(RwLock::new(s));
 
     Router::new()
         .route(
@@ -155,6 +153,9 @@ where
         )
         .route(
             "/:tag",
-            put(move |tag, body, body_validate, meta| App::put(s, tag, body, body_validate, meta)),
+            put({
+                let s = s.clone();
+                move |tag, body, body_validate, meta| App::put(s, tag, body, body_validate, meta)
+            }),
         )
 }

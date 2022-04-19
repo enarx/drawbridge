@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 # Internal Dependencies
 drawbridge-hash = { path = "../hash" }
+drawbridge-store = { path = "../store" }
 drawbridge-type = { path = "../type" , features = ["server"]}
 
 # External Dependencies

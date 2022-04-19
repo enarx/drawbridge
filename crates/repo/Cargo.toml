@@ -12,4 +12,5 @@ drawbridge-tree = { path = "../tree" }
 
 # External dependencies
 axum = { version = "0.5.0" }
+tokio = { version = "1.17.0" }
 tower = { version = "0.4.12" }
