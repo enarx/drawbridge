@@ -35,17 +35,15 @@ pub enum GetError<E> {
 }
 
 #[async_trait]
-pub trait Store<K>
+pub trait Create<K>
 where
     K: Send,
-    for<'a> &'a mut Self::Write: AsyncWrite,
-    for<'a> &'a Self::Read: AsyncRead,
+    for<'a> &'a mut Self::Item: AsyncWrite,
 {
-    type Read: ?Sized + Sync;
-    type Write: ?Sized + Sync + Send;
+    type Item: ?Sized + Sync + Send;
     type Error: Sync + Send + std::error::Error;
 
-    async fn create(&mut self, k: K, m: Meta) -> Result<&mut Self::Write, CreateError<Self::Error>>
+    async fn create(&mut self, k: K, m: Meta) -> Result<&mut Self::Item, CreateError<Self::Error>>
     where
         K: 'async_trait;
 
@@ -62,8 +60,18 @@ where
         let mut bw = self.create(k, m).await.map_err(CreateCopyError::Create)?;
         copy(src, &mut bw).await.map_err(CreateCopyError::IO)
     }
+}
 
-    async fn get(&self, k: K) -> Result<(Meta, &Self::Read), GetError<Self::Error>>
+#[async_trait]
+pub trait Get<K>
+where
+    K: Send,
+    for<'a> &'a Self::Item: AsyncRead,
+{
+    type Item: ?Sized + Sync;
+    type Error: Sync + Send + std::error::Error;
+
+    async fn get(&self, k: K) -> Result<(Meta, &Self::Item), GetError<Self::Error>>
     where
         K: 'async_trait;
 
@@ -89,27 +97,31 @@ pub trait Keys<K> {
 pub struct Memory<K>(HashMap<K, (Meta, Vec<u8>)>);
 
 #[async_trait]
-impl<K> Store<K> for Memory<K>
+impl<K> Create<K> for Memory<K>
 where
     K: Sync + Send + Eq + Hash,
 {
-    type Read = [u8];
-    type Write = Vec<u8>;
+    type Item = Vec<u8>;
     type Error = Infallible;
 
-    async fn create(
-        &mut self,
-        k: K,
-        m: Meta,
-    ) -> Result<&mut Self::Write, CreateError<Self::Error>> {
+    async fn create(&mut self, k: K, m: Meta) -> Result<&mut Self::Item, CreateError<Self::Error>> {
         if let Entry::Vacant(e) = self.0.entry(k) {
             Ok(&mut e.insert((m, vec![])).1)
         } else {
             Err(CreateError::Occupied)
         }
     }
+}
 
-    async fn get(&self, k: K) -> Result<(Meta, &Self::Read), GetError<Self::Error>> {
+#[async_trait]
+impl<K> Get<K> for Memory<K>
+where
+    K: Sync + Send + Eq + Hash,
+{
+    type Item = [u8];
+    type Error = Infallible;
+
+    async fn get(&self, k: K) -> Result<(Meta, &Self::Item), GetError<Self::Error>> {
         self.0
             .get(&k)
             .ok_or(GetError::NotFound)
