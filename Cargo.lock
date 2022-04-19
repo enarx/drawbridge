@@ -189,6 +189,7 @@ dependencies = [
  "drawbridge-store",
  "drawbridge-tags",
  "drawbridge-tree",
+ "tokio",
  "tower",
 ]
 
@@ -226,6 +227,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "drawbridge-hash",
+ "drawbridge-store",
  "drawbridge-type",
  "futures 0.3.21",
  "serde",
