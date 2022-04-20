@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use axum::async_trait;
 use axum::extract::{FromRequest, RequestParts};
-use axum::http::StatusCode;
+use axum::http::{StatusCode, Uri};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,11 +36,12 @@ where
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let uri = req.uri_mut();
         let path = uri.path().strip_prefix('/').expect("invalid URI");
-        let (name, path) = path.split_once('/').unwrap_or((path, ""));
+        let (name, rest) = path.split_once('/').unwrap_or((path, ""));
         let name = name.parse().map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
-        let path = path.to_string();
-        *uri = format!("/{}", path).parse().unwrap();
+        let mut parts = uri.clone().into_parts();
+        parts.path_and_query = Some(format!("/{}", rest).parse().unwrap());
+        *uri = Uri::from_parts(parts).unwrap();
         Ok(name)
     }
 }
