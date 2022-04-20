@@ -58,6 +58,30 @@ impl FromStr for Namespace {
     }
 }
 
+#[async_trait]
+impl<B> FromRequest<B> for Namespace
+where
+    B: Send + HttpBody,
+    B::Error: Sync + Send + std::error::Error + 'static,
+    B::Data: Send,
+{
+    type Rejection = (StatusCode, &'static str);
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let uri = req.uri_mut();
+        let path = uri.path().strip_prefix('/').expect("invalid URI");
+        let (namespace, rest) = path.split_once("/_").unwrap_or((path, ""));
+        let namespace = namespace
+            .parse()
+            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+
+        let mut parts = uri.clone().into_parts();
+        parts.path_and_query = Some(format!("/_{}", rest).parse().unwrap());
+        *uri = Uri::from_parts(parts).unwrap();
+        Ok(namespace)
+    }
+}
+
 pub fn app() -> Router {
     let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
