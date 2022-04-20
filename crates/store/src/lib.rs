@@ -93,8 +93,14 @@ pub trait Keys<K> {
     async fn keys(&self) -> Result<Self::Stream, Self::Error>;
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Memory<K>(HashMap<K, (Meta, Vec<u8>)>);
+
+impl<K> Default for Memory<K> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 #[async_trait]
 impl<K> Create<K> for Memory<K>
