@@ -71,13 +71,16 @@ where
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let uri = req.uri_mut();
         let path = uri.path().strip_prefix('/').expect("invalid URI");
-        let (namespace, rest) = path.split_once("/_").unwrap_or((path, ""));
+        let (namespace, rest) = path
+            .split_once("/_")
+            .map(|(namespace, rest)| (namespace, format!("_{}", rest)))
+            .unwrap_or((path, "".into()));
         let namespace = namespace
             .parse()
             .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
         let mut parts = uri.clone().into_parts();
-        parts.path_and_query = Some(format!("/_{}", rest).parse().unwrap());
+        parts.path_and_query = Some(format!("/{}", rest).parse().unwrap());
         *uri = Uri::from_parts(parts).unwrap();
         Ok(namespace)
     }
