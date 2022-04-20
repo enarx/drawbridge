@@ -12,10 +12,11 @@ use drawbridge_store as store;
 use drawbridge_tags as tag;
 use drawbridge_tree as tree;
 
-use axum::body::Body;
+use axum::body::{Body, HttpBody};
+use axum::extract::{FromRequest, RequestParts};
 use axum::handler::Handler;
-use axum::http::{Request, StatusCode};
-use axum::Router;
+use axum::http::{Request, StatusCode, Uri};
+use axum::{async_trait, Router};
 use tokio::sync::RwLock;
 use tower::Service;
 
@@ -86,34 +87,33 @@ pub fn app() -> Router {
     let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     Router::new().fallback(
-        (|mut req: Request<Body>| async move {
-            fn no_route() -> (StatusCode, &'static str) {
-                (StatusCode::NOT_FOUND, "Route not found")
-            }
-
-            let uri = req.uri_mut();
-            let path = uri.path();
-            let (namespace, path) = path
-                .strip_prefix('/')
-                .expect("invalid URI")
-                .split_once("/_")
-                .ok_or_else(no_route)?;
-
-            let namespace = namespace
-                .parse()
-                .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
-
-            let path = path.to_string();
-            let (comp, path) = path.split_once('/').unwrap_or((&path, ""));
-            *uri = format!("/_{}", path).parse().unwrap();
-
-            match comp {
-                "tree" => Ok(tree::app(trees.entry(namespace).or_default())
+        (|req: Request<Body>| async move {
+            let mut parts = RequestParts::new(req);
+            let namespace = parts.extract::<Namespace>().await?;
+            let req = parts
+                .try_into_request()
+                .or(Err::<_, (StatusCode, &'static str)>((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "",
+                )))?;
+            Ok::<_, (_, _)>(
+                Router::new()
+                    .nest(
+                        "/_tag",
+                        tag::app(tags.entry(namespace.clone()).or_default()),
+                    )
+                    .nest(
+                        // TODO: Nest tree API under `/_tag/:name/`
+                        // https://github.com/profianinc/drawbridge/issues/48
+                        "/_tree",
+                        tree::app(trees.entry(namespace.clone()).or_default()),
+                    )
+                    .fallback(
+                        (|| async { (StatusCode::NOT_FOUND, "Route not found") }).into_service(),
+                    )
                     .call(req)
-                    .await),
-                "tag" => Ok(tag::app(tags.entry(namespace).or_default()).call(req).await),
-                _ => Err(no_route()),
-            }
+                    .await,
+            )
         })
         .into_service(),
     )
