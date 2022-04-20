@@ -189,6 +189,8 @@ dependencies = [
  "drawbridge-store",
  "drawbridge-tags",
  "drawbridge-tree",
+ "drawbridge-type",
+ "futures 0.3.21",
  "tokio",
  "tower",
 ]

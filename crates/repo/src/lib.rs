@@ -8,15 +8,19 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use drawbridge_store as store;
+use drawbridge_store::{self as store, Create, CreateCopyError, CreateError, Get, GetError};
 use drawbridge_tags as tag;
 use drawbridge_tree as tree;
+use drawbridge_type::Meta;
 
 use axum::body::{Body, HttpBody};
-use axum::extract::{FromRequest, RequestParts};
+use axum::extract::{BodyStream, FromRequest, RequestParts};
 use axum::handler::Handler;
 use axum::http::{Request, StatusCode, Uri};
+use axum::response::IntoResponse;
+use axum::routing::{get, head, put};
 use axum::{async_trait, Router};
+use futures::{io, AsyncRead, AsyncReadExt, AsyncWrite, TryStreamExt};
 use tokio::sync::RwLock;
 use tower::Service;
 
@@ -86,7 +90,86 @@ where
     }
 }
 
+struct App;
+
+impl App {
+    async fn head<S>(s: Arc<RwLock<S>>, namespace: Namespace) -> impl IntoResponse
+    where
+        S: Sync + Get<Namespace>,
+        for<'a> &'a S::Item: AsyncRead,
+    {
+        s.read()
+            .await
+            .get_meta(namespace)
+            .await
+            .map_err(|e| match e {
+                GetError::NotFound => (StatusCode::NOT_FOUND, "Repository does not exist"),
+                GetError::Internal(e) => {
+                    eprintln!("Failed to get repository metadata: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                }
+            })
+            .map(|meta| (meta, ()))
+    }
+
+    async fn get<S>(s: Arc<RwLock<S>>, namespace: Namespace) -> impl IntoResponse
+    where
+        S: Sync + Get<Namespace>,
+        for<'a> &'a S::Item: AsyncRead,
+    {
+        let s = s.read().await;
+
+        let (meta, mut br) = s.get(namespace).await.map_err(|e| match e {
+            GetError::NotFound => (StatusCode::NOT_FOUND, "Namespace does not exist"),
+            GetError::Internal(e) => {
+                eprintln!("Failed to get repository: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+            }
+        })?;
+        // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
+        let mut body = vec![];
+        br.read_to_end(&mut body).await.map_err(|e| {
+            eprintln!("Failed to read repository contents: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+        })?;
+        Ok::<_, (_, _)>((meta, body))
+    }
+
+    async fn put<S>(
+        s: Arc<RwLock<S>>,
+        namespace: Namespace,
+        body: BodyStream,
+        meta: Meta,
+    ) -> impl IntoResponse
+    where
+        S: Sync + Send + Create<Namespace>,
+        for<'a> &'a mut S::Item: AsyncWrite,
+    {
+        // TODO: Allow incomplete meta (compute length of body and digests) https://github.com/profianinc/drawbridge/issues/55
+        let body = body.map_err(|e| io::Error::new(io::ErrorKind::Other, e));
+        s.write()
+            .await
+            .create_copy(namespace, meta, body.into_async_read())
+            .await
+            .map_err(|e| match e {
+                CreateCopyError::IO(e) => {
+                    eprintln!("Failed to stream repository contents: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                }
+                CreateCopyError::Create(CreateError::Occupied) => {
+                    (StatusCode::CONFLICT, "Repository already exists")
+                }
+                CreateCopyError::Create(CreateError::Internal(e)) => {
+                    eprintln!("Failed to create repository: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                }
+            })
+            .map(|_| ())
+    }
+}
+
 pub fn app() -> Router {
+    let repos: Arc<RwLock<store::Memory<Namespace>>> = Default::default();
     let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     Router::new().fallback(
@@ -110,6 +193,26 @@ pub fn app() -> Router {
                         // https://github.com/profianinc/drawbridge/issues/48
                         "/_tree",
                         tree::app(trees.entry(namespace.clone()).or_default()),
+                    )
+                    .route(
+                        "/",
+                        head({
+                            let repos = repos.clone();
+                            let namespace = namespace.clone();
+                            move || App::head(repos, namespace)
+                        }),
+                    )
+                    .route(
+                        "/",
+                        get({
+                            let repos = repos.clone();
+                            let namespace = namespace.clone();
+                            move || App::get(repos, namespace)
+                        }),
+                    )
+                    .route(
+                        "/",
+                        put(|body, meta| App::put(repos, namespace, body, meta)),
                     )
                     .fallback(
                         (|| async { (StatusCode::NOT_FOUND, "Route not found") }).into_service(),
