@@ -14,7 +14,7 @@ use drawbridge_type::Meta;
 use async_trait::async_trait;
 use futures::io::{self, copy};
 use futures::stream::{iter, Iter};
-use futures::{AsyncRead, AsyncWrite, TryStream};
+use futures::{AsyncRead, AsyncWrite, TryFutureExt, TryStream};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CreateError<E> {
@@ -80,6 +80,21 @@ where
         K: 'async_trait,
     {
         self.get(k).await.map(|(m, _)| m)
+    }
+
+    async fn contains(&self, k: K) -> Result<bool, Self::Error>
+    where
+        K: 'async_trait,
+    {
+        self.get(k)
+            .map_ok_or_else(
+                |e| match e {
+                    GetError::Internal(e) => Err(e),
+                    GetError::NotFound => Ok(false),
+                },
+                |_| Ok(true),
+            )
+            .await
     }
 }
 
