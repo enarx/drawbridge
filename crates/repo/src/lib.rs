@@ -23,6 +23,7 @@ use axum::routing::{any, get, head, put};
 use axum::{async_trait, Router};
 use futures::{io, AsyncRead, AsyncReadExt, AsyncWrite, TryStreamExt};
 use tokio::sync::RwLock;
+use tower::layer::layer_fn;
 use tower::Service;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -183,6 +184,37 @@ impl App {
     }
 }
 
+#[derive(Clone)]
+struct RepoExists<I> {
+    repos: Arc<RwLock<store::Memory<Namespace>>>,
+    repo: Namespace,
+    inner: I,
+}
+
+impl<R, I> Service<R> for RepoExists<I>
+where
+    I: Service<R>,
+{
+    type Response = I::Response;
+    type Error = I::Error;
+    type Future = I::Future;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: R) -> Self::Future {
+        // TODO: Check existence of a repository before call
+        // https://github.com/profianinc/drawbridge/issues/67
+        let _ = self.repos;
+        let _ = self.repo;
+        self.inner.call(req)
+    }
+}
+
 pub fn app() -> Router {
     let repos: Arc<RwLock<store::Memory<Namespace>>> = Default::default();
     let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
@@ -200,10 +232,19 @@ pub fn app() -> Router {
                 )))?;
             Ok::<_, (_, _)>(
                 Router::new()
-                    .nest("/_tag", tag::app(tags.entry(repo.clone()).or_default()))
-                    // TODO: Nest tree API under `/_tag/:name/`
-                    // https://github.com/profianinc/drawbridge/issues/48
-                    .nest("/_tree", tree::app(trees.entry(repo.clone()).or_default()))
+                    .nest(
+                        "/_tag",
+                        tag::app(tags.entry(repo.clone()).or_default())
+                            .nest(
+                                "/:tag/tree",
+                                tree::app(trees.entry(repo.clone()).or_default()),
+                            )
+                            .route_layer(layer_fn(|inner| RepoExists {
+                                repos: repos.clone(),
+                                repo: repo.clone(),
+                                inner,
+                            })),
+                    )
                     .route(
                         "/",
                         head({
