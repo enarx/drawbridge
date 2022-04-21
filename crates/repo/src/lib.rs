@@ -19,7 +19,7 @@ use axum::extract::{BodyStream, FromRequest, RequestParts};
 use axum::handler::Handler;
 use axum::http::{Request, StatusCode, Uri};
 use axum::response::IntoResponse;
-use axum::routing::{get, head, put};
+use axum::routing::{any, get, head, put};
 use axum::{async_trait, Router};
 use futures::{io, AsyncRead, AsyncReadExt, AsyncWrite, TryStreamExt};
 use tokio::sync::RwLock;
@@ -108,14 +108,14 @@ where
 struct App;
 
 impl App {
-    async fn head<S>(s: Arc<RwLock<S>>, namespace: Namespace) -> impl IntoResponse
+    async fn head<S>(s: Arc<RwLock<S>>, repo: Namespace) -> impl IntoResponse
     where
         S: Sync + Get<Namespace>,
         for<'a> &'a S::Item: AsyncRead,
     {
         s.read()
             .await
-            .get_meta(namespace)
+            .get_meta(repo)
             .await
             .map_err(|e| match e {
                 GetError::NotFound => (StatusCode::NOT_FOUND, "Repository does not exist"),
@@ -127,14 +127,14 @@ impl App {
             .map(|meta| (meta, ()))
     }
 
-    async fn get<S>(s: Arc<RwLock<S>>, namespace: Namespace) -> impl IntoResponse
+    async fn get<S>(s: Arc<RwLock<S>>, repo: Namespace) -> impl IntoResponse
     where
         S: Sync + Get<Namespace>,
         for<'a> &'a S::Item: AsyncRead,
     {
         let s = s.read().await;
 
-        let (meta, mut br) = s.get(namespace).await.map_err(|e| match e {
+        let (meta, mut br) = s.get(repo).await.map_err(|e| match e {
             GetError::NotFound => (StatusCode::NOT_FOUND, "Repository does not exist"),
             GetError::Internal(e) => {
                 eprintln!("Failed to get repository: {}", e);
@@ -152,7 +152,7 @@ impl App {
 
     async fn put<S>(
         s: Arc<RwLock<S>>,
-        namespace: Namespace,
+        repo: Namespace,
         body: BodyStream,
         meta: Meta,
     ) -> impl IntoResponse
@@ -164,7 +164,7 @@ impl App {
         let body = body.map_err(|e| io::Error::new(io::ErrorKind::Other, e));
         s.write()
             .await
-            .create_copy(namespace, meta, body.into_async_read())
+            .create_copy(repo, meta, body.into_async_read())
             .await
             .map_err(|e| match e {
                 CreateCopyError::IO(e) => {
@@ -187,10 +187,11 @@ pub fn app() -> Router {
     let repos: Arc<RwLock<store::Memory<Namespace>>> = Default::default();
     let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
     let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
-    Router::new().fallback(
-        (|req: Request<Body>| async move {
+    Router::new().route(
+        "/*path",
+        any(|req: Request<Body>| async move {
             let mut parts = RequestParts::new(req);
-            let namespace = parts.extract::<Namespace>().await?;
+            let repo = parts.extract::<Namespace>().await?;
             let req = parts
                 .try_into_request()
                 .or(Err::<_, (StatusCode, &'static str)>((
@@ -199,44 +200,46 @@ pub fn app() -> Router {
                 )))?;
             Ok::<_, (_, _)>(
                 Router::new()
-                    .nest(
-                        "/_tag",
-                        tag::app(tags.entry(namespace.clone()).or_default()),
-                    )
-                    .nest(
-                        // TODO: Nest tree API under `/_tag/:name/`
-                        // https://github.com/profianinc/drawbridge/issues/48
-                        "/_tree",
-                        tree::app(trees.entry(namespace.clone()).or_default()),
-                    )
+                    .nest("/_tag", tag::app(tags.entry(repo.clone()).or_default()))
+                    // TODO: Nest tree API under `/_tag/:name/`
+                    // https://github.com/profianinc/drawbridge/issues/48
+                    .nest("/_tree", tree::app(trees.entry(repo.clone()).or_default()))
                     .route(
                         "/",
                         head({
                             let repos = repos.clone();
-                            let namespace = namespace.clone();
-                            move || App::head(repos, namespace)
+                            let repo = repo.clone();
+                            move || App::head(repos, repo)
                         }),
                     )
                     .route(
                         "/",
                         get({
                             let repos = repos.clone();
-                            let namespace = namespace.clone();
-                            move || App::get(repos, namespace)
+                            let repo = repo.clone();
+                            move || App::get(repos, repo)
                         }),
                     )
                     .route(
                         "/",
-                        put(|body, meta| App::put(repos, namespace, body, meta)),
+                        put({
+                            let repo = repo.clone();
+                            |body, meta| App::put(repos, repo, body, meta)
+                        }),
                     )
                     .fallback(
-                        (|| async { (StatusCode::NOT_FOUND, "Route not found") }).into_service(),
+                        (|uri: Uri| async move {
+                            (
+                                StatusCode::NOT_FOUND,
+                                format!("Route {} not found for repository {}", uri, repo),
+                            )
+                        })
+                        .into_service(),
                     )
                     .call(req)
                     .await,
             )
-        })
-        .into_service(),
+        }),
     )
 }
 
