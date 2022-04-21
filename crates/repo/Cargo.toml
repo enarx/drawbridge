@@ -12,7 +12,7 @@ drawbridge-tree = { path = "../tree" }
 drawbridge-type = { path = "../type" }
 
 # External dependencies
-axum = { version = "0.5.0" }
+axum = { version = "0.5.3" }
 futures = { version = "0.3.21" }
 tokio = { version = "1.17.0" }
 tower = { version = "0.4.12" }

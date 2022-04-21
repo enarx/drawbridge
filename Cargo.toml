@@ -20,8 +20,8 @@ members = [
 drawbridge-repo = { path = "./crates/repo" }
 
 # External dependencies
-axum = { version = "0.5.0" }
-tokio = { version = "1.17.0", features = [ "full" ] }
+axum = { version = "0.5.3" }
+tokio = { version = "1.17.0", features = ["full"] }
 
 [patch.crates-io]
 http = { git = "https://github.com/npmccallum/http", rev = "0f4438e7f5107d8b06142894d2d9cd5186b721ab" }
