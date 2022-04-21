@@ -120,7 +120,7 @@ impl App {
         let s = s.read().await;
 
         let (meta, mut br) = s.get(namespace).await.map_err(|e| match e {
-            GetError::NotFound => (StatusCode::NOT_FOUND, "Namespace does not exist"),
+            GetError::NotFound => (StatusCode::NOT_FOUND, "Repository does not exist"),
             GetError::Internal(e) => {
                 eprintln!("Failed to get repository: {}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
