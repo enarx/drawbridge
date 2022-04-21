@@ -44,7 +44,7 @@ impl FromStr for Namespace {
                     .is_none()
         }
 
-        let mut namespace = s.split('/').map(Into::into);
+        let mut namespace = s.split_terminator('/').map(Into::into);
         let owner = namespace
             .next()
             .ok_or("Repository owner must be specified")?;
@@ -238,7 +238,6 @@ mod tests {
         assert!("owner/".parse::<Namespace>().is_err());
         assert!("/name".parse::<Namespace>().is_err());
         assert!("owner//name".parse::<Namespace>().is_err());
-        assert!("owner/name/".parse::<Namespace>().is_err());
         assert!("owner/group///name".parse::<Namespace>().is_err());
         assert!("owner/g%roup/name".parse::<Namespace>().is_err());
         assert!("owner/gяoup/name".parse::<Namespace>().is_err());
@@ -248,6 +247,14 @@ mod tests {
 
         assert_eq!(
             "owner/name".parse(),
+            Ok(Namespace {
+                owner: "owner".into(),
+                groups: vec![],
+                name: "name".into(),
+            })
+        );
+        assert_eq!(
+            "owner/name/".parse(),
             Ok(Namespace {
                 owner: "owner".into(),
                 groups: vec![],
