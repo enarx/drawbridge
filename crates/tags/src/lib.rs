@@ -23,6 +23,7 @@ use axum::Router;
 use futures::io;
 use futures::{AsyncRead, AsyncReadExt, AsyncWrite, TryStream, TryStreamExt};
 use tokio::sync::RwLock;
+use tower::Service;
 
 struct App;
 
@@ -158,4 +159,33 @@ where
                 move |tag, body, body_validate, meta| App::put(s, tag, body, body_validate, meta)
             }),
         )
+}
+
+#[derive(Clone)]
+pub struct TagExists<S, I> {
+    pub tags: Arc<RwLock<S>>,
+    pub inner: I,
+}
+
+impl<R, S, I> Service<R> for TagExists<S, I>
+where
+    I: Service<R>,
+{
+    type Response = I::Response;
+    type Error = I::Error;
+    type Future = I::Future;
+
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: R) -> Self::Future {
+        // TODO: Check existence of a tag before call
+        // https://github.com/profianinc/drawbridge/issues/72
+        let _ = self.tags;
+        self.inner.call(req)
+    }
 }

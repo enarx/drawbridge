@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use drawbridge_store::{self as store, Create, CreateCopyError, CreateError, Get, GetError};
-use drawbridge_tags as tag;
+use drawbridge_tags::{self as tag, TagExists};
 use drawbridge_tree as tree;
 use drawbridge_type::Meta;
 
@@ -154,19 +154,24 @@ pub fn app() -> Router {
                 )))?;
             Ok::<_, (_, _)>(
                 Router::new()
-                    .nest(
-                        "/_tag",
-                        tag::app(tags.entry(repo.clone()).or_default())
+                    .nest("/_tag", {
+                        let tags = tags.entry(repo.clone()).or_default();
+                        tag::app(tags)
                             .nest(
                                 "/:tag/tree",
-                                tree::app(trees.entry(repo.clone()).or_default()),
+                                tree::app(trees.entry(repo.clone()).or_default()).route_layer(
+                                    layer_fn(|inner| TagExists {
+                                        tags: tags.clone(),
+                                        inner,
+                                    }),
+                                ),
                             )
                             .route_layer(layer_fn(|inner| RepoExists {
                                 repos: repos.clone(),
                                 repo: repo.clone(),
                                 inner,
-                            })),
-                    )
+                            }))
+                    })
                     .route(
                         "/",
                         head({
