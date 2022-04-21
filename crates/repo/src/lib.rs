@@ -5,6 +5,7 @@
 #![forbid(unsafe_code)]
 
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -60,6 +61,20 @@ impl FromStr for Namespace {
                 name,
             })
         }
+    }
+}
+
+impl Display for Namespace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}{}/{}",
+            self.owner,
+            self.groups
+                .iter()
+                .fold("".into(), |acc, x| format!("{}/{}", acc, x)),
+            self.name,
+        )
     }
 }
 
