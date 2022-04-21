@@ -220,3 +220,99 @@ pub fn app() -> Router {
         }),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use axum::http::header::{CONTENT_LENGTH, CONTENT_TYPE};
+    use axum::http::request;
+
+    #[tokio::test]
+    async fn routes() {
+        const URL: &str = "http://127.0.0.1:8080/test/onetwothree";
+        fn request_builder() -> request::Builder {
+            Request::builder().uri(URL)
+        }
+
+        let mut router = app();
+
+        let res = router
+            .call(request_builder().body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        let res = router
+            .call(
+                request_builder()
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 3)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+        let res = router
+            .call(
+                request_builder()
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 2)
+                    .header(CONTENT_TYPE, "application/toml")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
+
+        let res = router
+            .call(
+                request_builder()
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 13)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from(r#"{"one":"two"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+        let res = router
+            .call(
+                request_builder()
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 2)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // TODO: This should not result in conflict, since payload is the same.
+        let res = router
+            .call(
+                request_builder()
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 2)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::CONFLICT);
+
+        let res = router
+            .call(request_builder().body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+}
