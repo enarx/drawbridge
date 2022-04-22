@@ -1,15 +1,19 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use drawbridge_jose::jws::Jws;
-use drawbridge_type::Entry;
+use super::entry::Entry;
 
-use axum::body::HttpBody;
-use axum::extract::{FromRequest, RequestParts};
-use axum::headers::ContentType;
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::{async_trait, Json, TypedHeader};
+use drawbridge_jose::jws::Jws;
+
+#[cfg(feature = "axum")]
+use axum::{
+    body::HttpBody,
+    extract::{FromRequest, RequestParts},
+    headers::ContentType,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    {async_trait, Json, TypedHeader},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -18,6 +22,7 @@ pub enum Tag {
     Unsigned(Entry),
 }
 
+#[cfg(feature = "axum")]
 #[async_trait]
 impl<B> FromRequest<B> for Tag
 where
@@ -55,17 +60,18 @@ where
 mod tests {
     use super::*;
 
-    use std::collections::{BTreeMap, HashMap};
-
-    use axum::body::Body;
-    use drawbridge_jose::b64::Json;
-    use drawbridge_jose::jws::{Flattened, General, Jws, Signature};
-
-    use axum::http::Request;
-    use serde_json::json;
-
+    #[cfg(feature = "axum")]
     #[tokio::test]
     async fn from_request() {
+        use std::collections::{BTreeMap, HashMap};
+
+        use drawbridge_jose::b64::Json;
+        use drawbridge_jose::jws::{Flattened, General, Jws, Signature};
+
+        use axum::body::Body;
+        use axum::http::Request;
+        use serde_json::json;
+
         async fn from_request(
             content_type: Option<&str>,
             body: impl ToString,

@@ -245,6 +245,7 @@ dependencies = [
  "axum",
  "base64",
  "drawbridge-byte",
+ "drawbridge-jose",
  "futures 0.3.21",
  "headers",
  "http",

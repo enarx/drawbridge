@@ -5,15 +5,13 @@
 #![forbid(unsafe_code)]
 
 mod name;
-mod tag;
 
 pub use name::*;
-pub use tag::*;
 
 use std::sync::Arc;
 
 use drawbridge_store::{Create, CreateCopyError, CreateError, Get, GetError, Keys};
-use drawbridge_type::Meta;
+use drawbridge_type::{Meta, Tag};
 
 use axum::body::StreamBody;
 use axum::extract::{BodyStream, Path};
