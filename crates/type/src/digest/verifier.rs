@@ -23,6 +23,22 @@ where
     hashes: ContentDigest<H>,
 }
 
+#[allow(unsafe_code)]
+unsafe impl<T, H> Sync for Verifier<T, H>
+where
+    T: Sync,
+    H: Sync + AsRef<[u8]> + From<Vec<u8>>,
+{
+}
+
+#[allow(unsafe_code)]
+unsafe impl<T, H> Send for Verifier<T, H>
+where
+    T: Send,
+    H: Send + AsRef<[u8]> + From<Vec<u8>>,
+{
+}
+
 impl<T, H> Verifier<T, H>
 where
     H: AsRef<[u8]> + From<Vec<u8>>,
