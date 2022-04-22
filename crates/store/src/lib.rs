@@ -18,7 +18,7 @@ use drawbridge_type::Meta;
 use async_trait::async_trait;
 use futures::io::{self, copy};
 use futures::stream::{iter, Iter};
-use futures::{AsyncRead, AsyncWrite, AsyncWriteExt, TryFutureExt, TryStream};
+use futures::{AsyncRead, AsyncWrite, TryFutureExt, TryStream};
 use mime::Mime;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,15 +28,9 @@ pub enum CreateError<E> {
 }
 
 #[derive(Debug)]
-pub enum CreateCopyError<E> {
+pub enum CreateFromReaderError<E> {
     IO(io::Error),
     Create(CreateError<E>),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum GetError<E> {
-    NotFound,
-    Internal(E),
 }
 
 #[async_trait]
@@ -63,12 +57,12 @@ where
     where
         K: 'async_trait;
 
-    async fn create_copy<R>(
+    async fn create_from_reader<R>(
         &mut self,
         key: K,
         mime: Mime,
         src: R,
-    ) -> Result<(u64, ContentDigest), CreateCopyError<Self::Error>>
+    ) -> Result<(u64, ContentDigest), CreateFromReaderError<Self::Error>>
     where
         Self: 'static,
         K: 'async_trait,
@@ -77,10 +71,22 @@ where
         let mut w = self
             .create(key, mime)
             .await
-            .map_err(CreateCopyError::Create)?;
-        copy(src, &mut w).await.map_err(CreateCopyError::IO)?;
+            .map_err(CreateFromReaderError::Create)?;
+        copy(src, &mut w).await.map_err(CreateFromReaderError::IO)?;
         Ok(w.finish().await)
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum GetError<E> {
+    NotFound,
+    Internal(E),
+}
+
+#[derive(Debug)]
+pub enum GetToWriterError<E> {
+    IO(io::Error),
+    Get(GetError<E>),
 }
 
 #[async_trait]
@@ -96,6 +102,21 @@ where
     async fn get(&self, k: K) -> Result<(Meta, Self::Item<'_>), GetError<Self::Error>>
     where
         K: 'async_trait;
+
+    async fn get_to_writer<W>(
+        &self,
+        k: K,
+        dst: &mut W,
+    ) -> Result<Meta, GetToWriterError<Self::Error>>
+    where
+        Self: 'static,
+        K: 'async_trait,
+        W: Send + Unpin + AsyncWrite + 'async_trait,
+    {
+        let (meta, r) = self.get(k).await.map_err(GetToWriterError::Get)?;
+        copy(r, dst).await.map_err(GetToWriterError::IO)?;
+        Ok(meta)
+    }
 
     async fn get_meta(&self, k: K) -> Result<Meta, GetError<Self::Error>>
     where
@@ -199,8 +220,11 @@ where
         mime: Mime,
     ) -> Result<Self::Item<'_>, CreateError<Self::Error>> {
         if let Entry::Vacant(entry) = self.0.entry(key) {
-            let mut buf = vec![];
-            Ok(MemoryCreateItem { mime, buf, entry })
+            Ok(MemoryCreateItem {
+                mime,
+                buf: vec![],
+                entry,
+            })
         } else {
             Err(CreateError::Occupied)
         }

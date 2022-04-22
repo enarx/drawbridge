@@ -189,6 +189,8 @@ dependencies = [
  "drawbridge-tree",
  "drawbridge-type",
  "futures 0.3.21",
+ "serde",
+ "serde_json",
  "tokio",
  "tower",
 ]
@@ -201,6 +203,8 @@ dependencies = [
  "drawbridge-type",
  "futures 0.3.21",
  "mime",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -215,6 +219,7 @@ dependencies = [
  "drawbridge-tree",
  "drawbridge-type",
  "futures 0.3.21",
+ "mime",
  "semver",
  "serde",
  "serde_json",

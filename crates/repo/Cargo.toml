@@ -14,5 +14,7 @@ drawbridge-type = { path = "../type" }
 # External dependencies
 axum = { version = "0.5.3", git = "https://github.com/rvolosatovs/axum.git", branch = "feat/typed-header-rejection" }
 futures = { version = "0.3.21" }
+serde = { version = "1.0.136" }
+serde_json = "1.0.79"
 tokio = { version = "1.17.0" }
 tower = { version = "0.4.12" }
