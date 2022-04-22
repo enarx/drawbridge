@@ -24,7 +24,6 @@ use axum::Router;
 use axum::{routing::*, Json};
 use futures::TryStream;
 use tokio::sync::RwLock;
-use tower::Service;
 
 struct App;
 
@@ -169,64 +168,21 @@ where
             }),
         )
         .route(
-            "/:name",
+            "/:tag",
             head({
                 let s = s.clone();
-                move |name| App::head(s, name)
+                move |tag| App::head(s, tag)
             }),
         )
         .route(
-            "/:name",
+            "/:tag",
             get({
                 let s = s.clone();
-                move |name| App::get(s, name)
+                move |tag| App::get(s, tag)
             }),
         )
         .route(
-            "/:name",
-            put({
-                let s = s.clone();
-                move |name, meta, req| App::put(s, name, meta, req)
-            }),
+            "/:tag",
+            put(move |tag, meta, req| App::put(s, tag, meta, req)),
         )
-}
-
-pub struct TagExists<S, I> {
-    pub tags: Arc<RwLock<S>>,
-    pub inner: I,
-}
-
-impl<S, I> Clone for TagExists<S, I>
-where
-    I: Clone,
-{
-    fn clone(&self) -> Self {
-        Self {
-            tags: self.tags.clone(),
-            inner: self.inner.clone(),
-        }
-    }
-}
-
-impl<R, S, I> Service<R> for TagExists<S, I>
-where
-    I: Service<R>,
-{
-    type Response = I::Response;
-    type Error = I::Error;
-    type Future = I::Future;
-
-    fn poll_ready(
-        &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    fn call(&mut self, req: R) -> Self::Future {
-        // TODO: Check existence of a tag before call
-        // https://github.com/profianinc/drawbridge/issues/72
-        let _ = self.tags;
-        self.inner.call(req)
-    }
 }

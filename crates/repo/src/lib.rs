@@ -14,7 +14,7 @@ use std::sync::Arc;
 use drawbridge_store::{
     self as store, Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
 };
-use drawbridge_tags::{self as tag, TagExists};
+use drawbridge_tags as tag;
 use drawbridge_tree::{self as tree, Path};
 use drawbridge_type::{Meta, Repository, RequestMeta};
 
@@ -26,7 +26,6 @@ use axum::response::IntoResponse;
 use axum::routing::{any, get, head, put};
 use axum::{Json, Router};
 use tokio::sync::RwLock;
-use tower::layer::layer_fn;
 use tower::Service;
 
 struct App;
@@ -131,41 +130,14 @@ impl App {
     }
 }
 
-#[derive(Clone)]
-struct RepoExists<I> {
-    repos: Arc<RwLock<store::Memory<Namespace>>>,
-    repo: Namespace,
-    inner: I,
-}
-
-impl<R, I> Service<R> for RepoExists<I>
-where
-    I: Service<R>,
-{
-    type Response = I::Response;
-    type Error = I::Error;
-    type Future = I::Future;
-
-    fn poll_ready(
-        &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    fn call(&mut self, req: R) -> Self::Future {
-        // TODO: Check existence of a repository before call
-        // https://github.com/profianinc/drawbridge/issues/67
-        let _ = self.repos;
-        let _ = self.repo;
-        self.inner.call(req)
-    }
-}
+type Repos = store::Memory<Namespace>;
+type Tags = HashMap<Namespace, Arc<RwLock<store::Memory<String>>>>;
+type Trees = HashMap<(Namespace, String), Arc<RwLock<store::Memory<Path>>>>;
 
 pub fn app() -> Router {
-    let repos: Arc<RwLock<store::Memory<Namespace>>> = Default::default();
-    let mut tags: HashMap<Namespace, Arc<RwLock<store::Memory<String>>>> = Default::default();
-    let mut trees: HashMap<Namespace, Arc<RwLock<store::Memory<Path>>>> = Default::default();
+    let repos: Arc<RwLock<Repos>> = Default::default();
+    let tags: Arc<RwLock<Tags>> = Default::default();
+    let trees: Arc<RwLock<Trees>> = Default::default();
     Router::new().route(
         "/*path",
         any(|req: Request<Body>| async move {
@@ -179,22 +151,46 @@ pub fn app() -> Router {
                 )))?;
             Ok::<_, (_, _)>(
                 Router::new()
-                    .nest("/_tag", {
-                        let tags = tags.entry(name.clone()).or_default();
-                        tag::app(Arc::clone(tags))
-                            .nest("/:name/tree", {
-                                tree::app(Arc::clone(trees.entry(name.clone()).or_default()))
-                                    .route_layer(layer_fn(|inner| TagExists {
-                                        tags: tags.clone(),
-                                        inner,
-                                    }))
-                            })
-                            .route_layer(layer_fn(|inner| RepoExists {
-                                repos: Arc::clone(&repos),
-                                repo: name.clone(),
-                                inner,
-                            }))
-                    })
+                    .nest(
+                        "/_tag",
+                        any({
+                            let repos = Arc::clone(&repos);
+                            let name = name.clone();
+                            |req: Request<Body>| async move {
+                                if !repos.read().await.contains(name.clone()).await.or(Err((
+                                    StatusCode::INTERNAL_SERVER_ERROR,
+                                    "Failed to check repository existence",
+                                )))? {
+                                    return Err((
+                                        StatusCode::NOT_FOUND,
+                                        "Repository does not exist",
+                                    ));
+                                }
+                                Ok(tag::app(Arc::clone(
+                                    // TODO: Try `read()` lock first
+                                    tags.write().await.entry(name.clone()).or_default(),
+                                ))
+                                .nest(
+                                    "/:tag/tree",
+                                    any(|tag: drawbridge_tags::Name, req: Request<Body>| async move {
+                                        // TODO: Check that tag exists https://github.com/profianinc/drawbridge/issues/72
+                                        tree::app(Arc::clone(
+                                            // TODO: Try `read()` lock first
+                                            trees
+                                                .write()
+                                                .await
+                                                .entry((name, tag.into()))
+                                                .or_default(),
+                                        ))
+                                        .call(req)
+                                        .await
+                                    }),
+                                )
+                                .call(req)
+                                .await)
+                            }
+                        }),
+                    )
                     .route(
                         "/",
                         head({
