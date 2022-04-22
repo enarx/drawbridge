@@ -8,6 +8,7 @@ mod directory;
 mod entry;
 mod meta;
 mod repository;
+mod tag;
 
 pub mod digest;
 
@@ -15,3 +16,4 @@ pub use directory::*;
 pub use entry::*;
 pub use meta::*;
 pub use repository::*;
+pub use tag::*;

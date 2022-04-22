@@ -5,8 +5,11 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [dependencies]
+# Internal Dependencies
 drawbridge-byte = { path = "../byte" }
+drawbridge-jose = { path = "../jose" }
 
+# External Dependencies
 base64 = "0.13.0"
 mime = "0.3.16"
 serde = { version = "1.0.136", features = ["derive"] }
