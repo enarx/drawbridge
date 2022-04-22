@@ -8,7 +8,8 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 #[cfg(feature = "axum")]
 use axum::{
-    extract::{rejection::TypedHeaderRejection, FromRequest, RequestParts, TypedHeader},
+    extract::rejection::{TypedHeaderRejection, TypedHeaderRejectionReason},
+    extract::{FromRequest, RequestParts, TypedHeader},
     headers::{ContentLength, ContentType},
     response::{IntoResponseParts, Response, ResponseParts},
 };
@@ -35,6 +36,47 @@ fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Mime, D::Er
 
 fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Error> {
     mime.to_string().serialize(serializer)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RequestMeta {
+    #[serde(rename = "digest")]
+    pub hash: ContentDigest<Box<[u8]>>,
+
+    #[serde(rename = "length")]
+    pub size: Option<u64>,
+
+    #[serde(deserialize_with = "deserialize")]
+    #[serde(serialize_with = "serialize")]
+    #[serde(rename = "type")]
+    pub mime: Mime,
+}
+
+#[cfg(feature = "axum")]
+#[axum::async_trait]
+impl<B: Send> FromRequest<B> for RequestMeta {
+    type Rejection = TypedHeaderRejection;
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let hash = match req.extract().await {
+            Ok(TypedHeader(hash)) => hash,
+            Err(TypedHeaderRejection {
+                reason: TypedHeaderRejectionReason::Missing,
+                ..
+            }) => Default::default(),
+            Err(e) => return Err(e),
+        };
+        let size = match req.extract().await {
+            Ok(TypedHeader(ContentLength(size))) => Some(size),
+            Err(TypedHeaderRejection {
+                reason: TypedHeaderRejectionReason::Missing,
+                ..
+            }) => None,
+            Err(e) => return Err(e),
+        };
+        let mime = req.extract::<TypedHeader<ContentType>>().await?.0.into();
+        Ok(RequestMeta { hash, size, mime })
+    }
 }
 
 #[cfg(feature = "axum")]
