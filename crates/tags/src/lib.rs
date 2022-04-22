@@ -10,16 +10,19 @@ pub use name::*;
 
 use std::sync::Arc;
 
-use drawbridge_store::{Create, CreateCopyError, CreateError, Get, GetError, Keys};
-use drawbridge_type::{Meta, Tag};
+use drawbridge_jose::jws::Jws;
+use drawbridge_store::{
+    Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError, Keys,
+};
+use drawbridge_type::{Entry, Meta, RequestMeta, Tag};
 
-use axum::body::StreamBody;
-use axum::extract::{BodyStream, Path};
-use axum::http::StatusCode;
+use axum::body::{Body, StreamBody};
+use axum::extract::RequestParts;
+use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::Router;
-use futures::io;
-use futures::{AsyncRead, AsyncReadExt, AsyncWrite, TryStream, TryStreamExt};
+use axum::{routing::*, Json};
+use futures::TryStream;
 use tokio::sync::RwLock;
 use tower::Service;
 
@@ -41,14 +44,13 @@ impl App {
             .map(StreamBody::new)
     }
 
-    async fn head<S>(s: Arc<RwLock<S>>, Path(tag): Path<Name>) -> impl IntoResponse
+    async fn head<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
         S: Sync + Get<String>,
-        for<'a> &'a S::Item: AsyncRead,
     {
         s.read()
             .await
-            .get_meta(tag.0)
+            .get_meta(name.0)
             .await
             .map_err(|e| match e {
                 GetError::NotFound => (StatusCode::NOT_FOUND, "Tag does not exist"),
@@ -60,74 +62,96 @@ impl App {
             .map(|meta| (meta, ()))
     }
 
-    async fn get<S>(s: Arc<RwLock<S>>, Path(tag): Path<Name>) -> impl IntoResponse
+    async fn get<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
-        S: Sync + Get<String>,
-        for<'a> &'a S::Item: AsyncRead,
+        S: Sync + Get<String> + 'static,
     {
         let s = s.read().await;
 
-        let (meta, mut br) = s.get(tag.0).await.map_err(|e| match e {
-            GetError::NotFound => (StatusCode::NOT_FOUND, "Tag does not exist"),
-            GetError::Internal(e) => {
-                eprintln!("Failed to get tag: {}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
-            }
-        })?;
         // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
-        // probably there should be a way to write body within the closure
         let mut body = vec![];
-        br.read_to_end(&mut body).await.map_err(|e| {
-            eprintln!("Failed to read tag contents: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
-        })?;
+        let meta = s
+            .get_to_writer(name.0, &mut body)
+            .await
+            .map_err(|e| match e {
+                GetToWriterError::Get(GetError::NotFound) => {
+                    (StatusCode::NOT_FOUND, "Tag does not exist")
+                }
+                GetToWriterError::Get(GetError::Internal(e)) => {
+                    eprintln!("Failed to get tag: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                }
+                GetToWriterError::IO(e) => {
+                    eprintln!("Failed to read tag contents: {}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                }
+            })?;
         Ok::<_, (_, _)>((meta, body))
     }
 
     async fn put<S>(
         s: Arc<RwLock<S>>,
-        Path(tag): Path<Name>,
-        body: BodyStream,
-        _: Tag, // validate body contents
-        meta: Meta,
+        name: Name,
+        RequestMeta { hash, size, mime }: RequestMeta,
+        req: Request<Body>,
     ) -> impl IntoResponse
     where
-        S: Sync + Send + Create<String>,
-        for<'a> &'a mut S::Item: AsyncWrite,
+        S: Sync + Send + Create<String> + 'static,
     {
-        // TODO: Introduce tag validation middleware https://github.com/profianinc/drawbridge/issues/57
-        // TODO: Allow incomplete meta (compute length of body and digests) https://github.com/profianinc/drawbridge/issues/55
-        let body = body.map_err(|e| io::Error::new(io::ErrorKind::Other, e));
+        let mut req = RequestParts::new(req);
+        let tag = match mime.to_string().as_str() {
+            Entry::TYPE => req.extract().await.map(|Json(v)| Tag::Unsigned(v)),
+            Jws::TYPE => req.extract().await.map(|Json(v)| Tag::Signed(v)),
+            _ => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Invalid content type".into_response(),
+                ))
+            }
+        }
+        .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?;
+
+        let buf = serde_json::to_vec(&tag).unwrap();
+        if let Some(size) = size {
+            if buf.len() as u64 != size {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Content length mismatch".into_response(),
+                ));
+            }
+        }
         s.write()
             .await
-            .create_copy(tag.0, meta, body.into_async_read())
+            .create_from_reader(name.0, mime.clone(), hash.verifier(buf.as_slice()))
             .await
             .map_err(|e| match e {
-                CreateCopyError::IO(e) => {
+                CreateFromReaderError::IO(e) => {
                     eprintln!("Failed to stream tag contents: {}", e);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Storage backend failure".into_response(),
+                    )
                 }
-                CreateCopyError::Create(CreateError::Occupied) => {
-                    (StatusCode::CONFLICT, "Tag already exists")
+                CreateFromReaderError::Create(CreateError::Occupied) => {
+                    (StatusCode::CONFLICT, "Tag already exists".into_response())
                 }
-                CreateCopyError::Create(CreateError::Internal(e)) => {
+                CreateFromReaderError::Create(CreateError::Internal(e)) => {
                     eprintln!("Failed to create tag: {}", e);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Storage backend failure".into_response(),
+                    )
                 }
             })
-            .map(|_| ())
+            .map(|(size, hash)| Json(Meta { hash, size, mime }))
     }
 }
 
-pub fn app<S>(s: &mut Arc<RwLock<S>>) -> Router
+pub fn app<S>(s: Arc<RwLock<S>>) -> Router
 where
     S: Sync + Send + Get<String> + Create<String> + Keys<String> + 'static,
-    for<'a> &'a <S as Get<String>>::Item: AsyncRead,
-    for<'a> &'a mut <S as Create<String>>::Item: AsyncWrite,
     S::Stream: TryStream<Ok = String>,
 {
-    use axum::routing::*;
-
     Router::new()
         .route(
             "/",
@@ -137,32 +161,43 @@ where
             }),
         )
         .route(
-            "/:tag",
+            "/:name",
             head({
                 let s = s.clone();
-                move |tag| App::head(s, tag)
+                move |name| App::head(s, name)
             }),
         )
         .route(
-            "/:tag",
+            "/:name",
             get({
                 let s = s.clone();
-                move |tag| App::get(s, tag)
+                move |name| App::get(s, name)
             }),
         )
         .route(
-            "/:tag",
+            "/:name",
             put({
                 let s = s.clone();
-                move |tag, body, body_validate, meta| App::put(s, tag, body, body_validate, meta)
+                move |name, meta, req| App::put(s, name, meta, req)
             }),
         )
 }
 
-#[derive(Clone)]
 pub struct TagExists<S, I> {
     pub tags: Arc<RwLock<S>>,
     pub inner: I,
+}
+
+impl<S, I> Clone for TagExists<S, I>
+where
+    I: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            tags: self.tags.clone(),
+            inner: self.inner.clone(),
+        }
+    }
 }
 
 impl<R, S, I> Service<R> for TagExists<S, I>
