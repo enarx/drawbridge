@@ -5,4 +5,5 @@ use serde::{Deserialize, Serialize};
 
 /// A repository.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Repository {}
