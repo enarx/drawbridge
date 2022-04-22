@@ -26,6 +26,12 @@ impl FromStr for Name {
     }
 }
 
+impl From<Name> for String {
+    fn from(name: Name) -> Self {
+        name.0
+    }
+}
+
 #[async_trait]
 impl<B> FromRequest<B> for Name
 where
