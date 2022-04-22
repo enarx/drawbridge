@@ -20,7 +20,7 @@ members = [
 drawbridge-repo = { path = "./crates/repo" }
 
 # External dependencies
-axum = { version = "0.5.3" }
+axum = { version = "0.5.3", git = "https://github.com/rvolosatovs/axum.git", branch = "feat/typed-header-rejection" }
 tokio = { version = "1.17.0", features = ["full"] }
 
 [patch.crates-io]
