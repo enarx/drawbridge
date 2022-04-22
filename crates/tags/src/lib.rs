@@ -116,7 +116,15 @@ impl App {
             if buf.len() as u64 != size {
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    "Content length mismatch".into_response(),
+                    (
+                        Meta {
+                            hash: Default::default(), // TODO: compute
+                            size: buf.len() as _,
+                            mime,
+                        },
+                        buf,
+                    )
+                        .into_response(),
                 ));
             }
         }

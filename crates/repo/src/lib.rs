@@ -89,24 +89,42 @@ impl App {
         let buf = serde_json::to_vec(&repo).unwrap();
         if let Some(size) = size {
             if buf.len() as u64 != size {
-                return Err((StatusCode::BAD_REQUEST, "Content length mismatch"));
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    (
+                        Meta {
+                            hash: Default::default(), // TODO: compute
+                            size: buf.len() as _,
+                            mime,
+                        },
+                        buf,
+                    )
+                        .into_response(),
+                ));
             }
         }
         s.write()
             .await
-            .create_from_reader(name, mime.clone(), hash.verifier(buf.as_slice()))
+            .create_from_reader(name.clone(), mime.clone(), hash.verifier(buf.as_slice()))
             .await
             .map_err(|e| match e {
                 CreateFromReaderError::IO(e) => {
                     eprintln!("Failed to stream repository contents: {}", e);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Storage backend failure".into_response(),
+                    )
                 }
-                CreateFromReaderError::Create(CreateError::Occupied) => {
-                    (StatusCode::CONFLICT, "Repository already exists")
-                }
+                CreateFromReaderError::Create(CreateError::Occupied) => (
+                    StatusCode::CONFLICT,
+                    "Repository already exists".into_response(),
+                ),
                 CreateFromReaderError::Create(CreateError::Internal(e)) => {
                     eprintln!("Failed to create repository: {}", e);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Storage backend failure".into_response(),
+                    )
                 }
             })
             .map(|(size, hash)| Json(Meta { hash, size, mime }))
