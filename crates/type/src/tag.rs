@@ -17,6 +17,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Tag {
     Signed(Jws),
     Unsigned(Entry),
