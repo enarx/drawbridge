@@ -200,6 +200,7 @@ dependencies = [
  "async-trait",
  "drawbridge-type",
  "futures 0.3.21",
+ "mime",
  "tokio",
 ]
 
