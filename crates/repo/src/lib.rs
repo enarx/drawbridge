@@ -92,7 +92,7 @@ impl App {
                     StatusCode::BAD_REQUEST,
                     (
                         Meta {
-                            hash: Default::default(), // TODO: compute
+                            hash: Default::default(), // TODO: Compute https://github.com/profianinc/drawbridge/issues/76
                             size: buf.len() as _,
                             mime,
                         },

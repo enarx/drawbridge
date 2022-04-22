@@ -56,6 +56,7 @@ impl App {
     {
         let s = s.read().await;
 
+        // TODO: Return a list of missing paths depending on `Accept` header https://github.com/profianinc/drawbridge/issues/29
         // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
         let mut body = vec![];
         let meta = s
@@ -101,7 +102,7 @@ impl App {
                             StatusCode::BAD_REQUEST,
                             (
                                 Meta {
-                                    hash: Default::default(), // TODO: compute
+                                    hash: Default::default(), // TODO: Compute https://github.com/profianinc/drawbridge/issues/76
                                     size: buf.len() as _,
                                     mime,
                                 },

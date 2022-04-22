@@ -97,6 +97,8 @@ impl App {
     where
         S: Sync + Send + Create<String> + 'static,
     {
+        // TODO: Validate node hash against parents' expected values https://github.com/profianinc/drawbridge/issues/77
+
         let mut req = RequestParts::new(req);
         let tag = match mime.to_string().as_str() {
             Entry::TYPE => req.extract().await.map(|Json(v)| Tag::Unsigned(v)),
@@ -117,7 +119,7 @@ impl App {
                     StatusCode::BAD_REQUEST,
                     (
                         Meta {
-                            hash: Default::default(), // TODO: compute
+                            hash: Default::default(), // TODO: Compute https://github.com/profianinc/drawbridge/issues/76
                             size: buf.len() as _,
                             mime,
                         },
