@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 
 mod directory;
 mod entry;

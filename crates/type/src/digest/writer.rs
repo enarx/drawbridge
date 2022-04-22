@@ -18,6 +18,12 @@ pub struct Writer<T> {
     digests: Vec<(Algorithm, Box<dyn DynDigest>)>,
 }
 
+#[allow(unsafe_code)]
+unsafe impl<T> Sync for Writer<T> where T: Sync {}
+
+#[allow(unsafe_code)]
+unsafe impl<T> Send for Writer<T> where T: Send {}
+
 impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
     fn poll_write(
         mut self: Pin<&mut Self>,
