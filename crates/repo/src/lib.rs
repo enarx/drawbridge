@@ -4,10 +4,6 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
-mod namespace;
-
-use namespace::*;
-
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -16,7 +12,8 @@ use drawbridge_store::{
 };
 use drawbridge_tags as tag;
 use drawbridge_tree::{self as tree, Path};
-use drawbridge_type::{Meta, Repository, RequestMeta};
+use drawbridge_type::repository::{Config, Namespace};
+use drawbridge_type::{Meta, RequestMeta};
 
 use axum::body::Body;
 use axum::extract::RequestParts;
@@ -80,7 +77,7 @@ impl App {
         s: Arc<RwLock<S>>,
         name: Namespace,
         RequestMeta { hash, size, mime }: RequestMeta,
-        Json(repo): Json<Repository>,
+        Json(repo): Json<Config>,
     ) -> impl IntoResponse
     where
         S: Sync + Send + Create<Namespace> + 'static,

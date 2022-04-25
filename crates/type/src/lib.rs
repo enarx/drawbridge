@@ -7,7 +7,7 @@
 mod directory;
 mod entry;
 mod meta;
-mod repository;
+pub mod repository;
 mod tag;
 
 pub mod digest;
@@ -15,5 +15,5 @@ pub mod digest;
 pub use directory::*;
 pub use entry::*;
 pub use meta::*;
-pub use repository::*;
+pub use repository::{Config as RepositoryConfig, Namespace as RepositoryNamespace};
 pub use tag::*;

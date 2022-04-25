@@ -9,7 +9,7 @@ edition = "2021"
 drawbridge-store = { path = "../store" }
 drawbridge-tags = { path = "../tags" }
 drawbridge-tree = { path = "../tree" }
-drawbridge-type = { path = "../type" }
+drawbridge-type = { path = "../type", features = ["server"] }
 
 # External dependencies
 axum = { version = "0.5.3", git = "https://github.com/rvolosatovs/axum.git", branch = "feat/typed-header-rejection" }
