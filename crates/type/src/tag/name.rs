@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 #[cfg(feature = "axum")]
@@ -11,7 +12,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Name(pub(super) String);
+pub struct Name(String);
 
 impl FromStr for Name {
     type Err = &'static str;
@@ -31,6 +32,20 @@ impl FromStr for Name {
 impl From<Name> for String {
     fn from(name: Name) -> Self {
         name.0
+    }
+}
+
+impl Deref for Name {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Name {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
