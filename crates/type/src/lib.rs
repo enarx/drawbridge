@@ -6,12 +6,12 @@
 
 pub mod digest;
 pub mod repository;
+pub mod tag;
 pub mod tree;
 
 mod meta;
-mod tag;
 
 pub use meta::*;
-pub use repository::{Config as RepositoryConfig, Namespace as RepositoryNamespace};
-pub use tag::*;
+pub use repository::{Config as RepositoryConfig, Name as RepositoryName};
+pub use tag::{Name as TagName, Tag};
 pub use tree::{Directory as TreeDirectory, Entry as TreeEntry, Path as TreePath};

@@ -4,17 +4,14 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
-mod name;
-
-pub use name::*;
-
 use std::sync::Arc;
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError, Keys,
 };
-use drawbridge_type::{Entry, Meta, RequestMeta, Tag};
+use drawbridge_type::tag::{Name, Tag};
+use drawbridge_type::{Entry, Meta, RequestMeta};
 
 use axum::body::{Body, StreamBody};
 use axum::extract::RequestParts;

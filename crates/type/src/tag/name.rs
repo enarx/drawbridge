@@ -3,9 +3,11 @@
 
 use std::str::FromStr;
 
-use axum::async_trait;
-use axum::extract::{FromRequest, RequestParts};
-use axum::http::{StatusCode, Uri};
+#[cfg(feature = "axum")]
+use axum::{
+    extract::{FromRequest, RequestParts},
+    http::{StatusCode, Uri},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,7 +34,8 @@ impl From<Name> for String {
     }
 }
 
-#[async_trait]
+#[cfg(feature = "axum")]
+#[axum::async_trait]
 impl<B> FromRequest<B> for Name
 where
     B: Send,
@@ -54,12 +57,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use axum::http::Request;
-
+    #[cfg(feature = "axum")]
     #[tokio::test]
     async fn from_request() {
+        use super::*;
+
+        use axum::http::Request;
+
         fn new_request(path: impl AsRef<str>) -> RequestParts<()> {
             RequestParts::new(Request::builder().uri(path.as_ref()).body(()).unwrap())
         }

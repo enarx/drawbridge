@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{fmt::Display, str::FromStr};
-
-use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use std::fmt::Display;
 
 #[cfg(feature = "axum")]
 use axum::{
@@ -12,20 +11,15 @@ use axum::{
     http::{StatusCode, Uri},
 };
 
-/// A repository.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Config {}
-
-/// A repository namespace.
+/// A repository name
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct Namespace {
+pub struct Name {
     owner: String,
     groups: Vec<String>,
     name: String,
 }
 
-impl FromStr for Namespace {
+impl FromStr for Name {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -57,7 +51,7 @@ impl FromStr for Namespace {
     }
 }
 
-impl Display for Namespace {
+impl Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -73,7 +67,7 @@ impl Display for Namespace {
 
 #[cfg(feature = "axum")]
 #[axum::async_trait]
-impl<B> FromRequest<B> for Namespace
+impl<B> FromRequest<B> for Name
 where
     B: Send + HttpBody,
     B::Error: Sync + Send + std::error::Error + 'static,
@@ -105,23 +99,23 @@ mod tests {
 
     #[test]
     fn from_str() {
-        assert!("".parse::<Namespace>().is_err());
-        assert!(" ".parse::<Namespace>().is_err());
-        assert!("/".parse::<Namespace>().is_err());
-        assert!("name".parse::<Namespace>().is_err());
-        assert!("owner/".parse::<Namespace>().is_err());
-        assert!("/name".parse::<Namespace>().is_err());
-        assert!("owner//name".parse::<Namespace>().is_err());
-        assert!("owner/group///name".parse::<Namespace>().is_err());
-        assert!("owner/g%roup/name".parse::<Namespace>().is_err());
-        assert!("owner/gяoup/name".parse::<Namespace>().is_err());
-        assert!("owner /group/name".parse::<Namespace>().is_err());
-        assert!("owner/gr☣up/name".parse::<Namespace>().is_err());
-        assert!("o.wner/group/name".parse::<Namespace>().is_err());
+        assert!("".parse::<Name>().is_err());
+        assert!(" ".parse::<Name>().is_err());
+        assert!("/".parse::<Name>().is_err());
+        assert!("name".parse::<Name>().is_err());
+        assert!("owner/".parse::<Name>().is_err());
+        assert!("/name".parse::<Name>().is_err());
+        assert!("owner//name".parse::<Name>().is_err());
+        assert!("owner/group///name".parse::<Name>().is_err());
+        assert!("owner/g%roup/name".parse::<Name>().is_err());
+        assert!("owner/gяoup/name".parse::<Name>().is_err());
+        assert!("owner /group/name".parse::<Name>().is_err());
+        assert!("owner/gr☣up/name".parse::<Name>().is_err());
+        assert!("o.wner/group/name".parse::<Name>().is_err());
 
         assert_eq!(
             "owner/name".parse(),
-            Ok(Namespace {
+            Ok(Name {
                 owner: "owner".into(),
                 groups: vec![],
                 name: "name".into(),
@@ -129,7 +123,7 @@ mod tests {
         );
         assert_eq!(
             "owner/name/".parse(),
-            Ok(Namespace {
+            Ok(Name {
                 owner: "owner".into(),
                 groups: vec![],
                 name: "name".into(),
@@ -137,7 +131,7 @@ mod tests {
         );
         assert_eq!(
             "owner/group/name".parse(),
-            Ok(Namespace {
+            Ok(Name {
                 owner: "owner".into(),
                 groups: vec!["group".into()],
                 name: "name".into(),
@@ -145,7 +139,7 @@ mod tests {
         );
         assert_eq!(
             "owner/group/subgroup/name".parse(),
-            Ok(Namespace {
+            Ok(Name {
                 owner: "owner".into(),
                 groups: vec!["group".into(), "subgroup".into()],
                 name: "name".into(),
@@ -153,7 +147,7 @@ mod tests {
         );
         assert_eq!(
             "0WnEr/gr0up/subgr0up/-n4mE".parse(),
-            Ok(Namespace {
+            Ok(Name {
                 owner: "0WnEr".into(),
                 groups: vec!["gr0up".into(), "subgr0up".into()],
                 name: "-n4mE".into(),
