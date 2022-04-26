@@ -5,16 +5,16 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [dependencies]
-# Internal Dependencies
+# Internal dependencies
 drawbridge-byte = { path = "../byte" }
 drawbridge-jose = { path = "../jose" }
 
-# External Dependencies
+# External dependencies
 base64 = "0.13.0"
+futures = "0.3.21"
 mime = "0.3.16"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
-futures = "0.3.21"
 sha2 = "0.10.2"
 
 axum = { version = "0.5.3", features = ["headers"], optional = true, git = "https://github.com/rvolosatovs/axum.git", branch = "feat/typed-header-rejection" }
