@@ -11,15 +11,16 @@ use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError, Keys,
 };
 use drawbridge_type::tag::{Name, Tag};
-use drawbridge_type::{Entry, Meta, RequestMeta};
+use drawbridge_type::tree::Entry;
+use drawbridge_type::{Meta, RequestMeta};
 
-use axum::body::{Body, StreamBody};
+use axum::body::Body;
 use axum::extract::RequestParts;
 use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::Router;
 use axum::{routing::*, Json};
-use futures::TryStream;
+use futures::{TryStream, TryStreamExt};
 use tokio::sync::RwLock;
 
 struct App;
@@ -27,7 +28,7 @@ struct App;
 impl App {
     async fn query<S>(s: Arc<RwLock<S>>) -> impl IntoResponse
     where
-        S: Keys<String> + 'static,
+        S: Keys<Name> + 'static,
     {
         s.read()
             .await
@@ -36,17 +37,24 @@ impl App {
             .map_err(|e| {
                 eprintln!("Failed to query tags: {}", e);
                 (StatusCode::INTERNAL_SERVER_ERROR, "")
+            })?
+            .map_ok(|name| name.into())
+            .try_collect::<Vec<String>>()
+            .await
+            .map_err(|e| {
+                eprintln!("Failed to get tag name: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "")
             })
-            .map(StreamBody::new)
+            .map(Json)
     }
 
     async fn head<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
-        S: Sync + Get<String>,
+        S: Sync + Get<Name>,
     {
         s.read()
             .await
-            .get_meta(name.0)
+            .get_meta(name)
             .await
             .map_err(|e| match e {
                 GetError::NotFound => (StatusCode::NOT_FOUND, "Tag does not exist"),
@@ -60,14 +68,14 @@ impl App {
 
     async fn get<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
-        S: Sync + Get<String> + 'static,
+        S: Sync + Get<Name> + 'static,
     {
         let s = s.read().await;
 
         // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
         let mut body = vec![];
         let meta = s
-            .get_to_writer(name.0, &mut body)
+            .get_to_writer(name, &mut body)
             .await
             .map_err(|e| match e {
                 GetToWriterError::Get(GetError::NotFound) => {
@@ -92,7 +100,7 @@ impl App {
         req: Request<Body>,
     ) -> impl IntoResponse
     where
-        S: Sync + Send + Create<String> + 'static,
+        S: Sync + Send + Create<Name> + 'static,
     {
         // TODO: Validate node hash against parents' expected values https://github.com/profianinc/drawbridge/issues/77
 
@@ -128,7 +136,7 @@ impl App {
         }
         s.write()
             .await
-            .create_from_reader(name.0, mime.clone(), hash.verifier(buf.as_slice()))
+            .create_from_reader(name, mime.clone(), hash.verifier(buf.as_slice()))
             .await
             .map_err(|e| match e {
                 CreateFromReaderError::IO(e) => {
@@ -155,8 +163,8 @@ impl App {
 
 pub fn app<S>(s: Arc<RwLock<S>>) -> Router
 where
-    S: Sync + Send + Get<String> + Create<String> + Keys<String> + 'static,
-    S::Stream: TryStream<Ok = String>,
+    S: Sync + Send + Get<Name> + Create<Name> + Keys<Name> + 'static,
+    S::Stream: TryStream<Ok = Name>,
 {
     Router::new()
         .route(

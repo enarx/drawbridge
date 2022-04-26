@@ -10,10 +10,8 @@ use std::sync::Arc;
 use drawbridge_store::{
     self as store, Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
 };
-use drawbridge_tags as tag;
-use drawbridge_tree::{self as tree, Path};
-use drawbridge_type::repository::{Config, Namespace};
-use drawbridge_type::{Meta, RequestMeta};
+use drawbridge_type::repository::{Config, Name};
+use drawbridge_type::{tag, tree, Meta, RequestMeta};
 
 use axum::body::Body;
 use axum::extract::RequestParts;
@@ -28,9 +26,9 @@ use tower::Service;
 struct App;
 
 impl App {
-    async fn head<S>(s: Arc<RwLock<S>>, name: Namespace) -> impl IntoResponse
+    async fn head<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
-        S: Sync + Get<Namespace>,
+        S: Sync + Get<Name>,
     {
         s.read()
             .await
@@ -46,9 +44,9 @@ impl App {
             .map(|meta| (meta, ()))
     }
 
-    async fn get<S>(s: Arc<RwLock<S>>, name: Namespace) -> impl IntoResponse
+    async fn get<S>(s: Arc<RwLock<S>>, name: Name) -> impl IntoResponse
     where
-        S: Sync + Get<Namespace> + 'static,
+        S: Sync + Get<Name> + 'static,
     {
         let s = s.read().await;
 
@@ -75,12 +73,12 @@ impl App {
 
     async fn put<S>(
         s: Arc<RwLock<S>>,
-        name: Namespace,
+        name: Name,
         RequestMeta { hash, size, mime }: RequestMeta,
         Json(repo): Json<Config>,
     ) -> impl IntoResponse
     where
-        S: Sync + Send + Create<Namespace> + 'static,
+        S: Sync + Send + Create<Name> + 'static,
     {
         let buf = serde_json::to_vec(&repo).unwrap();
         if let Some(size) = size {
@@ -127,9 +125,9 @@ impl App {
     }
 }
 
-type Repos = store::Memory<Namespace>;
-type Tags = HashMap<Namespace, Arc<RwLock<store::Memory<String>>>>;
-type Trees = HashMap<(Namespace, String), Arc<RwLock<store::Memory<Path>>>>;
+type Repos = store::Memory<Name>;
+type Tags = HashMap<Name, Arc<RwLock<store::Memory<tag::Name>>>>;
+type Trees = HashMap<(Name, tag::Name), Arc<RwLock<store::Memory<tree::Path>>>>;
 
 pub fn app() -> Router {
     let repos: Arc<RwLock<Repos>> = Default::default();
@@ -139,7 +137,7 @@ pub fn app() -> Router {
         "/*path",
         any(|req: Request<Body>| async move {
             let mut parts = RequestParts::new(req);
-            let name = parts.extract::<Namespace>().await?;
+            let name = parts.extract::<Name>().await?;
             let req = parts
                 .try_into_request()
                 .or(Err::<_, (StatusCode, &'static str)>((
@@ -163,21 +161,17 @@ pub fn app() -> Router {
                                         "Repository does not exist",
                                     ));
                                 }
-                                Ok(tag::app(Arc::clone(
+                                Ok(drawbridge_tags::app(Arc::clone(
                                     // TODO: Try `read()` lock first
                                     tags.write().await.entry(name.clone()).or_default(),
                                 ))
                                 .nest(
                                     "/:tag/tree",
-                                    any(|tag: drawbridge_tags::Name, req: Request<Body>| async move {
+                                    any(|tag: tag::Name, req: Request<Body>| async move {
                                         // TODO: Check that tag exists https://github.com/profianinc/drawbridge/issues/72
-                                        tree::app(Arc::clone(
+                                        drawbridge_tree::app(Arc::clone(
                                             // TODO: Try `read()` lock first
-                                            trees
-                                                .write()
-                                                .await
-                                                .entry((name, tag.into()))
-                                                .or_default(),
+                                            trees.write().await.entry((name, tag)).or_default(),
                                         ))
                                         .call(req)
                                         .await
