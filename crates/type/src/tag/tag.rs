@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::tree::Entry;
+use super::super::tree::Entry;
 
 use drawbridge_jose::jws::Jws;
 
@@ -12,7 +12,7 @@ use axum::{
     headers::ContentType,
     http::StatusCode,
     response::{IntoResponse, Response},
-    {async_trait, Json, TypedHeader},
+    {Json, TypedHeader},
 };
 use serde::{Deserialize, Serialize};
 
@@ -24,7 +24,7 @@ pub enum Tag {
 }
 
 #[cfg(feature = "axum")]
-#[async_trait]
+#[axum::async_trait]
 impl<B> FromRequest<B> for Tag
 where
     B: Send + HttpBody,
