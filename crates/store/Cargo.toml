@@ -5,10 +5,10 @@ authors = ["Profian Inc"]
 edition = "2021"
 
 [dependencies]
-# Internal Dependencies
+# Internal dependencies
 drawbridge-type = { path = "../type" }
 
-# External Dependencies
+# External dependencies
 async-trait = "0.1.53"
 futures = { version = "0.3.21", features = ["io-compat"] }
 mime = "0.3.16"

@@ -1,10 +1,12 @@
 [package]
 name = "drawbridge-byte"
 version = "0.1.0"
+authors = ["Profian Inc"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+# Internal dependencies
+
+# External dependencies
 base64 = "0.13.0"
 serde = { version = "1.0.136", features = ["derive"] }
