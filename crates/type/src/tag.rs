@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::entry::Entry;
+use super::tree::Entry;
 
 use drawbridge_jose::jws::Jws;
 
@@ -59,11 +59,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[cfg(feature = "axum")]
     #[tokio::test]
     async fn from_request() {
+        use super::*;
+
         use std::collections::{BTreeMap, HashMap};
 
         use drawbridge_jose::b64::Json;

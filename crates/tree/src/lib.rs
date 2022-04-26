@@ -4,22 +4,18 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
-mod path;
-
-pub use path::*;
-
 use axum::body::Body;
 use axum::extract::RequestParts;
 use axum::http::Request;
 use axum::Json;
-use drawbridge_store::GetToWriterError;
-use drawbridge_type::Directory;
-use drawbridge_type::RequestMeta;
 
 use std::sync::Arc;
 
-use drawbridge_store::{Create, CreateError, CreateFromReaderError, Get, GetError};
-use drawbridge_type::Meta;
+use drawbridge_store::{
+    Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
+};
+use drawbridge_type::tree::{Directory, Entry, Path};
+use drawbridge_type::{Meta, RequestMeta};
 
 use axum::extract::BodyStream;
 use axum::http::StatusCode;
