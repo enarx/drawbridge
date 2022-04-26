@@ -14,7 +14,7 @@ use std::sync::Arc;
 use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
 };
-use drawbridge_type::tree::{Directory, Entry, Path};
+use drawbridge_type::tree::{Directory, Path};
 use drawbridge_type::{Meta, RequestMeta};
 
 use axum::extract::BodyStream;

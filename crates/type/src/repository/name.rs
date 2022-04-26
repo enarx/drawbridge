@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
 use std::fmt::Display;
+use std::str::FromStr;
 
 #[cfg(feature = "axum")]
 use axum::{
