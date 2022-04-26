@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::fmt::Display;
+use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
 #[cfg(feature = "axum")]
@@ -39,6 +40,20 @@ impl FromStr for Path {
 impl Display for Path {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.join("/"))
+    }
+}
+
+impl Deref for Path {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Path {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
