@@ -215,6 +215,7 @@ dependencies = [
  "axum",
  "drawbridge-hash",
  "drawbridge-jose",
+ "drawbridge-repo",
  "drawbridge-store",
  "drawbridge-tree",
  "drawbridge-type",

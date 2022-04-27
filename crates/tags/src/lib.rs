@@ -193,3 +193,62 @@ where
             put(move |tag, meta, req| App::put(s, tag, meta, req)),
         )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use drawbridge_repo as repo;
+
+    use axum::handler::Handler;
+    use axum::http::header::{CONTENT_LENGTH, CONTENT_TYPE};
+    use axum::http::request;
+    use axum::response::IntoResponse;
+    use axum::routing::{any, get, head, put};
+    use axum::{Json, Router};
+
+    #[tokio::test]
+    async fn routes() {
+        const URL: &str = "http://127.0.0.1:8080/test/onetwothree";
+        const TAG: &str = "/_tag/v1.0";
+
+        let mut router = repo::app();
+
+        let res = router
+            .call(
+                Request::builder()
+                    .uri(format!("{}{}", URL, TAG))
+                .body(Body::empty()).unwrap()
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+        let res = router
+            .call(
+                Request::builder()
+                    .uri(URL)
+                    .method("PUT")
+                    .header(CONTENT_LENGTH, 2)
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let res = router
+            .call(
+                Request::builder()
+                    .uri(format!("{}{}", URL, TAG))
+                    .method("PUT")
+                    .header(CONTENT_TYPE, "application/vnd.drawbridge.entry.v1+json")
+                    .body(Body::from("{\"digest\":{\"sha-256\": \"4REjxQ4yrqUVicfSKYNO/cF9zNj5ANbzgDZt3/h3Qxo=\"}}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+}

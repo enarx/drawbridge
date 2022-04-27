@@ -23,4 +23,8 @@ tokio = { version = "1.17.0" }
 tokio-util = { version = "0.7.1", features = ["io"] }
 
 [dev-dependencies]
+# Internal Dependencies
+drawbridge-repo = { path = "../repo" }
+
+# External Dependencies
 tokio = { version = "1.17.0", features = ["macros", "rt"] }

@@ -227,6 +227,7 @@ mod tests {
 
     use axum::http::header::{CONTENT_LENGTH, CONTENT_TYPE};
     use axum::http::request;
+    use axum::routing;
 
     #[tokio::test]
     async fn routes() {
