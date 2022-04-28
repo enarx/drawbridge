@@ -10,18 +10,16 @@ members = [
     "crates/hash",
     "crates/jose",
     "crates/store",
-    "crates/tags",
-    "crates/tree",
     "crates/type",
 ]
 
 [dependencies]
 # Internal dependencies
-drawbridge-repo = { path = "./crates/repo" }
+drawbridge-app = { path = "./crates/app" }
 
 # External dependencies
-axum = { version = "0.5.3", git = "https://github.com/rvolosatovs/axum.git", branch = "feat/typed-header-rejection" }
-tokio = { version = "1.17.0", features = ["full"] }
+hyper = { version = "0.14.18" }
+tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 
 [patch.crates-io]
 http = { git = "https://github.com/npmccallum/http", rev = "0f4438e7f5107d8b06142894d2d9cd5186b721ab" }

@@ -19,6 +19,15 @@ use futures::stream::{iter, Iter};
 use futures::AsyncWrite;
 use mime::Mime;
 
+#[derive(Clone)]
+pub struct Memory<K>(HashMap<K, (Mime, ContentDigest, Vec<u8>)>);
+
+impl<K> Default for Memory<K> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
 pub struct MemoryCreateItem<'a, K> {
     mime: Mime,
     buf: Vec<u8>,
@@ -65,15 +74,6 @@ where
     }
 }
 
-#[derive(Clone)]
-pub struct Memory<K>(HashMap<K, (Mime, ContentDigest, Vec<u8>)>);
-
-impl<K> Default for Memory<K> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
 #[async_trait]
 impl<K> Create<K> for Memory<K>
 where
@@ -87,14 +87,13 @@ where
         key: K,
         mime: Mime,
     ) -> Result<Self::Item<'_>, CreateError<Self::Error>> {
-        if let Entry::Vacant(entry) = self.0.entry(key) {
-            Ok(MemoryCreateItem {
+        match self.0.entry(key) {
+            Entry::Vacant(entry) => Ok(MemoryCreateItem {
                 mime,
                 buf: vec![],
                 entry,
-            })
-        } else {
-            Err(CreateError::Occupied)
+            }),
+            Entry::Occupied(_) => Err(CreateError::Occupied),
         }
     }
 }
@@ -129,12 +128,11 @@ impl<K> Keys<K> for Memory<K>
 where
     K: Sync + Send + Clone,
 {
-    type Stream = Iter<std::vec::IntoIter<Result<K, Self::StreamError>>>;
+    type Stream = Iter<std::vec::IntoIter<Result<K, Infallible>>>;
     type StreamError = Infallible;
-    type Error = Infallible;
 
-    async fn keys(&self) -> Result<Self::Stream, Self::Error> {
-        Ok(iter(self.0.keys().cloned().map(Ok).collect::<Vec<_>>()))
+    async fn keys(&self) -> Self::Stream {
+        iter(self.0.keys().cloned().map(Ok).collect::<Vec<_>>())
     }
 }
 
@@ -153,11 +151,7 @@ mod tests {
 
         assert_eq!(mem.get(key).await, Err(GetError::NotFound));
 
-        {
-            let st = mem.keys().await;
-            assert!(matches!(st, Ok(_)));
-            assert!(st.unwrap().collect::<Vec<_>>().await.is_empty());
-        }
+        assert!(mem.keys().await.collect::<Vec<_>>().await.is_empty());
 
         let hash = {
             let mut hasher = Algorithms::default().writer(io::sink());
@@ -194,10 +188,6 @@ mod tests {
             Err(CreateError::Occupied)
         ));
 
-        {
-            let st = mem.keys().await;
-            assert!(matches!(st, Ok(_)));
-            assert_eq!(st.unwrap().collect::<Vec<_>>().await, vec![Ok(key)]);
-        }
+        assert_eq!(mem.keys().await.collect::<Vec<_>>().await, vec![Ok(key)]);
     }
 }
