@@ -5,6 +5,8 @@ use super::super::tree;
 
 use drawbridge_jose::jws::Jws;
 
+// TODO: Remove
+// https://github.com/profianinc/drawbridge/issues/95
 #[cfg(feature = "axum")]
 use axum::{
     body::HttpBody,
@@ -23,6 +25,8 @@ pub enum Entry {
     Unsigned(tree::Entry),
 }
 
+// TODO: Remove
+// https://github.com/profianinc/drawbridge/issues/95
 #[cfg(feature = "axum")]
 #[axum::async_trait]
 impl<B> FromRequest<B> for Entry
@@ -59,7 +63,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    // TODO: extract this to tag service test
+    // TODO: extract this to tag service unit test
+    // https://github.com/profianinc/drawbridge/issues/95
     #[cfg(feature = "axum")]
     #[tokio::test]
     async fn from_request() {
