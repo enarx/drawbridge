@@ -14,7 +14,7 @@ use axum::{
     response::{IntoResponseParts, Response, ResponseParts},
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Meta {
     #[serde(rename = "digest")]
     pub hash: ContentDigest<Box<[u8]>>,
@@ -38,7 +38,7 @@ fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Erro
     mime.to_string().serialize(serializer)
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct RequestMeta {
     #[serde(rename = "digest")]
     pub hash: ContentDigest<Box<[u8]>>,

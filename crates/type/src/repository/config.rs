@@ -4,6 +4,6 @@
 use serde::{Deserialize, Serialize};
 
 /// A repository config
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {}

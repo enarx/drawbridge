@@ -4,15 +4,8 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[cfg(feature = "axum")]
-use axum::{
-    body::HttpBody,
-    extract::{FromRequest, RequestParts},
-    http::{StatusCode, Uri},
-};
-
 /// A repository name
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Name {
     owner: String,
     groups: Vec<String>,
@@ -62,34 +55,6 @@ impl Display for Name {
                 .fold("".into(), |acc, x| format!("{}/{}", acc, x)),
             self.name,
         )
-    }
-}
-
-#[cfg(feature = "axum")]
-#[axum::async_trait]
-impl<B> FromRequest<B> for Name
-where
-    B: Send + HttpBody,
-    B::Error: Sync + Send + std::error::Error + 'static,
-    B::Data: Send,
-{
-    type Rejection = (StatusCode, &'static str);
-
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let uri = req.uri_mut();
-        let path = uri.path().strip_prefix('/').expect("invalid URI");
-        let (namespace, rest) = path
-            .split_once("/_")
-            .map(|(namespace, rest)| (namespace, format!("_{}", rest)))
-            .unwrap_or((path, "".into()));
-        let namespace = namespace
-            .parse()
-            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
-
-        let mut parts = uri.clone().into_parts();
-        parts.path_and_query = Some(format!("/{}", rest).parse().unwrap());
-        *uri = Uri::from_parts(parts).unwrap();
-        Ok(namespace)
     }
 }
 
