@@ -4,6 +4,7 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 #![feature(generic_associated_types)]
+#![feature(type_alias_impl_trait)]
 
 mod memory;
 
@@ -14,7 +15,7 @@ use drawbridge_type::Meta;
 
 use async_trait::async_trait;
 use futures::io::{self, copy};
-use futures::{AsyncRead, AsyncWrite, TryFutureExt, TryStream};
+use futures::{AsyncRead, AsyncWrite, Stream, TryFutureExt};
 use mime::Mime;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -139,10 +140,8 @@ where
 
 #[async_trait]
 pub trait Keys<K> {
-    type Stream: Send + TryStream<Ok = K, Error = Self::StreamError>;
+    type Stream: Send + Stream<Item = Result<K, Self::StreamError>>;
     type StreamError: Sync + Send + std::error::Error;
 
-    type Error: Sync + Send + std::error::Error;
-
-    async fn keys(&self) -> Result<Self::Stream, Self::Error>;
+    async fn keys(&self) -> Self::Stream;
 }
