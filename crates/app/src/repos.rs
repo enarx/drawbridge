@@ -38,7 +38,8 @@ pub async fn get(
     Extension(repos): Extension<Arc<RepoStore>>,
     Extension(name): Extension<Name>,
 ) -> impl IntoResponse {
-    // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
+    // TODO: Stream body
+    // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
     let meta = repos
         .read()
@@ -71,6 +72,7 @@ pub async fn put(
     if let Some(size) = size {
         if buf.len() as u64 != size {
             // TODO: Report error location
+            // https://github.com/profianinc/drawbridge/issues/97
             return Err((StatusCode::BAD_REQUEST, "Invalid repository encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
         }
     }

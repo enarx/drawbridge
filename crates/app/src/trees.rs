@@ -55,7 +55,8 @@ pub async fn get(
     assert_repo(repos, repo.clone()).await?;
     assert_tag(tags, repo.clone(), tag.clone()).await?;
 
-    // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
+    // TODO: Stream body
+    // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
     let meta = trees
         .read()
@@ -107,6 +108,8 @@ pub async fn put(
             let buf = serde_json::to_vec(&dir).unwrap();
             if let Some(size) = size {
                 if buf.len() as u64 != size {
+                    // TODO: Report error location
+                    // https://github.com/profianinc/drawbridge/issues/97
                     return Err((StatusCode::BAD_REQUEST, "Invalid directory encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
                 }
             }
@@ -116,13 +119,15 @@ pub async fn put(
                 .await
         }
         _ => {
-            // TODO: Validate node hash against parents' expected values https://github.com/profianinc/drawbridge/issues/77
+            // TODO: Validate node hash against parents' expected values
+            // https://github.com/profianinc/drawbridge/issues/77
             let body = req
                 .extract::<BodyStream>()
                 .await
                 .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
             // TODO: Validate body size
+            // https://github.com/profianinc/drawbridge/issues/96
             trees.write()
                 .await
                 .create_from_reader((repo, tag, path), mime.clone(), hash.verifier(body.into_async_read()))

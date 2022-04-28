@@ -33,6 +33,7 @@ pub async fn query(
         .try_filter_map(|(r, n)| async move {
             let _ = r;
             // TODO: Filter for valid namespace
+            // https://github.com/profianinc/drawbridge/issues/94
             Ok(Some(n.into()))
         })
         .try_collect::<Vec<String>>()
@@ -74,7 +75,8 @@ pub async fn get(
 ) -> impl IntoResponse {
     assert_repo(repos, repo.clone()).await?;
 
-    // TODO: Stream body https://github.com/profianinc/drawbridge/issues/56
+    // TODO: Stream body
+    // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
     let meta = tags
         .read()
@@ -126,6 +128,7 @@ pub async fn put(
     if let Some(size) = size {
         if buf.len() as u64 != size {
             // TODO: Report error location
+            // https://github.com/profianinc/drawbridge/issues/97
             return Err((StatusCode::BAD_REQUEST, "Invalid tag encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
         }
     }
