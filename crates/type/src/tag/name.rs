@@ -1,17 +1,13 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-#[cfg(feature = "axum")]
-use axum::{
-    extract::{FromRequest, RequestParts},
-    http::{StatusCode, Uri},
-};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Name(String);
 
 impl FromStr for Name {
@@ -49,62 +45,34 @@ impl DerefMut for Name {
     }
 }
 
-#[cfg(feature = "axum")]
-#[axum::async_trait]
-impl<B> FromRequest<B> for Name
-where
-    B: Send,
-{
-    type Rejection = (StatusCode, <Self as FromStr>::Err);
-
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let uri = req.uri_mut();
-        let path = uri.path().strip_prefix('/').expect("invalid URI");
-        let (name, rest) = path.split_once('/').unwrap_or((path, ""));
-        let name = name.parse().map_err(|e| (StatusCode::BAD_REQUEST, e))?;
-
-        let mut parts = uri.clone().into_parts();
-        parts.path_and_query = Some(format!("/{}", rest).parse().unwrap());
-        *uri = Uri::from_parts(parts).unwrap();
-        Ok(name)
+impl Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "axum")]
-    #[tokio::test]
-    async fn from_request() {
-        use super::*;
+    use super::*;
 
-        use axum::http::Request;
-
-        fn new_request(path: impl AsRef<str>) -> RequestParts<()> {
-            RequestParts::new(Request::builder().uri(path.as_ref()).body(()).unwrap())
-        }
-
-        for path in ["/", "//", "/\\/", "//test", "/=/", "/?"] {
-            assert!(
-                Name::from_request(&mut new_request(path)).await.is_err(),
-                "path '{}' should fail",
-                path
-            );
-        }
-
-        for (path, expected, rest) in [
-            ("/1.2.3/", "1.2.3", "/"),
-            ("/v1.2.3/foo/bar", "v1.2.3", "/foo/bar"),
-            ("/v1.2.3-rc1", "v1.2.3-rc1", "/"),
-            ("/test", "test", "/"),
-        ] {
-            let mut req = new_request(path);
+    #[test]
+    fn from_str() {
+        for s in ["", "=", "/", "v1.2/3"] {
             assert_eq!(
-                Name::from_request(&mut req).await.unwrap(),
-                Name(expected.into()),
-                "path '{}' should pass",
-                path
+                s.parse::<Name>(),
+                Err("Invalid tag name"),
+                "input '{}' should fail to parse",
+                s
             );
-            assert_eq!(req.uri().path(), rest);
+        }
+
+        for s in ["1.2.3", "v1.2.3", "v1.2.3-test"] {
+            assert_eq!(
+                s.parse(),
+                Ok(Name(s.into())),
+                "input '{}' should succeed to parse",
+                s
+            );
         }
     }
 }

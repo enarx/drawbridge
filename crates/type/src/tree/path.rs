@@ -5,14 +5,7 @@ use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-#[cfg(feature = "axum")]
-use axum::{
-    body::HttpBody,
-    extract::{FromRequest, RequestParts},
-    http::StatusCode,
-};
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Path(Vec<String>);
 
 impl FromStr for Path {
@@ -24,11 +17,15 @@ impl FromStr for Path {
             let part = part.as_ref();
             !part.is_empty()
                 && part
-                    .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-'))
+                    .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_'))
                     .is_none()
         }
 
-        let path = s.split_terminator('/').map(Into::into).collect::<Vec<_>>();
+        let path = s
+            .trim_start_matches('/')
+            .split_terminator('/')
+            .map(Into::into)
+            .collect::<Vec<_>>();
         if !path.iter().all(valid) {
             Err("Invalid path")
         } else {
@@ -57,22 +54,18 @@ impl DerefMut for Path {
     }
 }
 
-#[cfg(feature = "axum")]
-#[axum::async_trait]
-impl<B> FromRequest<B> for Path
-where
-    B: Send + HttpBody,
-    B::Error: Sync + Send + std::error::Error + 'static,
-    B::Data: Send,
-{
-    type Rejection = (StatusCode, &'static str);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        req.uri()
-            .path()
-            .strip_prefix('/')
-            .expect("invalid URI")
-            .parse()
-            .map_err(|e| (StatusCode::BAD_REQUEST, e))
+    #[test]
+    fn from_str() {
+        assert_eq!("/".parse(), Ok(Path(Default::default())));
+        assert_eq!("/foo".parse(), Ok(Path(vec!["foo".into()])));
+        assert_eq!("/foo/".parse(), Ok(Path(vec!["foo".into()])));
+        assert_eq!(
+            "/foo/bar".parse(),
+            Ok(Path(vec!["foo".into(), "bar".into()]))
+        );
     }
 }

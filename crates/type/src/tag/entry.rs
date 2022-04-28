@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::super::tree::Entry;
+use super::super::tree;
 
 use drawbridge_jose::jws::Jws;
 
@@ -18,14 +18,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
-pub enum Tag {
+pub enum Entry {
     Signed(Jws),
-    Unsigned(Entry),
+    Unsigned(tree::Entry),
 }
 
 #[cfg(feature = "axum")]
 #[axum::async_trait]
-impl<B> FromRequest<B> for Tag
+impl<B> FromRequest<B> for Entry
 where
     B: Send + HttpBody,
     B::Error: Sync + Send + std::error::Error + 'static,
@@ -39,15 +39,15 @@ where
             .await
             .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?;
         match content_type.to_string().as_str() {
-            Entry::TYPE => req
+            tree::Entry::TYPE => req
                 .extract()
                 .await
-                .map(|Json(v)| Tag::Unsigned(v))
+                .map(|Json(v)| Entry::Unsigned(v))
                 .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response())),
             Jws::TYPE => req
                 .extract()
                 .await
-                .map(|Json(v)| Tag::Signed(v))
+                .map(|Json(v)| Entry::Signed(v))
                 .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response())),
             _ => Err((
                 StatusCode::BAD_REQUEST,
@@ -59,6 +59,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    // TODO: extract this to tag service test
     #[cfg(feature = "axum")]
     #[tokio::test]
     async fn from_request() {
@@ -76,12 +77,12 @@ mod tests {
         async fn from_request(
             content_type: Option<&str>,
             body: impl ToString,
-        ) -> Result<Tag, <Tag as FromRequest<Body>>::Rejection> {
+        ) -> Result<Entry, <Entry as FromRequest<Body>>::Rejection> {
             let mut req = Request::builder().uri("https://example.com/").method("PUT");
             if let Some(content_type) = content_type {
                 req = req.header("Content-Type", content_type)
             }
-            Tag::from_request(&mut RequestParts::new(
+            Entry::from_request(&mut RequestParts::new(
                 req.body(Body::from(body.to_string())).unwrap(),
             ))
             .await
@@ -92,13 +93,15 @@ mod tests {
         const ALGORITHM: &str = "sha-256";
         const HASH: &str = "4REjxQ4yrqUVicfSKYNO/cF9zNj5ANbzgDZt3/h3Qxo=";
 
-        assert!(from_request(Some(Entry::TYPE), "").await.is_err());
-        assert!(from_request(Some(Entry::TYPE), "}{").await.is_err());
-        assert!(from_request(Some(Entry::TYPE), "test").await.is_err());
-        assert!(from_request(Some(Entry::TYPE), json!({})).await.is_err());
+        assert!(from_request(Some(tree::Entry::TYPE), "").await.is_err());
+        assert!(from_request(Some(tree::Entry::TYPE), "}{").await.is_err());
+        assert!(from_request(Some(tree::Entry::TYPE), "test").await.is_err());
+        assert!(from_request(Some(tree::Entry::TYPE), json!({}))
+            .await
+            .is_err());
 
         assert!(from_request(
-            Some(Entry::TYPE),
+            Some(tree::Entry::TYPE),
             json!({
                 "foo": "bar",
             }),
@@ -108,7 +111,7 @@ mod tests {
 
         assert_eq!(
             from_request(
-                Some(Entry::TYPE),
+                Some(tree::Entry::TYPE),
                 json!({
                     "digest": {
                         ALGORITHM: HASH,
@@ -117,7 +120,7 @@ mod tests {
             )
             .await
             .unwrap(),
-            Tag::Unsigned(Entry {
+            Entry::Unsigned(tree::Entry {
                 digest: format!("{}=:{}:", ALGORITHM, HASH).parse().unwrap(),
                 custom: Default::default(),
             }),
@@ -125,7 +128,7 @@ mod tests {
 
         assert_eq!(
             from_request(
-                Some(Entry::TYPE),
+                Some(tree::Entry::TYPE),
                 json!({
                     "digest": {
                         ALGORITHM: HASH,
@@ -135,7 +138,7 @@ mod tests {
             )
             .await
             .unwrap(),
-            Tag::Unsigned(Entry {
+            Entry::Unsigned(tree::Entry {
                 digest: format!("{}=:{}:", ALGORITHM, HASH).parse().unwrap(),
                 custom: {
                     let mut custom = HashMap::new();
@@ -183,7 +186,7 @@ mod tests {
             )
             .await
             .unwrap(),
-            Tag::Signed(Jws::Flattened(Flattened {
+            Entry::Signed(Jws::Flattened(Flattened {
                 payload: PAYLOAD.parse().unwrap(),
                 signature: Signature {
                     header: {
@@ -208,7 +211,7 @@ mod tests {
             )
             .await
             .unwrap(),
-            Tag::Signed(Jws::Flattened(Flattened {
+            Entry::Signed(Jws::Flattened(Flattened {
                 payload: PAYLOAD.parse().unwrap(),
                 signature: Signature {
                     header: None,
@@ -233,7 +236,7 @@ mod tests {
             )
             .await
             .unwrap(),
-            Tag::Signed(Jws::General(General {
+            Entry::Signed(Jws::General(General {
                 payload: PAYLOAD.parse().unwrap(),
                 signatures: vec![Signature {
                     header: None,

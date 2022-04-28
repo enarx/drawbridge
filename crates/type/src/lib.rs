@@ -13,5 +13,5 @@ mod meta;
 
 pub use meta::*;
 pub use repository::{Config as RepositoryConfig, Name as RepositoryName};
-pub use tag::{Name as TagName, Tag};
+pub use tag::{Entry as TagEntry, Name as TagName};
 pub use tree::{Directory as TreeDirectory, Entry as TreeEntry, Path as TreePath};
