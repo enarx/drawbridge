@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
+// SPDX-License-Identifier: Apache-2.0
+
 use drawbridge_type::{RepositoryName, TagEntry, TagName, TreeEntry};
 
 use reqwest::header::CONTENT_TYPE;
