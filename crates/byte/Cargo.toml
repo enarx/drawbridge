@@ -8,5 +8,5 @@ edition = "2021"
 # Internal dependencies
 
 # External dependencies
-base64 = "0.13.0"
-serde = { version = "1.0.136", features = ["derive"] }
+base64 = { version = "0.13.0", default-features = false, features = ["std"] }
+serde = { version = "1.0.136", default-features = false, features = ["std"] }
