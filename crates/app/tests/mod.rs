@@ -18,7 +18,7 @@ async fn app() {
     let addr = format!("http://{}", lis.local_addr().unwrap());
 
     let (tx, rx) = channel::<()>();
-    tokio::spawn(
+    let srv = tokio::spawn(
         Server::from_tcp(lis)
             .unwrap()
             .serve(Builder::new().build())
@@ -84,4 +84,5 @@ async fn app() {
 
     // Stop server
     assert_eq!(tx.send(()), Ok(()));
+    assert!(matches!(srv.await, Ok(Ok(()))));
 }
