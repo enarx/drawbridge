@@ -98,7 +98,7 @@ async fn handle(mut req: Request<Body>) -> impl IntoResponse {
         "duplicate repository name"
     );
 
-    let mut tail = tail.split('/');
+    let mut tail = tail.split_terminator('/');
     match (tail.next(), tail.next(), tail.next()) {
         (None | Some(""), None, None) => match *req.method() {
             Method::HEAD => Ok(repos::head.into_service().call(req).await.into_response()),
