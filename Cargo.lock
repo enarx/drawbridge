@@ -137,6 +137,8 @@ name = "drawbridge"
 version = "0.1.0"
 dependencies = [
  "drawbridge-app",
+ "drawbridge-client",
+ "futures",
  "hyper",
  "tokio",
 ]
@@ -164,6 +166,18 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "serde",
+]
+
+[[package]]
+name = "drawbridge-client"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "drawbridge-jose",
+ "drawbridge-type",
+ "mime",
+ "reqwest",
+ "serde_json",
 ]
 
 [[package]]
