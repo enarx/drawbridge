@@ -60,18 +60,14 @@ impl<B: Send> FromRequest<B> for RequestMeta {
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let hash = match req.extract().await {
             Ok(TypedHeader(hash)) => hash,
-            Err(TypedHeaderRejection {
-                reason: TypedHeaderRejectionReason::Missing,
-                ..
-            }) => Default::default(),
+            Err(e) if matches!(e.reason(), TypedHeaderRejectionReason::Missing) => {
+                Default::default()
+            }
             Err(e) => return Err(e),
         };
         let size = match req.extract().await {
             Ok(TypedHeader(ContentLength(size))) => Some(size),
-            Err(TypedHeaderRejection {
-                reason: TypedHeaderRejectionReason::Missing,
-                ..
-            }) => None,
+            Err(e) if matches!(e.reason(), TypedHeaderRejectionReason::Missing) => None,
             Err(e) => return Err(e),
         };
         let mime = req.extract::<TypedHeader<ContentType>>().await?.0.into();
