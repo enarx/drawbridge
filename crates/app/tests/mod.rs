@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
+// SPDX-License-Identifier: Apache-2.0
+
 mod helpers;
 
 use helpers::*;
@@ -6,6 +9,7 @@ use std::net::{Ipv4Addr, TcpListener};
 use std::time::Duration;
 
 use drawbridge_app::Builder;
+use drawbridge_type::digest::Algorithms;
 use drawbridge_type::{RepositoryConfig, TagEntry, TreeEntry};
 
 use axum::Server;
@@ -62,7 +66,10 @@ async fn app() {
         &foo,
         &tag,
         TagEntry::Unsigned(TreeEntry {
-            digest: Default::default(), // TODO: Set and require digest
+            digest: Algorithms::default()
+                .read(b"testing".as_slice())
+                .await
+                .unwrap(),
             custom: Default::default(),
         }),
     )
@@ -78,9 +85,15 @@ async fn app() {
         &tag,
         &"/".parse().unwrap(),
         mime::TEXT_PLAIN,
-        b"test".to_vec(),
+        b"testing".to_vec(),
     )
     .await;
+
+    let (test_resp, test_type) =
+        tree::get_path(&cl, &addr, &foo, &tag, &"/".parse().unwrap()).await;
+
+    assert_eq!(test_type, mime::TEXT_PLAIN);
+    assert_eq!(test_resp, b"testing".to_vec());
 
     // Stop server
     assert_eq!(tx.send(()), Ok(()));
