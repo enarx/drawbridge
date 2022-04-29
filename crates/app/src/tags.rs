@@ -24,17 +24,15 @@ pub async fn query(
     Extension(tags): Extension<Arc<TagStore>>,
     Extension(repo): Extension<repository::Name>,
 ) -> impl IntoResponse {
-    assert_repo(repos, repo).await?;
+    assert_repo(repos, repo.clone()).await?;
 
     tags.read()
         .await
         .keys()
         .await
-        .try_filter_map(|(r, n)| async move {
-            let _ = r;
-            // TODO: Filter for valid namespace
-            // https://github.com/profianinc/drawbridge/issues/94
-            Ok(Some(n.into()))
+        .try_filter_map(move |(r, n)| {
+            let repo = repo.clone();
+            async move { Ok(if r == repo { Some(n.into()) } else { None }) }
         })
         .try_collect::<Vec<String>>()
         .await
