@@ -9,12 +9,12 @@ edition = "2021"
 drawbridge-type = { path = "../type" }
 
 # External dependencies
-async-trait = "0.1.53"
-futures = { version = "0.3.21", features = ["io-compat"] }
-mime = "0.3.16"
-serde = { version = "1.0.136", features = ["derive"] }
-serde_json = "1.0.79"
-tokio = { version = "1.17.0" }
+async-trait = { version = "0.1.53", default-features = false }
+futures = { version = "0.3.21", default-features = false }
+mime = { version = "0.3.16", default-features = false }
+serde = { version = "1.0.136", default-features = false }
+serde_json = { version = "1.0.79", default-features = false }
+tokio = { version = "1.17.0", default-features = false }
 
 [dev-dependencies]
-tokio = { version = "1.17.0", features = ["macros", "rt"] }
+tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt"] }

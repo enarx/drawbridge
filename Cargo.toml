@@ -18,8 +18,8 @@ members = [
 drawbridge-app = { path = "./crates/app" }
 
 # External dependencies
-hyper = { version = "0.14.18" }
-tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
+hyper = { version = "0.14.18", default-features = false, features = ["http1", "server", "tcp"] }
+tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt-multi-thread"] }
 
 [patch.crates-io]
 http = { git = "https://github.com/npmccallum/http", rev = "0f4438e7f5107d8b06142894d2d9cd5186b721ab" }
