@@ -8,7 +8,7 @@ use drawbridge_byte::UrlSafeNoPad;
 use serde::de::DeserializeOwned;
 use serde::{ser::Error as _, Deserialize, Serialize};
 
-pub type Bytes<T = Vec<u8>> = drawbridge_byte::Bytes<T, UrlSafeNoPad>;
+pub type Bytes<T = Vec<u8>, C = UrlSafeNoPad> = drawbridge_byte::Bytes<T, C>;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Json<T>(pub T);
@@ -36,7 +36,7 @@ impl<T> DerefMut for Json<T> {
 impl<T: Serialize> Serialize for Json<T> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let buf = serde_json::to_vec(self).map_err(|_| S::Error::custom("encoding error"))?;
-        Bytes::from(buf).serialize(serializer)
+        Bytes::<_, UrlSafeNoPad>::from(buf).serialize(serializer)
     }
 }
 
