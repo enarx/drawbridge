@@ -67,6 +67,18 @@ impl<T, C> From<T> for Bytes<T, C> {
     }
 }
 
+impl<T: AsRef<U>, U: ?Sized, C> AsRef<U> for Bytes<T, C> {
+    fn as_ref(&self) -> &U {
+        self.0.as_ref()
+    }
+}
+
+impl<T: AsMut<U>, U: ?Sized, C> AsMut<U> for Bytes<T, C> {
+    fn as_mut(&mut self) -> &mut U {
+        self.0.as_mut()
+    }
+}
+
 impl<T, C> Deref for Bytes<T, C> {
     type Target = T;
 
