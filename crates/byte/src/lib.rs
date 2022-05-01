@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+//! This crate provides a [`Bytes`] type which wraps most types that represent
+//! a contiguous array of bytes. It provides implementations for easy
+//! conversions to and from Base64 representations in string contexts.
+
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -17,6 +21,7 @@ mod sealed {
 
 use sealed::Config;
 
+/// Standard Base64 encoding with padding
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Standard(());
 
@@ -24,6 +29,7 @@ impl Config for Standard {
     const CONFIG: base64::Config = base64::STANDARD;
 }
 
+/// Standard Base64 encoding without padding
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StandardNoPad(());
 
@@ -31,6 +37,7 @@ impl Config for StandardNoPad {
     const CONFIG: base64::Config = base64::STANDARD_NO_PAD;
 }
 
+/// URL-safe Base64 encoding with padding
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UrlSafe(());
 
@@ -38,6 +45,7 @@ impl Config for UrlSafe {
     const CONFIG: base64::Config = base64::URL_SAFE;
 }
 
+/// URL-safe Base64 encoding without padding
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UrlSafeNoPad(());
 
@@ -45,6 +53,7 @@ impl Config for UrlSafeNoPad {
     const CONFIG: base64::Config = base64::URL_SAFE_NO_PAD;
 }
 
+/// A wrapper for bytes which provides base64 encoding in string contexts
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bytes<T, C = Standard>(T, PhantomData<C>);
 
@@ -61,6 +70,7 @@ impl<T: Default, C> Default for Bytes<T, C> {
 }
 
 impl<T, C> Bytes<T, C> {
+    /// Consumes the outer type, returning the inner type
     pub fn into_inner(self) -> T {
         self.0
     }
