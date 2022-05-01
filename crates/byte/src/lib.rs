@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -120,8 +121,8 @@ impl<T: AsRef<[u8]>, C: Config> Serialize for Bytes<T, C> {
 impl<'de, T: From<Vec<u8>>, C: Config> Deserialize<'de> for Bytes<T, C> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         if deserializer.is_human_readable() {
-            let b64 = String::deserialize(deserializer)?;
-            let buf = base64::decode_config(&b64, C::CONFIG)
+            let b64 = Cow::<'de, str>::deserialize(deserializer)?;
+            let buf = base64::decode_config(b64.as_ref(), C::CONFIG)
                 .map_err(|_| D::Error::custom("invalid base64"))?;
             Ok(Self(buf.into(), PhantomData))
         } else {
