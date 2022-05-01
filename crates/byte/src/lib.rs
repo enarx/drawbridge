@@ -5,6 +5,15 @@
 //! a contiguous array of bytes. It provides implementations for easy
 //! conversions to and from Base64 representations in string contexts.
 
+#![forbid(unsafe_code)]
+#![warn(
+    clippy::all,
+    rust_2018_idioms,
+    unused_lifetimes,
+    unused_qualifications,
+    missing_docs
+)]
+
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::marker::PhantomData;
