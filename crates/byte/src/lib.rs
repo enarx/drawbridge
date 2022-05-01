@@ -41,7 +41,7 @@ impl Config for UrlSafeNoPad {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Bytes<T = Vec<u8>, C = Standard>(T, PhantomData<C>);
+pub struct Bytes<T, C = Standard>(T, PhantomData<C>);
 
 impl<T: Debug, C> Debug for Bytes<T, C> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
