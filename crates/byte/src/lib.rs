@@ -5,6 +5,7 @@
 //! a contiguous array of bytes. It provides implementations for easy
 //! conversions to and from Base64 representations in string contexts.
 
+#![no_std]
 #![forbid(unsafe_code)]
 #![warn(
     clippy::all,
@@ -14,10 +15,14 @@
     missing_docs
 )]
 
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
+extern crate alloc;
+
+use alloc::vec::Vec;
+
+use core::fmt::{Debug, Display, Formatter};
+use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
+use core::str::FromStr;
 
 mod sealed {
     pub trait Config {
@@ -64,7 +69,7 @@ impl Config for UrlSafeNoPad {
 pub struct Bytes<T, C = Standard>(T, PhantomData<C>);
 
 impl<T: Debug, C> Debug for Bytes<T, C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("Bytes").field(&self.0).finish()
     }
 }
@@ -114,8 +119,8 @@ impl<T, C> DerefMut for Bytes<T, C> {
     }
 }
 
-impl<T: AsRef<[u8]>, C: Config> std::fmt::Display for Bytes<T, C> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T: AsRef<[u8]>, C: Config> Display for Bytes<T, C> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(&base64::encode_config(self.0.as_ref(), C::CONFIG))
     }
 }
@@ -145,7 +150,7 @@ impl<'de, T: From<Vec<u8>>, C: Config> serde::Deserialize<'de> for Bytes<T, C> {
         use serde::de::Error;
 
         if deserializer.is_human_readable() {
-            let b64 = std::borrow::Cow::<'de, str>::deserialize(deserializer)?;
+            let b64 = alloc::borrow::Cow::<'de, str>::deserialize(deserializer)?;
             let buf = base64::decode_config(b64.as_ref(), C::CONFIG)
                 .map_err(|_| D::Error::custom("invalid base64"))?;
             Ok(Self(buf.into(), PhantomData))
