@@ -9,9 +9,13 @@ use std::str::FromStr;
 
 use serde::{de::Error as _, Deserialize, Serialize};
 
-pub trait Config {
-    const CONFIG: base64::Config;
+mod sealed {
+    pub trait Config {
+        const CONFIG: base64::Config;
+    }
 }
+
+use sealed::Config;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Standard(());
