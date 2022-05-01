@@ -6,6 +6,7 @@ use crate::{assert_repo, RepoStore, TagStore};
 use std::sync::Arc;
 
 use drawbridge_jose::jws::Jws;
+use drawbridge_jose::MediaTyped;
 use drawbridge_store::{Create, CreateError, CreateFromReaderError};
 use drawbridge_type::{Meta, RepositoryName, TagEntry, TagName, TreeEntry};
 

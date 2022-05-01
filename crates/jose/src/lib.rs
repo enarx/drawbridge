@@ -6,3 +6,7 @@
 
 pub mod b64;
 pub mod jws;
+
+pub trait MediaTyped {
+    const TYPE: &'static str;
+}
