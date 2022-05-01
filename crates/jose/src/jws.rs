@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::b64::{Bytes, Json};
+use crate::MediaTyped;
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-impl Jws {
-    pub const TYPE: &'static str = "application/jose+json";
+impl MediaTyped for Jws {
+    const TYPE: &'static str = "application/jose+json";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

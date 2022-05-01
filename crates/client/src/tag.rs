@@ -4,6 +4,7 @@
 use super::{Node, Repository, Result};
 
 use drawbridge_jose::jws::Jws;
+use drawbridge_jose::MediaTyped;
 use drawbridge_type::{TagEntry, TagName, TreeEntry, TreePath};
 
 use anyhow::bail;

@@ -4,6 +4,7 @@
 use super::super::tree;
 
 use drawbridge_jose::jws::Jws;
+use drawbridge_jose::MediaTyped;
 
 // TODO: Remove
 // https://github.com/profianinc/drawbridge/issues/95
