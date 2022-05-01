@@ -6,7 +6,7 @@ use crate::MediaTyped;
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 
 impl MediaTyped for Jws {
@@ -14,29 +14,23 @@ impl MediaTyped for Jws {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
 #[serde(untagged)]
-pub enum Jws<T = Bytes, P = BTreeMap<String, Value>, H = P>
-where
-    Json<P>: for<'a> Deserialize<'a>,
-{
+pub enum Jws<T = Bytes, P = BTreeMap<String, Value>, H = P> {
     General(General<T, P, H>),
     Flattened(Flattened<T, P, H>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct General<T = Bytes, P = BTreeMap<String, Value>, H = P>
-where
-    Json<P>: for<'a> Deserialize<'a>,
-{
+#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
+pub struct General<T = Bytes, P = BTreeMap<String, Value>, H = P> {
     pub payload: T,
     pub signatures: Vec<Signature<P, H>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Flattened<T = Bytes, P = BTreeMap<String, Value>, H = P>
-where
-    Json<P>: for<'a> Deserialize<'a>,
-{
+#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
+pub struct Flattened<T = Bytes, P = BTreeMap<String, Value>, H = P> {
     pub payload: T,
 
     #[serde(flatten)]
@@ -44,10 +38,8 @@ where
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Signature<P = BTreeMap<String, Value>, H = P>
-where
-    Json<P>: for<'a> Deserialize<'a>,
-{
+#[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
+pub struct Signature<P = BTreeMap<String, Value>, H = P> {
     pub protected: Option<Json<P>>,
     pub header: Option<H>,
     pub signature: Bytes,
