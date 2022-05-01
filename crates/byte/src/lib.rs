@@ -20,6 +20,20 @@ impl Config for Standard {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct StandardNoPad(());
+
+impl Config for StandardNoPad {
+    const CONFIG: base64::Config = base64::STANDARD_NO_PAD;
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct UrlSafe(());
+
+impl Config for UrlSafe {
+    const CONFIG: base64::Config = base64::URL_SAFE;
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UrlSafeNoPad(());
 
 impl Config for UrlSafeNoPad {
