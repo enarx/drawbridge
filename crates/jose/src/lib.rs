@@ -5,6 +5,7 @@
 #![forbid(unsafe_code, clippy::expect_used, clippy::panic)]
 
 pub mod b64;
+pub mod jwk;
 pub mod jws;
 
 pub trait MediaTyped {
