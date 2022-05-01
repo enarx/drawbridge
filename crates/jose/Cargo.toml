@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "../byte" }
+drawbridge-byte = { path = "../byte", features = ["serde"] }
 
 # External dependencies
 base64 = { version = "0.13.0", default-features = false, features = ["std"] }

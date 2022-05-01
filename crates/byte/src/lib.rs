@@ -14,13 +14,10 @@
     missing_docs
 )]
 
-use std::borrow::Cow;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-
-use serde::{de::Error as _, Deserialize, Serialize};
 
 mod sealed {
     pub trait Config {
@@ -131,7 +128,8 @@ impl<T: From<Vec<u8>>, C: Config> FromStr for Bytes<T, C> {
     }
 }
 
-impl<T: AsRef<[u8]>, C: Config> Serialize for Bytes<T, C> {
+#[cfg(feature = "serde")]
+impl<T: AsRef<[u8]>, C: Config> serde::Serialize for Bytes<T, C> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         if serializer.is_human_readable() {
             base64::encode_config(self.0.as_ref(), C::CONFIG).serialize(serializer)
@@ -141,10 +139,13 @@ impl<T: AsRef<[u8]>, C: Config> Serialize for Bytes<T, C> {
     }
 }
 
-impl<'de, T: From<Vec<u8>>, C: Config> Deserialize<'de> for Bytes<T, C> {
+#[cfg(feature = "serde")]
+impl<'de, T: From<Vec<u8>>, C: Config> serde::Deserialize<'de> for Bytes<T, C> {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+
         if deserializer.is_human_readable() {
-            let b64 = Cow::<'de, str>::deserialize(deserializer)?;
+            let b64 = std::borrow::Cow::<'de, str>::deserialize(deserializer)?;
             let buf = base64::decode_config(b64.as_ref(), C::CONFIG)
                 .map_err(|_| D::Error::custom("invalid base64"))?;
             Ok(Self(buf.into(), PhantomData))
