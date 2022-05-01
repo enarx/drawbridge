@@ -193,7 +193,7 @@ mod tests {
             .await
             .unwrap(),
             Entry::Signed(Jws::Flattened(Flattened {
-                payload: PAYLOAD.parse().unwrap(),
+                payload: Some(PAYLOAD.parse().unwrap()),
                 signature: Signature {
                     header: {
                         let mut header = BTreeMap::new();
@@ -218,7 +218,7 @@ mod tests {
             .await
             .unwrap(),
             Entry::Signed(Jws::Flattened(Flattened {
-                payload: PAYLOAD.parse().unwrap(),
+                payload: Some(PAYLOAD.parse().unwrap()),
                 signature: Signature {
                     header: None,
                     protected: protected(),
@@ -243,7 +243,7 @@ mod tests {
             .await
             .unwrap(),
             Entry::Signed(Jws::General(General {
-                payload: PAYLOAD.parse().unwrap(),
+                payload: Some(PAYLOAD.parse().unwrap()),
                 signatures: vec![Signature {
                     header: None,
                     protected: protected(),

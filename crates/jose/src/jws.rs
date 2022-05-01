@@ -14,24 +14,24 @@ impl MediaTyped for Jws {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
+#[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
 #[serde(untagged)]
-pub enum Jws<T = Bytes, P = BTreeMap<String, Value>, H = P> {
-    General(General<T, P, H>),
-    Flattened(Flattened<T, P, H>),
+pub enum Jws<P = BTreeMap<String, Value>, H = P> {
+    General(General<P, H>),
+    Flattened(Flattened<P, H>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
-pub struct General<T = Bytes, P = BTreeMap<String, Value>, H = P> {
-    pub payload: T,
+#[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
+pub struct General<P = BTreeMap<String, Value>, H = P> {
+    pub payload: Option<Bytes>,
     pub signatures: Vec<Signature<P, H>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(bound(deserialize = "T: Deserialize<'de>, P: DeserializeOwned, H: Deserialize<'de>"))]
-pub struct Flattened<T = Bytes, P = BTreeMap<String, Value>, H = P> {
-    pub payload: T,
+#[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
+pub struct Flattened<P = BTreeMap<String, Value>, H = P> {
+    pub payload: Option<Bytes>,
 
     #[serde(flatten)]
     pub signature: Signature<P, H>,
@@ -103,8 +103,8 @@ mod tests {
             signature: signature1.parse().unwrap(),
         };
 
-        let exp = Jws::<Bytes, Protected, Header>::General(General {
-            payload: payload.parse().unwrap(),
+        let exp = Jws::General(General {
+            payload: Some(payload.parse().unwrap()),
             signatures: vec![sig0, sig1],
         });
 
@@ -124,8 +124,8 @@ mod tests {
             "signature": signature,
         });
 
-        let exp = Jws::<Bytes, Protected, Header>::Flattened(Flattened {
-            payload: payload.parse().unwrap(),
+        let exp = Jws::Flattened(Flattened {
+            payload: Some(payload.parse().unwrap()),
             signature: Signature {
                 header: Some(Header {
                     kid: "e9bc097a-ce51-4036-9562-d2ade882db0d".to_string(),
@@ -151,7 +151,7 @@ mod tests {
             "signature": signature,
         });
 
-        let exp = Jws::<Option<()>, Protected, Header>::Flattened(Flattened {
+        let exp = Jws::Flattened(Flattened {
             payload: None,
             signature: Signature {
                 header: Some(Header {
