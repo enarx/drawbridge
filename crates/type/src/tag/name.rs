@@ -8,31 +8,18 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct Name(String);
+pub struct Name(semver::Version);
 
 impl FromStr for Name {
-    type Err = &'static str;
+    type Err = semver::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty()
-            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '.' ))
-                .is_some()
-        {
-            Err("Invalid tag name")
-        } else {
-            Ok(Name(s.into()))
-        }
-    }
-}
-
-impl From<Name> for String {
-    fn from(name: Name) -> Self {
-        name.0
+        s.parse().map(Name)
     }
 }
 
 impl Deref for Name {
-    type Target = String;
+    type Target = semver::Version;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -57,19 +44,39 @@ mod tests {
 
     #[test]
     fn from_str() {
-        for s in ["", "=", "/", "v1.2/3"] {
-            assert_eq!(
-                s.parse::<Name>(),
-                Err("Invalid tag name"),
+        for s in ["", "=", "/", "v1.2/3", "v1.2.3"] {
+            assert!(
+                s.parse::<Name>().is_err(),
                 "input '{}' should fail to parse",
                 s
             );
         }
 
-        for s in ["1.2.3", "v1.2.3", "v1.2.3-test"] {
+        for (s, expected) in [
+            (
+                "1.2.3",
+                semver::Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3,
+                    pre: Default::default(),
+                    build: Default::default(),
+                },
+            ),
+            (
+                "1.2.3-test",
+                semver::Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3,
+                    pre: semver::Prerelease::new("test").unwrap(),
+                    build: Default::default(),
+                },
+            ),
+        ] {
             assert_eq!(
-                s.parse(),
-                Ok(Name(s.into())),
+                s.parse::<Name>().unwrap(),
+                Name(expected),
                 "input '{}' should succeed to parse",
                 s
             );

@@ -32,7 +32,7 @@ pub async fn query(
         .await
         .try_filter_map(move |(r, n)| {
             let repo = repo.clone();
-            async move { Ok(if r == repo { Some(n.into()) } else { None }) }
+            async move { Ok(if r == repo { Some(n.to_string()) } else { None }) }
         })
         .try_collect::<Vec<String>>()
         .await
