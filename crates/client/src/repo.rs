@@ -41,8 +41,6 @@ impl Repository<'_> {
             .inner
             .put(self.client.url.join(&self.name.to_string())?)
             // TODO: Calculate and set Content-Digest
-            // TODO: Verify if Content-Length header is set
-            // https://github.com/profianinc/drawbridge/issues/102
             .json(conf)
             .send()?
             .error_for_status()?;

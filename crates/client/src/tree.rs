@@ -32,8 +32,6 @@ impl Node<'_> {
             ))?)
             .header(CONTENT_TYPE, mime.to_string())
             // TODO: Calculate and set Content-Digest
-            // TODO: Verify if Content-Length header is set
-            // https://github.com/profianinc/drawbridge/issues/102
             .body(body)
             .send()?
             .error_for_status()?;

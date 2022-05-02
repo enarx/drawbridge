@@ -9,7 +9,7 @@ use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
 };
 use drawbridge_type::repository::{Config, Name};
-use drawbridge_type::RequestMeta;
+use drawbridge_type::Meta;
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -65,16 +65,14 @@ pub async fn get(
 pub async fn put(
     Extension(repos): Extension<Arc<RepoStore>>,
     Extension(name): Extension<Name>,
-    RequestMeta { hash, size, mime }: RequestMeta,
+    Meta { hash, size, mime }: Meta,
     Json(config): Json<Config>,
 ) -> impl IntoResponse {
     let buf = serde_json::to_vec(&config).unwrap();
-    if let Some(size) = size {
-        if buf.len() as u64 != size {
-            // TODO: Report error location
-            // https://github.com/profianinc/drawbridge/issues/97
-            return Err((StatusCode::BAD_REQUEST, "Invalid repository encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
-        }
+    if buf.len() as u64 != size {
+        // TODO: Report error location
+        // https://github.com/profianinc/drawbridge/issues/97
+        return Err((StatusCode::BAD_REQUEST, "Invalid repository encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
     }
     repos
         .write()
