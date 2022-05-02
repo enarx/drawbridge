@@ -9,7 +9,7 @@ use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError,
 };
 use drawbridge_type::tree::{Directory, Path};
-use drawbridge_type::{repository, tag, RequestMeta};
+use drawbridge_type::{repository, tag, Meta};
 
 use axum::body::Body;
 use axum::extract::{BodyStream, RequestParts};
@@ -87,7 +87,7 @@ pub async fn put(
     Extension(repo): Extension<repository::Name>,
     Extension(tag): Extension<tag::Name>,
     Extension(path): Extension<Path>,
-    RequestMeta { hash, size, mime }: RequestMeta,
+    Meta { hash, size, mime }: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
     assert_repo(repos, repo.clone())
@@ -106,12 +106,10 @@ pub async fn put(
                 .map(|Json(v): Json<Directory>| v)
                 .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?;
             let buf = serde_json::to_vec(&dir).unwrap();
-            if let Some(size) = size {
-                if buf.len() as u64 != size {
-                    // TODO: Report error location
-                    // https://github.com/profianinc/drawbridge/issues/97
-                    return Err((StatusCode::BAD_REQUEST, "Invalid directory encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
-                }
+            if buf.len() as u64 != size {
+                // TODO: Report error location
+                // https://github.com/profianinc/drawbridge/issues/97
+                return Err((StatusCode::BAD_REQUEST, "Invalid directory encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
             }
             trees.write()
                 .await
@@ -126,8 +124,6 @@ pub async fn put(
                 .await
                 .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
-            // TODO: Validate body size
-            // https://github.com/profianinc/drawbridge/issues/96
             trees.write()
                 .await
                 .create_from_reader((repo, tag, path), mime.clone(), hash.verifier(body.into_async_read()))

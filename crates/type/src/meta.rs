@@ -38,23 +38,9 @@ fn serialize<S: Serializer>(mime: &Mime, serializer: S) -> Result<S::Ok, S::Erro
     mime.to_string().serialize(serializer)
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct RequestMeta {
-    #[serde(rename = "digest")]
-    pub hash: ContentDigest<Box<[u8]>>,
-
-    #[serde(rename = "length")]
-    pub size: Option<u64>,
-
-    #[serde(deserialize_with = "deserialize")]
-    #[serde(serialize_with = "serialize")]
-    #[serde(rename = "type")]
-    pub mime: Mime,
-}
-
 #[cfg(feature = "axum")]
 #[axum::async_trait]
-impl<B: Send> FromRequest<B> for RequestMeta {
+impl<B: Send> FromRequest<B> for Meta {
     type Rejection = TypedHeaderRejection;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
@@ -65,23 +51,6 @@ impl<B: Send> FromRequest<B> for RequestMeta {
             }
             Err(e) => return Err(e),
         };
-        let size = match req.extract().await {
-            Ok(TypedHeader(ContentLength(size))) => Some(size),
-            Err(e) if matches!(e.reason(), TypedHeaderRejectionReason::Missing) => None,
-            Err(e) => return Err(e),
-        };
-        let mime = req.extract::<TypedHeader<ContentType>>().await?.0.into();
-        Ok(RequestMeta { hash, size, mime })
-    }
-}
-
-#[cfg(feature = "axum")]
-#[axum::async_trait]
-impl<B: Send> FromRequest<B> for Meta {
-    type Rejection = TypedHeaderRejection;
-
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let hash = req.extract::<TypedHeader<ContentDigest>>().await?.0;
         let size = req.extract::<TypedHeader<ContentLength>>().await?.0 .0;
         let mime = req.extract::<TypedHeader<ContentType>>().await?.0.into();
         Ok(Meta { hash, size, mime })

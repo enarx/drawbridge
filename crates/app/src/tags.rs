@@ -10,7 +10,7 @@ use drawbridge_store::{
     Create, CreateError, CreateFromReaderError, Get, GetError, GetToWriterError, Keys,
 };
 use drawbridge_type::tag::{Entry, Name};
-use drawbridge_type::{repository, tree, RequestMeta};
+use drawbridge_type::{repository, tree, Meta};
 
 use axum::body::Body;
 use axum::extract::RequestParts;
@@ -102,7 +102,7 @@ pub async fn put(
     Extension(tags): Extension<Arc<TagStore>>,
     Extension(repo): Extension<repository::Name>,
     Extension(name): Extension<Name>,
-    RequestMeta { hash, size, mime }: RequestMeta,
+    Meta { hash, size, mime }: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
     assert_repo(repos, repo.clone())
@@ -123,12 +123,10 @@ pub async fn put(
     .map_err(|e| (StatusCode::BAD_REQUEST, e.into_response()))?;
 
     let buf = serde_json::to_vec(&tag).unwrap();
-    if let Some(size) = size {
-        if buf.len() as u64 != size {
-            // TODO: Report error location
-            // https://github.com/profianinc/drawbridge/issues/97
-            return Err((StatusCode::BAD_REQUEST, "Invalid tag encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
-        }
+    if buf.len() as u64 != size {
+        // TODO: Report error location
+        // https://github.com/profianinc/drawbridge/issues/97
+        return Err((StatusCode::BAD_REQUEST, "Invalid tag encoding, make sure the object is minified and keys are sorted lexicographically".into_response()));
     }
     tags.write()
         .await
