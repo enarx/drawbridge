@@ -2,12 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::b64::{Bytes, Json};
-use crate::MediaTyped;
+use crate::{MediaTyped, Thumbprint};
 
-use std::collections::BTreeMap;
-
+use mediatype::MediaTypeBuf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::Value;
+use url::Url;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Parameters {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub alg: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub jku: Option<Url>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub jwk: Option<crate::jwk::Jwk<crate::jwk::Parameters>>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub kid: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub x5u: Option<Url>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub x5c: Option<Vec<drawbridge_byte::Bytes<Vec<u8>>>>, // base64, not base64url
+
+    #[serde(flatten)]
+    pub x5t: Thumbprint,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub typ: Option<MediaTypeBuf>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub cty: Option<MediaTypeBuf>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub crit: Option<Vec<String>>,
+}
 
 impl MediaTyped for Jws {
     const TYPE: &'static str = "application/jose+json";
@@ -16,21 +48,21 @@ impl MediaTyped for Jws {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
 #[serde(untagged)]
-pub enum Jws<P = BTreeMap<String, Value>, H = P> {
+pub enum Jws<P = Parameters, H = P> {
     General(General<P, H>),
     Flattened(Flattened<P, H>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
-pub struct General<P = BTreeMap<String, Value>, H = P> {
+pub struct General<P = Parameters, H = P> {
     pub payload: Option<Bytes>,
     pub signatures: Vec<Signature<P, H>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
-pub struct Flattened<P = BTreeMap<String, Value>, H = P> {
+pub struct Flattened<P = Parameters, H = P> {
     pub payload: Option<Bytes>,
 
     #[serde(flatten)]
@@ -39,7 +71,7 @@ pub struct Flattened<P = BTreeMap<String, Value>, H = P> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
-pub struct Signature<P = BTreeMap<String, Value>, H = P> {
+pub struct Signature<P = Parameters, H = P> {
     pub protected: Option<Json<P>>,
     pub header: Option<H>,
     pub signature: Bytes,
@@ -49,16 +81,6 @@ pub struct Signature<P = BTreeMap<String, Value>, H = P> {
 mod tests {
     use super::*;
     use serde_json::json;
-
-    #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-    struct Header {
-        kid: String,
-    }
-
-    #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-    struct Protected {
-        alg: String,
-    }
 
     // Example from RFC 7515 A.6.4
     #[test]
@@ -84,21 +106,25 @@ mod tests {
         });
 
         let sig0 = Signature {
-            header: Some(Header {
-                kid: "2010-12-29".to_string(),
+            header: Some(Parameters {
+                kid: Some("2010-12-29".to_string()),
+                ..Default::default()
             }),
-            protected: Some(Json(Protected {
-                alg: "RS256".to_string(),
+            protected: Some(Json(Parameters {
+                alg: Some("RS256".to_string()),
+                ..Default::default()
             })),
             signature: signature0.parse().unwrap(),
         };
 
         let sig1 = Signature {
-            header: Some(Header {
-                kid: "e9bc097a-ce51-4036-9562-d2ade882db0d".to_string(),
+            header: Some(Parameters {
+                kid: Some("e9bc097a-ce51-4036-9562-d2ade882db0d".to_string()),
+                ..Default::default()
             }),
-            protected: Some(Json(Protected {
-                alg: "ES256".to_string(),
+            protected: Some(Json(Parameters {
+                alg: Some("ES256".to_string()),
+                ..Default::default()
             })),
             signature: signature1.parse().unwrap(),
         };
@@ -127,11 +153,13 @@ mod tests {
         let exp = Jws::Flattened(Flattened {
             payload: Some(payload.parse().unwrap()),
             signature: Signature {
-                header: Some(Header {
-                    kid: "e9bc097a-ce51-4036-9562-d2ade882db0d".to_string(),
+                header: Some(Parameters {
+                    kid: Some("e9bc097a-ce51-4036-9562-d2ade882db0d".to_string()),
+                    ..Default::default()
                 }),
-                protected: Some(Json(Protected {
-                    alg: "ES256".to_string(),
+                protected: Some(Json(Parameters {
+                    alg: Some("ES256".to_string()),
+                    ..Default::default()
                 })),
                 signature: signature.parse().unwrap(),
             },
@@ -154,11 +182,13 @@ mod tests {
         let exp = Jws::Flattened(Flattened {
             payload: None,
             signature: Signature {
-                header: Some(Header {
-                    kid: "e9bc097a-ce51-4036-9562-d2ade882db0d".to_string(),
+                header: Some(Parameters {
+                    kid: Some("e9bc097a-ce51-4036-9562-d2ade882db0d".to_string()),
+                    ..Default::default()
                 }),
-                protected: Some(Json(Protected {
-                    alg: "ES256".to_string(),
+                protected: Some(Json(Parameters {
+                    alg: Some("ES256".to_string()),
+                    ..Default::default()
                 })),
                 signature: signature.parse().unwrap(),
             },

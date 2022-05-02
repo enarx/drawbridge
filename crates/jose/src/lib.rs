@@ -8,6 +8,18 @@ pub mod b64;
 pub mod jwk;
 pub mod jws;
 
+use b64::Bytes;
+use serde::{Deserialize, Serialize};
+
 pub trait MediaTyped {
     const TYPE: &'static str;
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Thumbprint {
+    #[serde(skip_serializing_if = "Option::is_none", default, rename = "x5t")]
+    s1: Option<Bytes>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default, rename = "x5t#S256")]
+    s256: Option<Bytes>,
 }

@@ -20,6 +20,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[allow(clippy::large_enum_variant)]
 #[serde(untagged)]
 pub enum Entry {
     Signed(Jws),
@@ -71,10 +72,10 @@ mod tests {
     async fn from_request() {
         use super::*;
 
-        use std::collections::{BTreeMap, HashMap};
+        use std::collections::HashMap;
 
         use drawbridge_jose::b64::Json;
-        use drawbridge_jose::jws::{Flattened, General, Jws, Signature};
+        use drawbridge_jose::jws::{Flattened, General, Jws, Parameters, Signature};
 
         use axum::body::Body;
         use axum::http::Request;
@@ -172,11 +173,10 @@ mod tests {
         const PROTECTED: &str = "eyJhbGciOiJFUzI1NiJ9";
         const SIGNATURE: &str = "DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSApmWQxfKTUJqPP3-Kg6NU1Q";
 
-        let protected = || {
-            let mut protected = BTreeMap::new();
-            protected.insert("alg".into(), "ES256".into());
-            Some(Json(protected))
-        };
+        let protected = Some(Json(Parameters {
+            alg: Some("ES256".to_string()),
+            ..Default::default()
+        }));
 
         assert_eq!(
             from_request(
@@ -195,12 +195,11 @@ mod tests {
             Entry::Signed(Jws::Flattened(Flattened {
                 payload: Some(PAYLOAD.parse().unwrap()),
                 signature: Signature {
-                    header: {
-                        let mut header = BTreeMap::new();
-                        header.insert("kid".into(), KID.into());
-                        Some(header)
-                    },
-                    protected: protected(),
+                    header: Some(Parameters {
+                        kid: Some(KID.to_string()),
+                        ..Default::default()
+                    }),
+                    protected: protected.clone(),
                     signature: SIGNATURE.parse().unwrap(),
                 },
             })),
@@ -221,7 +220,7 @@ mod tests {
                 payload: Some(PAYLOAD.parse().unwrap()),
                 signature: Signature {
                     header: None,
-                    protected: protected(),
+                    protected: protected.clone(),
                     signature: SIGNATURE.parse().unwrap(),
                 },
             })),
@@ -246,7 +245,7 @@ mod tests {
                 payload: Some(PAYLOAD.parse().unwrap()),
                 signatures: vec![Signature {
                     header: None,
-                    protected: protected(),
+                    protected,
                     signature: SIGNATURE.parse().unwrap(),
                 }],
             })),
