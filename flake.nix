@@ -11,10 +11,10 @@
   outputs = { self, nixpkgs, flake-utils, fenix, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = nixpkgs.legacyPackages.${system};
 
         rust = fenix.packages."${system}".fromToolchainFile {
-          file = ./rust-toolchain.toml;
+          file = "${self}/rust-toolchain.toml";
         };
       in
       {
