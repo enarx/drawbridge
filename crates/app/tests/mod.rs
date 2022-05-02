@@ -78,7 +78,7 @@ async fn app() {
         &tag,
         &"/".parse().unwrap(),
         mime::TEXT_PLAIN,
-        b"test".into(),
+        b"test".to_vec(),
     )
     .await;
 
