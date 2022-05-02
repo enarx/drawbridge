@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Node, Repository};
-
-use std::error::Error;
+use super::{Node, Repository, Result};
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_type::{TagEntry, TagName, TreeEntry, TreePath};
 
+use anyhow::bail;
 use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use reqwest::StatusCode;
 
@@ -21,7 +20,7 @@ impl Tag<'_> {
         Node { tag: self, path }
     }
 
-    pub fn create(&self, entry: &TagEntry) -> Result<bool, Box<dyn Error>> {
+    pub fn create(&self, entry: &TagEntry) -> Result<bool> {
         let body = serde_json::to_vec(&entry)?;
         let res = self
             .repo
@@ -49,11 +48,11 @@ impl Tag<'_> {
         match res.status() {
             StatusCode::CREATED => Ok(true),
             StatusCode::OK => Ok(false),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn get(&self) -> Result<TagEntry, Box<dyn Error>> {
+    pub fn get(&self) -> Result<TagEntry> {
         let res = self
             .repo
             .client
@@ -71,7 +70,7 @@ impl Tag<'_> {
         // https://github.com/profianinc/drawbridge/issues/103
         match res.status() {
             StatusCode::OK => res.json().map_err(Into::into),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 }

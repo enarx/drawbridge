@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Client, Tag};
-
-use std::error::Error;
+use super::{Client, Result, Tag};
 
 use drawbridge_type::{RepositoryConfig, RepositoryName, TagName};
 
+use anyhow::bail;
 use reqwest::StatusCode;
 
 pub struct Repository<'a> {
@@ -19,7 +18,7 @@ impl Repository<'_> {
         Tag { repo: self, name }
     }
 
-    pub fn tags(&self) -> Result<Vec<TagName>, Box<dyn Error>> {
+    pub fn tags(&self) -> Result<Vec<TagName>> {
         let res = self
             .client
             .inner
@@ -31,11 +30,11 @@ impl Repository<'_> {
         // https://github.com/profianinc/drawbridge/issues/103
         match res.status() {
             StatusCode::OK => res.json().map_err(Into::into),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn create(&self, conf: &RepositoryConfig) -> Result<bool, Box<dyn Error>> {
+    pub fn create(&self, conf: &RepositoryConfig) -> Result<bool> {
         let res = self
             .client
             .inner
@@ -47,11 +46,11 @@ impl Repository<'_> {
         match res.status() {
             StatusCode::CREATED => Ok(true),
             StatusCode::OK => Ok(false),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn get(&self) -> Result<RepositoryConfig, Box<dyn Error>> {
+    pub fn get(&self) -> Result<RepositoryConfig> {
         let res = self
             .client
             .inner
@@ -63,7 +62,7 @@ impl Repository<'_> {
         // https://github.com/profianinc/drawbridge/issues/103
         match res.status() {
             StatusCode::OK => res.json().map_err(Into::into),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 }

@@ -10,6 +10,7 @@ drawbridge-jose = { path = "../jose" }
 drawbridge-type = { path = "../type" }
 
 # External dependencies
+anyhow = { version = "1.0", default-features = false, features = ["std"] }
 bytes = { version = "1.1.0", default-features = false }
 mime = { version = "0.3.16", default-features = false }
 reqwest = { version = "0.11.10", default-features = false, features = ["blocking", "json"] }
