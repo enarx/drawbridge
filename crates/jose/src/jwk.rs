@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{b64::Bytes, Typed};
+use crate::{b64::Bytes, MediaTyped, Thumbprint};
 
 use std::collections::BTreeSet;
 
@@ -20,7 +20,7 @@ pub struct JwkSet<P = Parameters> {
     pub keys: Vec<Jwk<P>>,
 }
 
-impl<P> Typed for JwkSet<P> {
+impl<P> MediaTyped for JwkSet<P> {
     const TYPE: &'static str = "application/jwk-set+json";
 }
 
@@ -38,7 +38,7 @@ pub struct Jwk<P = Parameters> {
     pub prm: P,
 }
 
-impl<P> Typed for Jwk<P> {
+impl<P> MediaTyped for Jwk<P> {
     const TYPE: &'static str = "application/jwk+json";
 }
 
@@ -104,15 +104,6 @@ pub struct Parameters {
 
     #[serde(flatten)]
     pub x5t: Thumbprint,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Thumbprint {
-    #[serde(skip_serializing_if = "Option::is_none", default, rename = "x5t")]
-    s1: Option<Bytes>,
-
-    #[serde(skip_serializing_if = "Option::is_none", default, rename = "x5t#S256")]
-    s256: Option<Bytes>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
