@@ -14,6 +14,7 @@ pub use tree::*;
 
 pub use drawbridge_type as types;
 
+pub use anyhow::Result;
 pub use mime;
 pub use reqwest::Url;
 
@@ -50,10 +51,13 @@ impl ClientBuilder {
 
     // TODO: Add configuration
 
-    pub fn build(self) -> Result<Client, reqwest::Error> {
-        self.inner.build().map(|inner| Client {
-            inner,
-            url: self.url,
-        })
+    pub fn build(self) -> Result<Client> {
+        self.inner
+            .build()
+            .map(|inner| Client {
+                inner,
+                url: self.url,
+            })
+            .map_err(Into::into)
     }
 }

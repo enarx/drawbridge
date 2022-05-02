@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use super::Tag;
+use super::{Result, Tag};
 
-use std::error::Error;
 use std::io::Write;
 
 use drawbridge_type::{Meta, TreePath};
 
+use anyhow::{anyhow, bail};
 use bytes::Bytes;
 use mime::Mime;
 use reqwest::blocking::{Body, Response};
@@ -20,7 +20,7 @@ pub struct Node<'a> {
 }
 
 impl Node<'_> {
-    pub fn create(&self, mime: Mime, body: impl Into<Body>) -> Result<bool, Box<dyn Error>> {
+    pub fn create(&self, mime: Mime, body: impl Into<Body>) -> Result<bool> {
         let res = self
             .tag
             .repo
@@ -38,11 +38,11 @@ impl Node<'_> {
         match res.status() {
             StatusCode::CREATED => Ok(true),
             StatusCode::OK => Ok(false),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    fn get(&self) -> Result<(Meta, Response), Box<dyn Error>> {
+    fn get(&self) -> Result<(Meta, Response)> {
         let res = self
             .tag
             .repo
@@ -67,21 +67,21 @@ impl Node<'_> {
                 // https://github.com/profianinc/drawbridge/issues/103
                 Default::default(),
                 hdr.get(CONTENT_TYPE)
-                    .ok_or("missing Content-Type header")?
+                    .ok_or(anyhow!("missing Content-Type header"))?
                     .to_str()?
                     .parse()?,
             )
         };
         let size = res
             .content_length()
-            .ok_or("missing Content-Length header")?;
+            .ok_or(anyhow!("missing Content-Length header"))?;
         match res.status() {
             StatusCode::OK => Ok((Meta { hash, size, mime }, res)),
-            _ => Err("unexpected status code")?,
+            _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn get_to(&self, dst: &mut impl Write) -> Result<(u64, Mime), Box<dyn Error>> {
+    pub fn get_to(&self, dst: &mut impl Write) -> Result<(u64, Mime)> {
         let (
             Meta {
                 // TODO: Validate digest
@@ -94,15 +94,16 @@ impl Node<'_> {
         ) = self.get()?;
         let n = res.copy_to(dst)?;
         if n != size {
-            Err(format!(
+            bail!(
                 "invalid amount of bytes read, expected {}, read {}",
-                size, n,
-            ))?
+                size,
+                n,
+            )
         }
         Ok((size, mime))
     }
 
-    pub fn get_bytes(&self) -> Result<(Bytes, Mime), Box<dyn Error>> {
+    pub fn get_bytes(&self) -> Result<(Bytes, Mime)> {
         let (
             Meta {
                 // TODO: Validate digest
@@ -115,16 +116,16 @@ impl Node<'_> {
         ) = self.get()?;
         let b = res.bytes()?;
         if b.len() as u64 != size {
-            Err(format!(
+            bail!(
                 "invalid amount of bytes read, expected {}, read {}",
                 size,
                 b.len(),
-            ))?
+            )
         }
         Ok((b, mime))
     }
 
-    pub fn get_text(&self) -> Result<(String, Mime), Box<dyn Error>> {
+    pub fn get_text(&self) -> Result<(String, Mime)> {
         let (
             Meta {
                 // TODO: Validate digest
@@ -137,11 +138,11 @@ impl Node<'_> {
         ) = self.get()?;
         let s = res.text()?;
         if s.len() as u64 != size {
-            Err(format!(
+            bail!(
                 "invalid amount of bytes read, expected {}, read {}",
                 size,
                 s.len(),
-            ))?
+            )
         }
         Ok((s, mime))
     }
