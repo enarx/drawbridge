@@ -3,78 +3,16 @@
 
 use super::{repos, tags, trees};
 
-use std::fmt::Display;
-use std::sync::Arc;
-
-use drawbridge_store::{Get, Memory};
-use drawbridge_type::{repository, tag, tree};
+use drawbridge_type::{RepositoryName, TagName, TreePath};
 
 use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Method, Request, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::IntoMakeService;
-use axum::{Extension, Router};
-use tokio::sync::RwLock;
 use tower::Service;
 
-pub(crate) type RepoStore = RwLock<Memory<repository::Name>>;
-pub(crate) type TagStore = RwLock<Memory<(repository::Name, tag::Name)>>;
-pub(crate) type TreeStore = RwLock<Memory<(repository::Name, tag::Name, tree::Path)>>;
-
-pub(crate) async fn assert_repo(
-    repos: Arc<RepoStore>,
-    repo: repository::Name,
-) -> Result<(), (StatusCode, &'static str)> {
-    #[inline]
-    fn err_map(e: impl Display) -> (StatusCode, &'static str) {
-        eprintln!("failed to check repository existence: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to check repository existence",
-        )
-    }
-    if !repos
-        .read()
-        .await
-        .contains(repo.clone())
-        .await
-        .map_err(err_map)?
-    {
-        Err((StatusCode::NOT_FOUND, "Repository does not exist"))
-    } else {
-        Ok(())
-    }
-}
-
-pub(crate) async fn assert_tag(
-    tags: Arc<TagStore>,
-    repo: repository::Name,
-    tag: tag::Name,
-) -> Result<(), (StatusCode, &'static str)> {
-    #[inline]
-    fn err_map(e: impl Display) -> (StatusCode, &'static str) {
-        eprintln!("failed to check tag existence: {}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to check tag existence",
-        )
-    }
-    if !tags
-        .read()
-        .await
-        .contains((repo.clone(), tag.clone()))
-        .await
-        .map_err(err_map)?
-    {
-        Err((StatusCode::NOT_FOUND, "Tag does not exist"))
-    } else {
-        Ok(())
-    }
-}
-
 /// Parses the URI of `req` and routes it to respective component.
-async fn handle(mut req: Request<Body>) -> impl IntoResponse {
+pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     let path = req.uri().path().strip_prefix('/').expect("invalid URI");
     let (head, tail) = path
         .split_once("/_")
@@ -86,7 +24,7 @@ async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             format!("Route `/{}` not found", path),
         ));
     }
-    let repo = head.parse::<repository::Name>().map_err(|e| {
+    let repo = head.parse::<RepositoryName>().map_err(|e| {
         (
             StatusCode::BAD_REQUEST,
             format!("Failed to parse repository name: {}", e),
@@ -117,7 +55,7 @@ async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             )),
         },
         (Some("_tag"), Some(tag), prop @ (None | Some("tree"))) => {
-            let tag = tag.parse::<tag::Name>().map_err(|e| {
+            let tag = tag.parse::<TagName>().map_err(|e| {
                 (
                     StatusCode::BAD_REQUEST,
                     format!("Failed to parse tag name: {}", e),
@@ -137,7 +75,7 @@ async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                 };
             }
 
-            let path = tail.as_str().parse::<tree::Path>().map_err(|e| {
+            let path = tail.as_str().parse::<TreePath>().map_err(|e| {
                 (
                     StatusCode::BAD_REQUEST,
                     format!("Failed to parse tree path: {}", e),
@@ -162,29 +100,5 @@ async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             StatusCode::NOT_FOUND,
             "Route not found on repository".into(),
         )),
-    }
-}
-
-#[derive(Default)]
-pub struct Builder;
-
-impl Builder {
-    pub fn new() -> Self {
-        Self
-    }
-
-    // TODO: Add configuration functionality
-
-    /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
-    pub fn build(self) -> IntoMakeService<Router> {
-        let repos: Arc<RepoStore> = Default::default();
-        let tags: Arc<TagStore> = Default::default();
-        let trees: Arc<TreeStore> = Default::default();
-        Router::new()
-            .fallback(handle.into_service())
-            .layer(Extension(repos))
-            .layer(Extension(tags))
-            .layer(Extension(trees))
-            .into_make_service()
     }
 }
