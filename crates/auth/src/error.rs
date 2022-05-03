@@ -4,6 +4,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
+    BuilderMissingProperty(&'static str),
     Request(reqwest::Error),
     Serde(String),
     OAuth(String),
@@ -20,6 +21,8 @@ impl fmt::Display for Error {
             f,
             "{}",
             match self {
+                Error::BuilderMissingProperty(e) =>
+                    format!("missing required property in builder: {}", e),
                 Error::Request(e) => format!("reqwest error: {}", e),
                 Error::Serde(e) => format!("Serde error: {}", e),
                 Error::OAuth(e) => format!("OAuth error: {}", e),

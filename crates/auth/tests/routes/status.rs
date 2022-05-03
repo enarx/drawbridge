@@ -26,7 +26,7 @@ async fn status_authenticated() {
         Provider::GitHub,
         AccessToken::new(env::var("GH_DRAWBRIDGE_TOKEN").expect("GH_DRAWBRIDGE_TOKEN env var")),
     );
-    let app = test_app("localhost");
+    let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(
             Request::builder()
@@ -51,7 +51,7 @@ async fn status_authenticated() {
 async fn status_bad_token() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(Provider::GitHub, AccessToken::new("BAD TOKEN".to_owned()));
-    let app = test_app("localhost");
+    let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(
             Request::builder()
@@ -74,7 +74,7 @@ async fn status_bad_token() {
 
 #[tokio::test]
 async fn status_unauthenticated() {
-    let app = test_app("localhost");
+    let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(Request::builder().uri(STATUS).body(Body::empty()).unwrap())
         .await

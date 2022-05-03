@@ -11,7 +11,7 @@ use tower::ServiceExt;
 
 #[tokio::test]
 async fn login() {
-    let app = test_app("localhost");
+    let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(
             Request::builder()
@@ -40,7 +40,7 @@ async fn login() {
 #[tokio::test]
 async fn authorized() {
     // TODO: write a successful test for this endpoint
-    let app = test_app("localhost");
+    let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(
             Request::builder()
