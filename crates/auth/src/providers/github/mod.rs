@@ -8,8 +8,8 @@ use axum::http::header::USER_AGENT;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use serde::Deserialize;
 
-pub const LOGIN_URI: &str = "/auth/github";
-pub const AUTHORIZED_URI: &str = "/auth/github/authorized";
+pub const LOGIN_URI: &str = "/github";
+pub const AUTHORIZED_URI: &str = "/github/authorized";
 
 pub async fn validate(session: &Session) -> Result<String, Error> {
     #[derive(Deserialize)]

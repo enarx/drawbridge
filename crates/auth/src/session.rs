@@ -3,7 +3,7 @@
 use crate::{
     error::Error,
     providers::{github, Provider},
-    redirect::AuthRedirect,
+    redirect::{AuthRedirect, AuthRedirectRoot},
 };
 
 use std::fmt;
@@ -72,29 +72,34 @@ where
     type Rejection = AuthRedirect;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let redirect = Extension::<AuthRedirectRoot>::from_request(req)
+            .await
+            .unwrap();
         let key = Extension::<RsaPrivateKey>::from_request(req).await.unwrap();
         let cookies = TypedHeader::<headers::Cookie>::from_request(req)
             .await
             .map_err(|e| match *e.name() {
                 COOKIE => match e.reason() {
-                    TypedHeaderRejectionReason::Missing => AuthRedirect::no_error(),
-                    TypedHeaderRejectionReason::Error(e) => AuthRedirect {
-                        error: Some(format!("Failed to parse HTTP headers: {}", e)),
-                    },
-                    _ => AuthRedirect::no_error(),
+                    TypedHeaderRejectionReason::Missing => redirect.no_error(),
+                    TypedHeaderRejectionReason::Error(e) => {
+                        redirect.error(format!("Failed to parse HTTP headers: {}", e))
+                    }
+                    _ => redirect.no_error(),
                 },
-                _ => AuthRedirect::no_error(),
+                _ => redirect.no_error(),
             })?;
 
-        let session_data = cookies.get(COOKIE_NAME).ok_or(AuthRedirect::no_error())?;
-        let session = Session::from_encrypted_str(session_data, &key.0)
-            .map_err(|_| AuthRedirect::no_error())?;
+        let session_data = cookies
+            .get(COOKIE_NAME)
+            .ok_or_else(|| redirect.no_error())?;
+        let session =
+            Session::from_encrypted_str(session_data, &key.0).map_err(|_| redirect.no_error())?;
 
         match session.provider {
             Provider::GitHub => github::validate(&session)
                 .await
                 .map(|_| session)
-                .map_err(|_| AuthRedirect::no_error()),
+                .map_err(|_| redirect.no_error()),
         }
     }
 }
