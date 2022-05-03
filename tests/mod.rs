@@ -20,9 +20,7 @@ async fn app() {
             .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
     );
     let cl = tokio::task::spawn_blocking(move || {
-        let cl = Client::builder(addr.parse::<Url>().unwrap())
-            .build()
-            .unwrap();
+        let cl = Client::builder(addr.parse::<Url>().unwrap()).build();
 
         let foo_repo = "user/foo".parse().unwrap();
         let foo = cl.repository(&foo_repo);
@@ -30,11 +28,11 @@ async fn app() {
         let bar_repo = "user/test/bar".parse().unwrap();
         let bar = cl.repository(&bar_repo);
 
-        assert!(matches!(foo.get(), Err(_)));
-        assert!(matches!(bar.get(), Err(_)));
+        assert!(foo.get().is_err());
+        assert!(bar.get().is_err());
 
-        assert!(matches!(foo.create(&RepositoryConfig {}), Ok(true)));
-        assert!(matches!(bar.create(&RepositoryConfig {}), Ok(true)));
+        assert_eq!(foo.create(&RepositoryConfig {}).unwrap(), true);
+        assert_eq!(bar.create(&RepositoryConfig {}).unwrap(), true);
 
         assert_eq!(foo.tags().unwrap(), vec![]);
         assert_eq!(bar.tags().unwrap(), vec![]);
@@ -47,15 +45,18 @@ async fn app() {
             custom: Default::default(),
         });
 
-        assert!(matches!(foo_v0_1_0.get(), Err(_)));
-        assert!(matches!(foo_v0_1_0.create(&entry), Ok(true)));
+        assert!(foo_v0_1_0.get().is_err());
+        assert_eq!(foo_v0_1_0.create(&entry).unwrap(), true);
         assert_eq!(foo_v0_1_0.get().unwrap(), entry);
 
         let root_path = "/".parse().unwrap();
         let root = foo_v0_1_0.path(&root_path);
-        assert!(matches!(root.get_text(), Err(_)));
-        assert!(matches!(root.create(mime::TEXT_PLAIN, "test"), Ok(true)));
-        assert_eq!(root.get_text().unwrap(), ("test".into(), mime::TEXT_PLAIN));
+        assert!(root.get_string().is_err());
+        assert_eq!(root.create_bytes(mime::TEXT_PLAIN, b"test").unwrap(), true);
+        assert_eq!(
+            root.get_string().unwrap(),
+            ("test".into(), mime::TEXT_PLAIN)
+        );
     });
     assert!(matches!(cl.await, Ok(())));
 

@@ -3,16 +3,16 @@
 
 use super::{Result, Tag};
 
-use std::io::Write;
+use std::io::{copy, Read, Write};
 
+use drawbridge_type::digest::ContentDigest;
 use drawbridge_type::{Meta, TreePath};
 
 use anyhow::{anyhow, bail};
-use bytes::Bytes;
+use http::header::{CONTENT_DIGEST, CONTENT_LENGTH, CONTENT_TYPE};
+use http::StatusCode;
 use mime::Mime;
-use reqwest::blocking::{Body, Response};
-use reqwest::header::CONTENT_TYPE;
-use reqwest::StatusCode;
+use ureq::{Request, Response};
 
 pub struct Node<'a> {
     pub(crate) tag: &'a Tag<'a>,
@@ -20,42 +20,71 @@ pub struct Node<'a> {
 }
 
 impl Node<'_> {
-    pub fn create(&self, mime: Mime, body: impl Into<Body>) -> Result<bool> {
-        let res = self
+    fn create_request(&self, hash: ContentDigest, mime: Mime) -> Result<Request> {
+        let req = self
             .tag
             .repo
             .client
             .inner
-            .put(self.tag.repo.client.url.join(&format!(
-                "{}/_tag/{}/tree{}",
-                self.tag.repo.name, self.tag.name, self.path,
-            ))?)
-            .header(CONTENT_TYPE, mime.to_string())
-            // TODO: Calculate and set Content-Digest
-            .body(body)
-            .send()?
-            .error_for_status()?;
-        match res.status() {
-            StatusCode::CREATED => Ok(true),
-            StatusCode::OK => Ok(false),
+            .put(
+                self.tag
+                    .repo
+                    .client
+                    .url
+                    .join(&format!(
+                        "{}/_tag/{}/tree{}",
+                        self.tag.repo.name, self.tag.name, self.path,
+                    ))?
+                    .as_str(),
+            )
+            .set(CONTENT_DIGEST.as_str(), &hash.to_string())
+            .set(CONTENT_TYPE.as_str(), &mime.to_string());
+        Ok(req)
+    }
+
+    pub fn create_from(&self, Meta { hash, size, mime }: Meta, rdr: impl Read) -> Result<bool> {
+        let res = self
+            .create_request(hash, mime)?
+            .set(CONTENT_LENGTH.as_str(), &size.to_string())
+            .send(rdr)?;
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::CREATED) => Ok(true),
+            Ok(StatusCode::OK) => Ok(false),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    fn get(&self) -> Result<(Meta, Response)> {
+    pub fn create_bytes(&self, mime: Mime, data: impl AsRef<[u8]>) -> Result<bool> {
+        let res = self
+            // TODO: Calculate and set Content-Digest
+            .create_request(Default::default(), mime)?
+            .send_bytes(data.as_ref())?;
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::CREATED) => Ok(true),
+            Ok(StatusCode::OK) => Ok(false),
+            _ => bail!("unexpected status code: {}", res.status()),
+        }
+    }
+
+    fn get_response(&self) -> Result<(Meta, Response)> {
         let res = self
             .tag
             .repo
             .client
             .inner
-            .get(self.tag.repo.client.url.join(&format!(
-                "{}/_tag/{}/tree{}",
-                self.tag.repo.name, self.tag.name, self.path,
-            ))?)
-            .send()?
-            .error_for_status()?;
+            .get(
+                self.tag
+                    .repo
+                    .client
+                    .url
+                    .join(&format!(
+                        "{}/_tag/{}/tree{}",
+                        self.tag.repo.name, self.tag.name, self.path,
+                    ))?
+                    .as_str(),
+            )
+            .call()?;
         let (hash, mime) = {
-            let hdr = res.headers();
             (
                 // TODO: figure out why CONTENT_DIGEST does not work
                 // TODO: fix parsing of Content-Digest header
@@ -66,22 +95,22 @@ impl Node<'_> {
                 //    .map_err(|e| format!("failed to parse Content-Digest value: {}", e))?,
                 // https://github.com/profianinc/drawbridge/issues/103
                 Default::default(),
-                hdr.get(CONTENT_TYPE)
-                    .ok_or(anyhow!("missing Content-Type header"))?
-                    .to_str()?
+                res.header(CONTENT_TYPE.as_str())
+                    .ok_or_else(|| anyhow!("missing Content-Type header"))?
                     .parse()?,
             )
         };
         let size = res
-            .content_length()
-            .ok_or(anyhow!("missing Content-Length header"))?;
-        match res.status() {
-            StatusCode::OK => Ok((Meta { hash, size, mime }, res)),
+            .header(CONTENT_LENGTH.as_str())
+            .ok_or_else(|| anyhow!("missing Content-Length header"))?
+            .parse()?;
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::OK) => Ok((Meta { hash, size, mime }, res)),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn get_to(&self, dst: &mut impl Write) -> Result<(u64, Mime)> {
+    pub fn get(&self) -> Result<(impl Read + Send, u64, Mime)> {
         let (
             Meta {
                 // TODO: Validate digest
@@ -90,9 +119,16 @@ impl Node<'_> {
                 size,
                 mime,
             },
-            mut res,
-        ) = self.get()?;
-        let n = res.copy_to(dst)?;
+            res,
+        ) = self.get_response()?;
+        // TODO: Wrap the reader and verify size
+        // https://github.com/profianinc/drawbridge/issues/103
+        Ok((res.into_reader().take(size), size, mime))
+    }
+
+    pub fn get_to(&self, dst: &mut impl Write) -> Result<(u64, Mime)> {
+        let (mut r, size, mime) = self.get()?;
+        let n = copy(&mut r, dst)?;
         if n != size {
             bail!(
                 "invalid amount of bytes read, expected {}, read {}",
@@ -103,29 +139,12 @@ impl Node<'_> {
         Ok((size, mime))
     }
 
-    pub fn get_bytes(&self) -> Result<(Bytes, Mime)> {
-        let (
-            Meta {
-                // TODO: Validate digest
-                // https://github.com/profianinc/drawbridge/issues/103
-                hash: _,
-                size,
-                mime,
-            },
-            res,
-        ) = self.get()?;
-        let b = res.bytes()?;
-        if b.len() as u64 != size {
-            bail!(
-                "invalid amount of bytes read, expected {}, read {}",
-                size,
-                b.len(),
-            )
-        }
-        Ok((b, mime))
+    pub fn get_bytes(&self) -> Result<(Vec<u8>, Mime)> {
+        let mut v = vec![];
+        self.get_to(&mut v).map(|(_, mime)| (v, mime))
     }
 
-    pub fn get_text(&self) -> Result<(String, Mime)> {
+    pub fn get_string(&self) -> Result<(String, Mime)> {
         let (
             Meta {
                 // TODO: Validate digest
@@ -135,8 +154,8 @@ impl Node<'_> {
                 mime,
             },
             res,
-        ) = self.get()?;
-        let s = res.text()?;
+        ) = self.get_response()?;
+        let s = res.into_string()?;
         if s.len() as u64 != size {
             bail!(
                 "invalid amount of bytes read, expected {}, read {}",

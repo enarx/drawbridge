@@ -16,13 +16,13 @@ pub use drawbridge_type as types;
 
 pub use anyhow::Result;
 pub use mime;
-pub use reqwest::Url;
+pub use url::Url;
 
 use drawbridge_type::RepositoryName;
 
 #[derive(Debug)]
 pub struct Client {
-    inner: reqwest::blocking::Client,
+    inner: ureq::Agent,
     url: Url,
 }
 
@@ -37,27 +37,24 @@ impl Client {
 }
 
 pub struct ClientBuilder {
-    inner: reqwest::blocking::ClientBuilder,
+    inner: ureq::AgentBuilder,
     url: Url,
 }
 
 impl ClientBuilder {
     pub fn new(url: impl Into<Url>) -> Self {
         Self {
-            inner: reqwest::blocking::Client::builder(),
+            inner: ureq::AgentBuilder::new(),
             url: url.into(),
         }
     }
 
     // TODO: Add configuration
 
-    pub fn build(self) -> Result<Client> {
-        self.inner
-            .build()
-            .map(|inner| Client {
-                inner,
-                url: self.url,
-            })
-            .map_err(Into::into)
+    pub fn build(self) -> Client {
+        Client {
+            inner: self.inner.build(),
+            url: self.url,
+        }
     }
 }

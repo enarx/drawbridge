@@ -6,7 +6,7 @@ use super::{Client, Result, Tag};
 use drawbridge_type::{RepositoryConfig, RepositoryName, TagName};
 
 use anyhow::bail;
-use reqwest::StatusCode;
+use http::StatusCode;
 
 pub struct Repository<'a> {
     pub(crate) client: &'a Client,
@@ -22,14 +22,18 @@ impl Repository<'_> {
         let res = self
             .client
             .inner
-            .get(self.client.url.join(&format!("{}/_tag", self.name))?)
-            .send()?
-            .error_for_status()?;
+            .get(
+                self.client
+                    .url
+                    .join(&format!("{}/_tag", self.name))?
+                    .as_str(),
+            )
+            .call()?;
         // TODO: Verify Content-Digest
         // TODO: Verify Content-Length
         // https://github.com/profianinc/drawbridge/issues/103
-        match res.status() {
-            StatusCode::OK => res.json().map_err(Into::into),
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::OK) => res.into_json().map_err(Into::into),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
@@ -38,14 +42,13 @@ impl Repository<'_> {
         let res = self
             .client
             .inner
-            .put(self.client.url.join(&self.name.to_string())?)
+            .put(self.client.url.join(&self.name.to_string())?.as_str())
             // TODO: Calculate and set Content-Digest
-            .json(conf)
-            .send()?
-            .error_for_status()?;
-        match res.status() {
-            StatusCode::CREATED => Ok(true),
-            StatusCode::OK => Ok(false),
+            // https://github.com/profianinc/drawbridge/issues/102
+            .send_json(conf)?;
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::CREATED) => Ok(true),
+            Ok(StatusCode::OK) => Ok(false),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
@@ -54,14 +57,13 @@ impl Repository<'_> {
         let res = self
             .client
             .inner
-            .get(self.client.url.join(&self.name.to_string())?)
-            .send()?
-            .error_for_status()?;
+            .get(self.client.url.join(&self.name.to_string())?.as_str())
+            .call()?;
         // TODO: Verify Content-Digest
         // TODO: Verify Content-Length
         // https://github.com/profianinc/drawbridge/issues/103
-        match res.status() {
-            StatusCode::OK => res.json().map_err(Into::into),
+        match StatusCode::from_u16(res.status()) {
+            Ok(StatusCode::OK) => res.into_json().map_err(Into::into),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
