@@ -27,7 +27,7 @@ pub async fn validate(session: &Session) -> Result<String, Error> {
 
     let client = reqwest::Client::new();
 
-    let body: String = client
+    let body = client
         .get("https://api.github.com/user")
         .header(USER_AGENT, "drawbridge")
         .bearer_auth(session.token.secret())
