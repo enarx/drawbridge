@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::Error;
 use crate::providers;
 
 use axum::routing::get;
@@ -9,24 +8,15 @@ use axum::{Extension, Router};
 
 #[derive(Default)]
 pub struct Builder {
-    host: Option<String>,
+    host: String,
     github: Option<(String, String)>,
 }
 
 impl Builder {
-    pub fn new() -> Self {
-        Self {
-            host: None,
-            github: None,
-        }
-    }
-
-    /// The host the server will run on (used for redirects).
-    pub fn host(self, host: String) -> Self {
-        Self {
-            host: Some(host),
-            ..self
-        }
+    /// Constructs a new [Builder].
+    /// The host is the URL the server will run on (used for redirects).
+    pub fn new(host: String) -> Self {
+        Self { host, github: None }
     }
 
     /// The github client id and client secret to use.
@@ -38,10 +28,8 @@ impl Builder {
     }
 
     /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
-    pub fn build(self) -> Result<Router, Error> {
+    pub fn build(self) -> Router {
         let mut router = Router::new();
-
-        let host = self.host.ok_or(Error::BuilderMissingProperty("host"))?;
 
         if let Some((client_id, client_secret)) = self.github {
             router = router
@@ -54,12 +42,11 @@ impl Builder {
                     get(providers::github::routes::login),
                 )
                 .layer(Extension(providers::github::OAuthClient::new(
-                    &host,
+                    &self.host,
                     client_id,
                     client_secret,
                 )));
         }
-
-        Ok(router)
+        router
     }
 }
