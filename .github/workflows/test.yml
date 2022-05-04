@@ -11,8 +11,10 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --workspace --features integration-tests
-      env:
-        GH_OAUTH_CLIENT_ID: ${{ secrets.GH_OAUTH_CLIENT_ID }}
-        GH_OAUTH_SECRET: ${{ secrets.GH_OAUTH_SECRET }}
-        GH_DRAWBRIDGE_TOKEN: ${{ secrets.GH_DRAWBRIDGE_TOKEN }}
+        args: --workspace
+        # TODO: Reenable https://github.com/profianinc/drawbridge/issues/124
+        #args: --workspace --features integration-tests
+        #env:
+        #  GH_OAUTH_CLIENT_ID: ${{ secrets.GH_OAUTH_CLIENT_ID }}
+        #  GH_OAUTH_SECRET: ${{ secrets.GH_OAUTH_SECRET }}
+        #  GH_DRAWBRIDGE_TOKEN: ${{ secrets.GH_DRAWBRIDGE_TOKEN }}
