@@ -21,8 +21,7 @@ serde_json = { version = "1.0", default-features = false }
 [dev-dependencies]
 hyper = { version = "0.14", default-features = false }
 regex = { version = "1", default-features = false, features = ["std"] }
-tokio = { version = "1.8.0", default-features = false }
-tokio-test = { version = "0.4", default-features = false }
+tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt"] }
 tower = { version = "0.4", default-features = false }
 
 [features]
