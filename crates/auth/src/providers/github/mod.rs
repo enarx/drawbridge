@@ -3,9 +3,9 @@
 
 pub mod routes;
 
-use std::{fmt, io};
+use super::super::session::Session;
 
-use crate::session::Session;
+use std::{fmt, io};
 
 use axum::http::header::{AUTHORIZATION, USER_AGENT};
 use axum::http::status::InvalidStatusCode;
