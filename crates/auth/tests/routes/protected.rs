@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
+
 use super::{test_app, PROTECTED};
-use drawbridge_auth::{Provider, Session, COOKIE_NAME};
 
 use std::{env, str};
 
-use axum::{
-    http::{Request, StatusCode},
-    response::IntoResponse,
-};
+use drawbridge_auth::{Provider, Session, COOKIE_NAME};
+
+use axum::http::{Request, StatusCode};
+use axum::response::IntoResponse;
 use hyper::Body;
 use oauth2::AccessToken;
-use rsa::{pkcs8::DecodePrivateKey, RsaPrivateKey};
+use rsa::pkcs8::DecodePrivateKey;
+use rsa::RsaPrivateKey;
 use tower::util::ServiceExt;
 
 /// This is just an example of how to implement endpoints behind OAuth.

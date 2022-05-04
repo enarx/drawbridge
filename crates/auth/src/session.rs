@@ -1,21 +1,17 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
-use crate::{
-    error::Error,
-    providers::{github, Provider},
-    redirect::{AuthRedirect, AuthRedirectRoot},
-};
+
+use crate::error::Error;
+use crate::providers::{github, Provider};
+use crate::redirect::{AuthRedirect, AuthRedirectRoot};
 
 use std::fmt;
 
-use axum::{
-    async_trait,
-    extract::{
-        rejection::TypedHeaderRejectionReason, Extension, FromRequest, RequestParts, TypedHeader,
-    },
-    headers,
-    http::header::COOKIE,
-};
+use axum::async_trait;
+use axum::extract::rejection::TypedHeaderRejectionReason;
+use axum::extract::{Extension, FromRequest, RequestParts, TypedHeader};
+use axum::headers;
+use axum::http::header::COOKIE;
 use oauth2::AccessToken;
 use rand::rngs::OsRng;
 use rsa::{PaddingScheme, PublicKey, RsaPrivateKey};
