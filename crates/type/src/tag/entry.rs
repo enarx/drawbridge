@@ -4,7 +4,6 @@
 use super::super::tree;
 
 use drawbridge_jose::jws::Jws;
-use drawbridge_jose::MediaTyped;
 
 // TODO: Remove
 // https://github.com/profianinc/drawbridge/issues/95
@@ -17,6 +16,9 @@ use axum::{
     response::{IntoResponse, Response},
     {Json, TypedHeader},
 };
+#[cfg(feature = "axum")]
+use drawbridge_jose::MediaTyped;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
