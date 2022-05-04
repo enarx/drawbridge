@@ -4,8 +4,10 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use serde::{Deserialize, Serialize};
+
 /// A repository name
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Name {
     owner: String,
     groups: Vec<String>,
