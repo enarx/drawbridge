@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
+
 pub mod routes;
 
-use crate::{error::Error, session::Session};
+use crate::error::Error;
+use crate::session::Session;
 
 use axum::http::header::USER_AGENT;
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use oauth2::basic::BasicClient;
+use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use serde::Deserialize;
 
 pub const LOGIN_URI: &str = "/github";

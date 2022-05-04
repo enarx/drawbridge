@@ -1,15 +1,19 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
+
 mod protected;
 mod providers;
 mod status;
 
-use drawbridge_auth::{AuthRedirectRoot, Builder};
-
 use std::env;
 
-use axum::{extract::Extension, routing::get, Router};
-use rsa::{pkcs8::DecodePrivateKey, RsaPrivateKey};
+use drawbridge_auth::{AuthRedirectRoot, Builder};
+
+use axum::extract::Extension;
+use axum::routing::get;
+use axum::Router;
+use rsa::pkcs8::DecodePrivateKey;
+use rsa::RsaPrivateKey;
 
 pub const STATUS: &str = "/status";
 pub const PROTECTED: &str = "/protected";

@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
+
 use super::{test_app, STATUS};
-use drawbridge_auth::{Provider, Session, COOKIE_NAME};
 
 use std::{env, str};
+
+use drawbridge_auth::{Provider, Session, COOKIE_NAME};
 
 use axum::http::{Request, StatusCode};
 use hyper::Body;

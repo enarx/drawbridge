@@ -1,17 +1,15 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
-use crate::{
-    providers::{github::OAuthClient, Provider},
-    session::Session,
-};
 
-use axum::{
-    extract::{Extension, Query},
-    response::{IntoResponse, Redirect},
-};
-use oauth2::{
-    basic::BasicClient, reqwest::http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse,
-};
+use crate::providers::github::OAuthClient;
+use crate::providers::Provider;
+use crate::session::Session;
+
+use axum::extract::{Extension, Query};
+use axum::response::{IntoResponse, Redirect};
+use oauth2::basic::BasicClient;
+use oauth2::reqwest::http_client;
+use oauth2::{AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use rsa::RsaPrivateKey;
 use serde::Deserialize;
 
