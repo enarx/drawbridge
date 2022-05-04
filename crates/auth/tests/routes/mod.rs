@@ -25,14 +25,12 @@ pub fn test_app(host: String) -> Router {
     Router::new()
         .nest(
             "/auth",
-            Builder::new()
-                .host(host.clone())
+            Builder::new(host.clone())
                 .github(
                     env::var("GH_OAUTH_CLIENT_ID").expect("GH_OAUTH_CLIENT_ID env var"),
                     env::var("GH_OAUTH_SECRET").expect("GH_OAUTH_SECRET env var"),
                 )
-                .build()
-                .unwrap(),
+                .build(),
         )
         .route(STATUS, get(status::status))
         .route(PROTECTED, get(protected::protected))
