@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::providers::github::OAuthClient;
-use crate::providers::Provider;
+use super::super::Provider;
+use super::OAuthClient;
 use crate::session::Session;
 
 use axum::extract::{Extension, Query};

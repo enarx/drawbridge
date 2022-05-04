@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::providers::{github, Provider};
-use crate::redirect::{AuthRedirect, AuthRedirectRoot};
+use super::providers::{github, Provider};
+use super::redirect::{AuthRedirect, AuthRedirectRoot};
 
 use std::fmt;
 
