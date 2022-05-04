@@ -5,8 +5,6 @@ mod protected;
 mod providers;
 mod status;
 
-use std::env;
-
 use drawbridge_auth::{AuthRedirectRoot, Builder};
 
 use axum::extract::Extension;
@@ -26,10 +24,7 @@ pub fn test_app(host: String) -> Router {
         .nest(
             "/auth",
             Builder::new(host.clone())
-                .github(
-                    env::var("GH_OAUTH_CLIENT_ID").expect("GH_OAUTH_CLIENT_ID env var"),
-                    env::var("GH_OAUTH_SECRET").expect("GH_OAUTH_SECRET env var"),
-                )
+                .github("unused".to_string(), "unused".to_string())
                 .build(),
         )
         .route(STATUS, get(status::status))
