@@ -5,7 +5,9 @@ use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Path(Vec<String>);
 
 impl FromStr for Path {
