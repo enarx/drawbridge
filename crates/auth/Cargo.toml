@@ -7,10 +7,10 @@ edition = "2021"
 [dependencies]
 # Internal dependencies
 # External dependencies
-axum = { version = "0.5.0", features = ["headers", "query"], default-features = false }
+axum = { version = "0.5.0", default-features = false, features = ["headers", "query"] }
 base64 = { version = "0.13", default-features = false }
 bincode = { version = "1", default-features = true }
-oauth2 = { version = "4.1", features = ["reqwest"], default-features = false }
+oauth2 = { version = "4.1", default-features = false, features = ["reqwest"] }
 rand = { version = "0.8", default-features = false }
 # TODO: migrate back to ureq because reqwest doesn't work in enarx: https://github.com/profianinc/drawbridge/issues/121
 reqwest = { version = "0.11", default-features = false }
@@ -20,7 +20,7 @@ serde_json = { version = "1.0", default-features = false }
 
 [dev-dependencies]
 hyper = { version = "0.14", default-features = false }
-regex = { version = "1", features = ["std"], default-features = false }
+regex = { version = "1", default-features = false, features = ["std"] }
 tokio = { version = "1.8.0", default-features = false }
 tokio-test = { version = "0.4", default-features = false }
 tower = { version = "0.4", default-features = false }
