@@ -8,7 +8,7 @@ use crate::session::Session;
 use axum::extract::{Extension, Query};
 use axum::response::{IntoResponse, Redirect};
 use oauth2::basic::BasicClient;
-use oauth2::reqwest::http_client;
+use oauth2::ureq::http_client;
 use oauth2::{AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use rsa::RsaPrivateKey;
 use serde::Deserialize;

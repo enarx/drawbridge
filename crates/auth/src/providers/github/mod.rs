@@ -3,10 +3,13 @@
 
 pub mod routes;
 
-use crate::error::Error;
+use std::{fmt, io};
+
 use crate::session::Session;
 
-use axum::http::header::USER_AGENT;
+use axum::http::header::{AUTHORIZATION, USER_AGENT};
+use axum::http::status::InvalidStatusCode;
+use axum::http::StatusCode;
 use oauth2::basic::BasicClient;
 use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use serde::Deserialize;
@@ -14,39 +17,61 @@ use serde::Deserialize;
 pub const LOGIN_URI: &str = "/github";
 pub const AUTHORIZED_URI: &str = "/github/authorized";
 
-pub async fn validate(session: &Session) -> Result<String, Error> {
+#[derive(Debug)]
+pub enum ValidateError {
+    Http(ureq::Error),
+    Json(io::Error),
+    InvalidStatusCode(InvalidStatusCode),
+    GitHub(String),
+}
+
+impl fmt::Display for ValidateError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "session {}",
+            match self {
+                ValidateError::Http(e) => format!("HTTP request error: {}", e),
+                ValidateError::Json(e) => format!("JSON deserialization error: {}", e),
+                ValidateError::InvalidStatusCode(e) => format!("invalid status code: {}", e),
+                ValidateError::GitHub(e) => format!("github error: {}", e),
+            }
+        )
+    }
+}
+
+impl std::error::Error for ValidateError {}
+
+pub async fn validate(session: &Session) -> Result<String, ValidateError> {
     #[derive(Deserialize)]
-    struct GitHubUser {
+    struct User {
         login: String,
     }
 
     #[derive(Deserialize)]
-    struct GitHubError {
+    struct Error {
         message: String,
     }
 
-    let client = reqwest::Client::new();
-
-    let body = client
-        .get("https://api.github.com/user")
-        .header(USER_AGENT, "drawbridge")
-        .bearer_auth(session.token.secret())
-        .send()
-        .await
-        .map_err(Error::Request)?
-        .text()
-        .await
-        .map_err(Error::Request)?;
-
-    let user =
-        serde_json::from_str::<GitHubUser>(&body).map_err(|_| {
-            match serde_json::from_str::<GitHubError>(&body) {
-                Err(e) => Error::Serde(e.to_string()),
-                Ok(error) => Error::OAuth(error.message),
-            }
-        })?;
-
-    Ok(user.login)
+    let res = ureq::get("https://api.github.com/user")
+        .set(USER_AGENT.as_str(), "drawbridge")
+        .set(
+            AUTHORIZATION.as_str(),
+            &format!("Bearer {}", session.token.secret()),
+        )
+        .call()
+        .map_err(ValidateError::Http)?;
+    match StatusCode::from_u16(res.status()) {
+        Ok(s) if s.is_success() => res
+            .into_json()
+            .map_err(ValidateError::Json)
+            .map(|User { login }| login),
+        Ok(_) => res
+            .into_json()
+            .map_err(ValidateError::Json)
+            .and_then(|Error { message }| Err(ValidateError::GitHub(message))),
+        Err(e) => Err(ValidateError::InvalidStatusCode(e)),
+    }
 }
 
 #[derive(Clone)]
