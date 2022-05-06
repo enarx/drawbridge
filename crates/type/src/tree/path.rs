@@ -19,7 +19,7 @@ impl FromStr for Path {
             let part = part.as_ref();
             !part.is_empty()
                 && part
-                    .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_'))
+                    .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.'))
                     .is_none()
         }
 
