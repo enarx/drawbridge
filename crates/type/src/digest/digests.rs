@@ -145,13 +145,15 @@ where
     }
 }
 
+static CONTENT_DIGEST: HeaderName = HeaderName::from_static("content-digest");
+
 #[cfg(all(feature = "headers", feature = "http"))]
 impl<H> Header for ContentDigest<H>
 where
     H: Default + AsRef<[u8]> + From<Vec<u8>>,
 {
     fn name() -> &'static HeaderName {
-        &http::header::CONTENT_DIGEST
+        &CONTENT_DIGEST
     }
 
     fn decode<'i, I>(values: &mut I) -> Result<Self, HeadErr>

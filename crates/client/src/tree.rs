@@ -9,7 +9,7 @@ use drawbridge_type::digest::ContentDigest;
 use drawbridge_type::{Meta, TreePath};
 
 use anyhow::{anyhow, bail};
-use http::header::{CONTENT_DIGEST, CONTENT_LENGTH, CONTENT_TYPE};
+use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use http::StatusCode;
 use mime::Mime;
 use ureq::{Request, Response};
@@ -20,7 +20,7 @@ pub struct Node<'a> {
 }
 
 impl Node<'_> {
-    fn create_request(&self, hash: ContentDigest, mime: Mime) -> Result<Request> {
+    fn create_request(&self, _hash: ContentDigest, mime: Mime) -> Result<Request> {
         let req = self
             .tag
             .repo
@@ -37,7 +37,8 @@ impl Node<'_> {
                     ))?
                     .as_str(),
             )
-            .set(CONTENT_DIGEST.as_str(), &hash.to_string())
+            // TODO: Set Content-Digest
+            // https://github.com/profianinc/drawbridge/issues/102
             .set(CONTENT_TYPE.as_str(), &mime.to_string());
         Ok(req)
     }
