@@ -536,8 +536,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.6"
-source = "git+https://github.com/npmccallum/http?rev=0f4438e7f5107d8b06142894d2d9cd5186b721ab#0f4438e7f5107d8b06142894d2d9cd5186b721ab"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff8670570af52249509a86f5e3e18a08c60b177071826898fde8997cf5f6bfbb"
 dependencies = [
  "bytes",
  "fnv",
