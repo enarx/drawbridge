@@ -13,4 +13,4 @@ jobs:
         command: test
         args: --workspace --features integration-tests
       env:
-        GH_DRAWBRIDGE_TOKEN: ${{ secrets.GH_DRAWBRIDGE_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
