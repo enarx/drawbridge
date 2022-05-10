@@ -145,6 +145,7 @@ where
     }
 }
 
+#[cfg(all(feature = "headers", feature = "http"))]
 static CONTENT_DIGEST: HeaderName = HeaderName::from_static("content-digest");
 
 #[cfg(all(feature = "headers", feature = "http"))]
