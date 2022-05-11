@@ -18,7 +18,7 @@ pub const PROTECTED: &str = "/protected";
 
 pub fn test_app(host: String) -> Router {
     // TODO: generate this key at runtime or pull the path from the command line args: https://github.com/profianinc/drawbridge/issues/18
-    let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
+    let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../rsa2048-priv.der")).unwrap();
 
     Router::new()
         .nest(

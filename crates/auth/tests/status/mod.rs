@@ -3,7 +3,7 @@
 
 use super::{test_app, STATUS};
 
-use std::{env, str};
+use std::str;
 
 use drawbridge_auth::{Provider, Session, COOKIE_NAME};
 
@@ -22,11 +22,12 @@ pub async fn status(session: Option<Session>) -> (StatusCode, String) {
 }
 
 #[tokio::test]
+#[cfg_attr(not(has_github_token), ignore)]
 async fn status_authenticated() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(
         Provider::GitHub,
-        AccessToken::new(env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env var")),
+        AccessToken::new(std::env::var("GITHUB_TOKEN").unwrap()),
     );
     let app = test_app("localhost/auth".to_owned());
     let response = app
