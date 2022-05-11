@@ -3,8 +3,6 @@
 
 use super::{test_app, PROTECTED};
 
-use std::{env, str};
-
 use drawbridge_auth::{Provider, Session, COOKIE_NAME};
 
 use axum::http::{Request, StatusCode};
@@ -24,11 +22,12 @@ pub async fn protected(session: Session) -> impl IntoResponse {
 }
 
 #[tokio::test]
+#[cfg_attr(not(has_github_token), ignore)]
 async fn protected_authenticated() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(
         Provider::GitHub,
-        AccessToken::new(env::var("GITHUB_TOKEN").expect("GITHUB_TOKEN env var")),
+        AccessToken::new(std::env::var("GITHUB_TOKEN").unwrap()),
     );
     let app = test_app("localhost/auth".to_owned());
     let response = app
@@ -47,7 +46,7 @@ async fn protected_authenticated() {
 
     assert_eq!(response.status(), StatusCode::OK);
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    let body = str::from_utf8(&body).unwrap();
+    let body = std::str::from_utf8(&body).unwrap();
     assert_eq!(
         body,
         r#"Welcome to the protected area
