@@ -1,4 +1,2 @@
 * @profianinc/drawbridge @bstrie @haraldh
-*.rs @profianinc/drawbridge
-/crates/client/**/*.rs @profianinc/drawbridge @bstrie
-/crates/type/**/*.rs @profianinc/drawbridge @bstrie
+*.rs @profianinc/drawbridge @bstrie
