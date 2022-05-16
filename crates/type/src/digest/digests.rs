@@ -117,19 +117,19 @@ where
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(
-            s.split(',')
-                .map(|s| {
-                    let (key, val) = s.split_once('=').ok_or(Error::MissingEq)?;
-                    if val.len() < 2 || !val.starts_with(':') || !val.ends_with(':') {
-                        return Err(Error::MissingColons);
-                    }
-
-                    let b64 = &val[1..val.len() - 2];
-                    Ok((key.parse()?, b64.parse()?))
-                })
-                .collect::<Result<_, _>>()?,
-        ))
+        s.split(',')
+            .map(|s| {
+                let (key, val) = s.split_once('=').ok_or(Error::MissingEq)?;
+                let alg = key.parse()?;
+                let b64 = val
+                    .strip_prefix(':')
+                    .and_then(|val| val.strip_suffix(':'))
+                    .ok_or(Error::MissingColons)?
+                    .parse()?;
+                Ok((alg, b64))
+            })
+            .collect::<Result<_, _>>()
+            .map(Self)
     }
 }
 
@@ -194,7 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn isomorphism() {
-        const STR: &str = "sha-224=:CAj2TmDViXn8tnbJbsk4Jw3qQkRa7vzTpOb42w==:,sha-256=:LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564=:,sha-384=:mMEf/f3VQGdrGhN8saIrKnA1DJpEFx1rEYDGvly7LuP3nVMsih3Z7y6OCOdSo7q7=:,sha-512=:9/u6bgY2+JDlb7vzKD5STG+jIErimDgtYkdB0NxmODJuKCxBvl5CVNiCB3LFUYosWowMf37aGVlKfrU5RT4e1w==:";
+        const STR: &str = "sha-224=:CAj2TmDViXn8tnbJbsk4Jw3qQkRa7vzTpOb42w==:,sha-256=:LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564=:,sha-384=:mMEf/f3VQGdrGhN8saIrKnA1DJpEFx1rEYDGvly7LuP3nVMsih3Z7y6OCOdSo7q7:,sha-512=:9/u6bgY2+JDlb7vzKD5STG+jIErimDgtYkdB0NxmODJuKCxBvl5CVNiCB3LFUYosWowMf37aGVlKfrU5RT4e1w==:";
         assert_eq!(STR.parse::<ContentDigest>().unwrap().to_string(), STR);
     }
 }
