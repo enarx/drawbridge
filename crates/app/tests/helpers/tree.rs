@@ -5,6 +5,7 @@ use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::{RepositoryName, TagName, TreePath};
 
 use axum::http;
+use bytes::Bytes;
 use http::header::HeaderMap;
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
@@ -100,28 +101,24 @@ pub async fn get_path(
     repo: &RepositoryName,
     tag: &TagName,
     path: &TreePath,
-) -> (Vec<u8>, Mime) {
+) -> (Bytes, Mime) {
     let url = format!("{addr}/{repo}/_tag/{tag}/tree{path}");
 
     let res = cl.get(&url).send().await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);
 
-    let length = res.content_length().unwrap();
-
-    let content_type: Mime = get_header(res.headers(), CONTENT_TYPE.as_str())
+    let content_length = res.content_length().unwrap();
+    let content_type = get_header(res.headers(), CONTENT_TYPE.as_str())
         .parse()
         .unwrap();
-
     let content_digest: ContentDigest =
         get_header(res.headers(), "content-digest").parse().unwrap();
-    let resp_bytes = res.bytes().await.unwrap().to_vec();
 
-    let calculated_digest = Algorithms::default()
-        .read(resp_bytes.as_slice())
-        .await
-        .unwrap();
+    let body = res.bytes().await.unwrap();
+    assert_eq!(body.len() as u64, content_length);
 
-    assert_eq!(length as usize, resp_bytes.len());
-    assert_eq!(content_digest, calculated_digest);
-    (resp_bytes, content_type)
+    let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
+    assert_eq!(body_digest, content_digest);
+
+    (body, content_type)
 }

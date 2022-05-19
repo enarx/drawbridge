@@ -93,7 +93,7 @@ async fn app() {
         tree::get_path(&cl, &addr, &foo, &tag, &"/".parse().unwrap()).await;
 
     assert_eq!(test_type, mime::TEXT_PLAIN);
-    assert_eq!(test_resp, b"testing".to_vec());
+    assert_eq!(&test_resp[..], b"testing");
 
     // Stop server
     assert_eq!(tx.send(()), Ok(()));
