@@ -11,6 +11,7 @@ pub async fn create(
     addr: &str,
     repo: &RepositoryName,
     name: &TagName,
+    ctype: &str,
     tag: TagEntry,
 ) {
     let url = format!("{}/{}/_tag/{}", addr, repo, name);
@@ -33,7 +34,7 @@ pub async fn create(
 
     let res = cl
         .put(&url)
-        .header(CONTENT_TYPE, TreeEntry::TYPE)
+        .header(CONTENT_TYPE, ctype)
         .body(serde_json::to_vec(&tag).unwrap())
         .send()
         .await
@@ -66,7 +67,7 @@ pub async fn create(
 
     let res = cl
         .put(&url)
-        .header(CONTENT_TYPE, TreeEntry::TYPE)
+        .header(CONTENT_TYPE, ctype)
         .body(serde_json::to_vec(&tag).unwrap())
         .send()
         .await

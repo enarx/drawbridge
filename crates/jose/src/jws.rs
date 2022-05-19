@@ -45,6 +45,10 @@ impl MediaTyped for Jws {
     const TYPE: &'static str = "application/jose+json";
 }
 
+impl Jws {
+    pub const TYPE: &'static str = "application/jose+json";
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound(deserialize = "P: DeserializeOwned, H: Deserialize<'de>"))]
 #[serde(untagged)]
