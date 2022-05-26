@@ -20,15 +20,15 @@ pub use trees::*;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use drawbridge_store::{Get, Memory};
+use drawbridge_store::{Filesystem, Get};
 use drawbridge_type::{RepositoryName, TagName, TreePath};
 
 use axum::http::StatusCode;
 use tokio::sync::RwLock;
 
-pub type RepoStore = RwLock<Memory<RepositoryName>>;
-pub type TagStore = RwLock<Memory<(RepositoryName, TagName)>>;
-pub type TreeStore = RwLock<Memory<(RepositoryName, TagName, TreePath)>>;
+pub type RepoStore = RwLock<Filesystem<RepositoryName>>;
+pub type TagStore = RwLock<Filesystem<(RepositoryName, TagName)>>;
+pub type TreeStore = RwLock<Filesystem<(RepositoryName, TagName, TreePath)>>;
 
 pub async fn assert_repo(
     repos: Arc<RepoStore>,

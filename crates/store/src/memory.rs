@@ -18,7 +18,10 @@ use futures::io::{self, copy};
 use futures::stream::{iter, Iter};
 use futures::AsyncWrite;
 use mime::Mime;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
+/// Memory based storage.
 #[derive(Clone)]
 pub struct Memory<K>(HashMap<K, (Mime, ContentDigest, Vec<u8>)>);
 
@@ -77,7 +80,7 @@ where
 #[async_trait]
 impl<K> Create<K> for Memory<K>
 where
-    K: Sync + Send + Unpin + Eq + Hash,
+    K: Serialize + Sync + Send + Unpin + Eq + Hash,
 {
     type Item<'a> = MemoryCreateItem<'a, K> where K: 'a;
     type Error = Infallible;
@@ -101,7 +104,7 @@ where
 #[async_trait]
 impl<K> Get<K> for Memory<K>
 where
-    K: Sync + Send + Eq + Hash,
+    K: Serialize + Sync + Send + Eq + Hash,
 {
     type Item<'a> = &'a [u8] where K:'a;
     type Error = Infallible;
@@ -126,7 +129,7 @@ where
 #[async_trait]
 impl<K> Keys<K> for Memory<K>
 where
-    K: Sync + Send + Clone,
+    K: DeserializeOwned + 'static + Sync + Send + Clone,
 {
     type Stream = Iter<std::vec::IntoIter<Result<K, Infallible>>>;
     type StreamError = Infallible;
@@ -144,12 +147,12 @@ mod tests {
 
     #[tokio::test]
     async fn test() {
-        let key = "test";
+        let key = "test".to_string();
         let mime = "text/plain".parse::<Mime>().unwrap();
 
         let mut mem = Memory::default();
 
-        assert_eq!(mem.get(key).await, Err(GetError::NotFound));
+        assert_eq!(mem.get(key.clone()).await, Err(GetError::NotFound));
 
         assert!(mem.keys().await.collect::<Vec<_>>().await.is_empty());
 
@@ -160,7 +163,7 @@ mod tests {
         };
 
         {
-            let w = mem.create(key, mime.clone()).await;
+            let w = mem.create(key.clone(), mime.clone()).await;
             assert!(matches!(w, Ok(_)));
             let mut w = w.unwrap();
             assert!(matches!(w.write_all(&[42]).await, Ok(())));
@@ -168,7 +171,7 @@ mod tests {
         }
 
         {
-            let mr = mem.get(key).await;
+            let mr = mem.get(key.clone()).await;
             assert!(matches!(mr, Ok(_)));
             let mut v = vec![];
             let (meta, mut r) = mr.unwrap();
@@ -184,7 +187,7 @@ mod tests {
         }
 
         assert!(matches!(
-            mem.create(key, mime).await,
+            mem.create(key.clone(), mime).await,
             Err(CreateError::Occupied)
         ));
 

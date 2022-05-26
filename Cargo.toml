@@ -29,3 +29,4 @@ drawbridge-client = { path = "./crates/client" }
 
 # External dependencies
 futures = { version = "0.3.21", default-features = false }
+tempdir = { version = "0.3", default-features = false }

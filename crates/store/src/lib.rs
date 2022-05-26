@@ -6,9 +6,14 @@
 #![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
 
+mod error;
+mod filesystem;
+#[cfg(test)]
 mod memory;
 
-pub use memory::*;
+pub use filesystem::Filesystem;
+#[cfg(test)]
+pub use memory::Memory;
 
 use drawbridge_type::digest::ContentDigest;
 use drawbridge_type::Meta;
@@ -17,6 +22,8 @@ use async_trait::async_trait;
 use futures::io::{self, copy};
 use futures::{AsyncRead, AsyncWrite, Stream, TryFutureExt};
 use mime::Mime;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CreateError<E> {
@@ -38,7 +45,7 @@ pub trait CreateItem: AsyncWrite {
 #[async_trait]
 pub trait Create<K>
 where
-    K: Send,
+    K: Serialize + Send,
 {
     type Item<'a>: Sync + Send + Unpin + CreateItem
     where
@@ -89,7 +96,7 @@ pub enum GetToWriterError<E> {
 #[async_trait]
 pub trait Get<K>
 where
-    K: Send,
+    K: Serialize + Send,
 {
     type Item<'a>: Sync + Send + Unpin + AsyncRead
     where
@@ -139,7 +146,10 @@ where
 }
 
 #[async_trait]
-pub trait Keys<K> {
+pub trait Keys<K>
+where
+    K: DeserializeOwned + 'static,
+{
     type Stream: Send + Stream<Item = Result<K, Self::StreamError>>;
     type StreamError: Sync + Send + std::error::Error;
 

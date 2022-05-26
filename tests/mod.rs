@@ -9,9 +9,14 @@ use drawbridge_client::{mime, Client, Url};
 
 use futures::channel::oneshot::channel;
 use hyper::Server;
+use tempdir::TempDir;
+
+const TEST_DATA_DIRECTORY: &str = ".test_data";
 
 #[tokio::test]
 async fn app() {
+    let dir = TempDir::new(TEST_DATA_DIRECTORY).unwrap();
+
     let lis = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
     let addr = format!("http://{}", lis.local_addr().unwrap());
 
@@ -19,7 +24,7 @@ async fn app() {
     let srv = tokio::spawn(
         Server::from_tcp(lis)
             .unwrap()
-            .serve(Builder::new().build())
+            .serve(Builder::new(dir.path()).build().unwrap())
             .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
     );
     let cl = tokio::task::spawn_blocking(move || {
