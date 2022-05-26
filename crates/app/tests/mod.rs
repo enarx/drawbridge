@@ -15,17 +15,21 @@ use drawbridge_type::{RepositoryConfig, TagEntry, TreeEntry};
 use axum::Server;
 use futures::channel::oneshot::channel;
 use reqwest::StatusCode;
+use tempdir::TempDir;
+
+const TEST_DATA_DIRECTORY: &str = ".test_data";
 
 #[tokio::test]
 async fn app() {
     let lis = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
     let addr = format!("http://{}", lis.local_addr().unwrap());
 
+    let dir = TempDir::new(TEST_DATA_DIRECTORY).unwrap();
     let (tx, rx) = channel::<()>();
     let srv = tokio::spawn(
         Server::from_tcp(lis)
             .unwrap()
-            .serve(Builder::new().build())
+            .serve(Builder::new(dir.path()).build().unwrap())
             .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
     );
 

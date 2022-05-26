@@ -3,32 +3,56 @@
 
 use super::{handle, RepoStore, TagStore, TreeStore};
 
+use drawbridge_store::Filesystem;
+
+use std::error::Error;
+use std::fs::File;
+use std::path::Path;
 use std::sync::Arc;
 
 use axum::handler::Handler;
 use axum::routing::IntoMakeService;
 use axum::{Extension, Router};
+use cap_async_std::fs::Dir;
+use tokio::sync::RwLock;
 
-#[derive(Default)]
-pub struct Builder;
+pub struct Builder<'a> {
+    data_directory: &'a Path,
+}
 
-impl Builder {
-    pub fn new() -> Self {
-        Self
+impl<'a> Builder<'a> {
+    /// Constructs a new [Builder].
+    pub fn new(data_directory: &'a Path) -> Self {
+        Self { data_directory }
     }
 
-    // TODO: Add configuration functionality
-
     /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
-    pub fn build(self) -> IntoMakeService<Router> {
-        let repos: Arc<RepoStore> = Default::default();
-        let tags: Arc<TagStore> = Default::default();
-        let trees: Arc<TreeStore> = Default::default();
-        Router::new()
+    pub fn build(self) -> Result<IntoMakeService<Router>, Box<dyn Error>> {
+        let path = self.data_directory;
+
+        if !path.exists() {
+            return Err(format!(
+                "The configured data directory does not exist: {}. Please create it or select another directory.",
+                self.data_directory.display()
+            ).into());
+        }
+
+        let root = Dir::from_std_file(File::open(path)?.into());
+        let repos: Arc<RepoStore> = Arc::new(RwLock::new(Filesystem::new(
+            root.clone(),
+            "repo".to_string(),
+        )));
+        let tags: Arc<TagStore> = Arc::new(RwLock::new(Filesystem::new(
+            root.clone(),
+            "tag".to_string(),
+        )));
+        let trees: Arc<TreeStore> =
+            Arc::new(RwLock::new(Filesystem::new(root, "tree".to_string())));
+        Ok(Router::new()
             .fallback(handle.into_service())
             .layer(Extension(repos))
             .layer(Extension(tags))
             .layer(Extension(trees))
-            .into_make_service()
+            .into_make_service())
     }
 }
