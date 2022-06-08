@@ -18,6 +18,12 @@ impl Directory {
     pub const TYPE: &'static str = "application/vnd.drawbridge.directory.v1+json";
 }
 
+impl From<BTreeMap<String, Entry>> for Directory {
+    fn from(m: BTreeMap<String, Entry>) -> Self {
+        Self(m)
+    }
+}
+
 impl Deref for Directory {
     type Target = BTreeMap<String, Entry>;
 
