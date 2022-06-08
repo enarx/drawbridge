@@ -475,6 +475,7 @@ dependencies = [
  "drawbridge-client",
  "futures",
  "hyper",
+ "serde_json",
  "tempfile",
  "tokio",
 ]

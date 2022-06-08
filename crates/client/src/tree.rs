@@ -6,13 +6,14 @@ use super::{Result, Tag};
 use std::io::{copy, Read, Write};
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
-use drawbridge_type::{Meta, TreePath};
+use drawbridge_type::{Meta, TreeDirectory, TreePath};
 
 use anyhow::{anyhow, bail, Context};
 use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use http::StatusCode;
 use mime::Mime;
 use ureq::{Request, Response};
+use url::Url;
 
 pub struct Node<'a> {
     pub(crate) tag: &'a Tag<'a>,
@@ -20,23 +21,25 @@ pub struct Node<'a> {
 }
 
 impl Node<'_> {
+    fn url(&self) -> Result<Url> {
+        self.tag
+            .repo
+            .client
+            .url
+            .join(&format!(
+                "{}/_tag/{}/tree/{}",
+                self.tag.repo.name, self.tag.name, self.path,
+            ))
+            .context("failed to construct URL")
+    }
+
     fn create_request(&self, hash: ContentDigest, mime: Mime) -> Result<Request> {
         let req = self
             .tag
             .repo
             .client
             .inner
-            .put(
-                self.tag
-                    .repo
-                    .client
-                    .url
-                    .join(&format!(
-                        "{}/_tag/{}/tree{}",
-                        self.tag.repo.name, self.tag.name, self.path,
-                    ))?
-                    .as_str(),
-            )
+            .put(self.url()?.as_str())
             .set("Content-Digest", &hash.to_string())
             .set(CONTENT_TYPE.as_str(), mime.as_ref());
         Ok(req)
@@ -61,12 +64,22 @@ impl Node<'_> {
             .context("failed to compute repository config digest")?;
         let res = self
             .create_request(content_digest, mime)?
-            .send_bytes(data.as_ref())?;
+            .send_bytes(data)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),
             _ => bail!("unexpected status code: {}", res.status()),
         }
+    }
+
+    pub fn create_directory(&self, dir: &TreeDirectory) -> Result<bool> {
+        let body = serde_json::to_vec(dir).context("failed to encode directory as JSON")?;
+        self.create_bytes(
+            TreeDirectory::TYPE
+                .parse()
+                .expect("failed to parse tree directory media type"),
+            body,
+        )
     }
 
     fn get_response(&self) -> Result<(Meta, Response)> {
@@ -75,17 +88,7 @@ impl Node<'_> {
             .repo
             .client
             .inner
-            .get(
-                self.tag
-                    .repo
-                    .client
-                    .url
-                    .join(&format!(
-                        "{}/_tag/{}/tree{}",
-                        self.tag.repo.name, self.tag.name, self.path,
-                    ))?
-                    .as_str(),
-            )
+            .get(self.url()?.as_str())
             .call()?;
         let (hash, mime) = {
             (

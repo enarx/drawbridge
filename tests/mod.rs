@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
+use std::collections::{BTreeMap, HashMap};
 use std::net::{Ipv4Addr, TcpListener};
 
 use drawbridge_app::Builder;
-use drawbridge_client::types::{RepositoryConfig, TagEntry, TreeEntry};
+use drawbridge_client::types::{RepositoryConfig, TagEntry, TreeDirectory, TreeEntry};
 use drawbridge_client::{mime, Client, Url};
 
 use futures::channel::oneshot::channel;
 use hyper::Server;
+use serde_json::json;
 use tempfile::tempdir;
 
 #[tokio::test]
@@ -57,9 +59,32 @@ async fn app() {
         let root_path = "/".parse().unwrap();
         let root = foo_v0_1_0.path(&root_path);
         assert!(root.get_string().is_err());
-        assert_eq!(root.create_bytes(mime::TEXT_PLAIN, b"test").unwrap(), true);
         assert_eq!(
-            root.get_string().unwrap(),
+            root.create_directory(&TreeDirectory::from({
+                let mut m = BTreeMap::new();
+                m.insert(
+                    "test".into(),
+                    TreeEntry {
+                        digest: Default::default(),
+                        custom: {
+                            let mut m = HashMap::new();
+                            m.insert("custom_field".into(), json!("custom_value"));
+                            m
+                        },
+                    },
+                );
+                m
+            }))
+            .unwrap(),
+            true
+        );
+
+        let test_path = "/test".parse().unwrap();
+        let test = foo_v0_1_0.path(&test_path);
+        assert!(test.get_string().is_err());
+        assert_eq!(test.create_bytes(mime::TEXT_PLAIN, b"test").unwrap(), true);
+        assert_eq!(
+            test.get_string().unwrap(),
             ("test".into(), mime::TEXT_PLAIN)
         );
     });
