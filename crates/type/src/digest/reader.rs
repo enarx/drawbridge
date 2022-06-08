@@ -18,28 +18,16 @@ pub struct Reader<T> {
     digests: Vec<(Algorithm, Box<dyn DynDigest>)>,
 }
 
-impl<T: AsyncRead + Unpin> AsyncRead for Reader<T> {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut self.reader).poll_read(cx, buf).map(|r| {
-            let n = r?;
-
-            for digest in &mut self.digests {
-                digest.1.update(&buf[..n]);
-            }
-
-            Ok(n)
-        })
-    }
-}
-
 impl<T> Reader<T> {
     pub(crate) fn new(reader: T, digests: impl IntoIterator<Item = Algorithm>) -> Self {
         let digests = digests.into_iter().map(|a| (a, a.hasher())).collect();
         Reader { reader, digests }
+    }
+
+    fn update(&mut self, buf: &[u8]) {
+        for digest in &mut self.digests {
+            digest.1.update(buf);
+        }
     }
 
     /// Calculates the digests for all the bytes written so far.
@@ -51,6 +39,27 @@ impl<T> Reader<T> {
         }
 
         set
+    }
+}
+
+impl<T: AsyncRead + Unpin> AsyncRead for Reader<T> {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut [u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.reader).poll_read(cx, buf).map_ok(|n| {
+            self.update(&buf[..n]);
+            n
+        })
+    }
+}
+
+impl<T: io::Read> io::Read for Reader<T> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let n = self.reader.read(buf)?;
+        self.update(&buf[..n]);
+        Ok(n)
     }
 }
 

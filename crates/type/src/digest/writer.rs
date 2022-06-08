@@ -24,6 +24,30 @@ unsafe impl<T> Sync for Writer<T> where T: Sync {}
 #[allow(unsafe_code)]
 unsafe impl<T> Send for Writer<T> where T: Send {}
 
+impl<T> Writer<T> {
+    pub(crate) fn new(writer: T, digests: impl IntoIterator<Item = Algorithm>) -> Self {
+        let digests = digests.into_iter().map(|a| (a, a.hasher())).collect();
+        Writer { writer, digests }
+    }
+
+    fn update(&mut self, buf: &[u8]) {
+        for digest in &mut self.digests {
+            digest.1.update(buf);
+        }
+    }
+
+    /// Calculates the digests for all the bytes written so far.
+    pub fn digests(&self) -> ContentDigest<Box<[u8]>> {
+        let mut set = ContentDigest::default();
+
+        for digest in &self.digests {
+            set.insert(digest.0, digest.1.clone().finalize().into());
+        }
+
+        set
+    }
+}
+
 impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
     fn poll_write(
         mut self: Pin<&mut Self>,
@@ -31,10 +55,7 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
         Pin::new(&mut self.writer).poll_write(cx, buf).map_ok(|n| {
-            for digest in &mut self.digests {
-                digest.1.update(&buf[..n]);
-            }
-
+            self.update(&buf[..n]);
             n
         })
     }
@@ -48,21 +69,15 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Writer<T> {
     }
 }
 
-impl<T> Writer<T> {
-    pub(crate) fn new(writer: T, digests: impl IntoIterator<Item = Algorithm>) -> Self {
-        let digests = digests.into_iter().map(|a| (a, a.hasher())).collect();
-        Writer { writer, digests }
+impl<T: io::Write> io::Write for Writer<T> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let n = self.writer.write(buf)?;
+        self.update(&buf[..n]);
+        Ok(n)
     }
 
-    /// Calculates the digests for all the bytes written so far.
-    pub fn digests(&self) -> ContentDigest<Box<[u8]>> {
-        let mut set = ContentDigest::default();
-
-        for digest in &self.digests {
-            set.insert(digest.0, digest.1.clone().finalize().into());
-        }
-
-        set
+    fn flush(&mut self) -> io::Result<()> {
+        self.writer.flush()
     }
 }
 

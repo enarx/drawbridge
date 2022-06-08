@@ -13,7 +13,7 @@ drawbridge-jose = { path = "../jose" }
 base64 = { version = "0.13.0", default-features = false, features = ["std"] }
 futures = { version = "0.3.21", default-features = false, features = ["std"] }
 mime = { version = "0.3.16", default-features = false }
-semver = { version = "1.0.9", default-features = false, features = ["serde"] }
+semver = { version = "1.0.9", default-features = false, features = ["serde", "std"] }
 serde = { version = "1.0.136", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
 sha2 = { version = "0.10.2", default-features = false, features = ["std"] }
