@@ -469,7 +469,7 @@ dependencies = [
  "drawbridge-client",
  "futures",
  "hyper",
- "tempdir",
+ "tempfile",
  "tokio",
 ]
 
@@ -488,7 +488,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "tempdir",
+ "tempfile",
  "tokio",
  "tower",
 ]
@@ -1671,13 +1671,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20518fe4a4c9acf048008599e464deb21beeae3d3578418951a189c235a7a9a8"
 
 [[package]]
-name = "tempdir"
-version = "0.3.7"
+name = "tempfile"
+version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15f2b5fb00ccdf689e0149d1b1b3c03fead81c2b37735d812fa8bddbbf41b6d8"
+checksum = "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4"
 dependencies = [
- "rand 0.4.6",
+ "cfg-if",
+ "fastrand",
+ "libc",
+ "redox_syscall",
  "remove_dir_all",
+ "winapi",
 ]
 
 [[package]]
