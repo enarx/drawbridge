@@ -5,9 +5,10 @@ use super::{Node, Repository, Result};
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_jose::MediaTyped;
+use drawbridge_type::digest::Algorithms;
 use drawbridge_type::{TagEntry, TagName, TreeEntry, TreePath};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use http::header::CONTENT_TYPE;
 use http::StatusCode;
 
@@ -22,6 +23,12 @@ impl Tag<'_> {
     }
 
     pub fn create(&self, entry: &TagEntry) -> Result<bool> {
+        let body = serde_json::to_vec(&entry).context("failed to encode tag entry to JSON")?;
+        let content_digest = Algorithms::default()
+            .read_sync(&body[..])
+            .context("failed to compute tag entry digest")?
+            .to_string();
+
         let res = self
             .repo
             .client
@@ -33,8 +40,6 @@ impl Tag<'_> {
                     .join(&format!("{}/_tag/{}", self.repo.name, self.name))?
                     .as_str(),
             )
-            // TODO: Calculate and set Content-Digest
-            // https://github.com/profianinc/drawbridge/issues/102
             .set(
                 CONTENT_TYPE.as_str(),
                 match entry {
@@ -42,7 +47,8 @@ impl Tag<'_> {
                     TagEntry::Signed(..) => Jws::TYPE,
                 },
             )
-            .send_json(entry)?;
+            .set("Content-Digest", &content_digest)
+            .send_bytes(&body)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),

@@ -5,10 +5,10 @@ use super::{Result, Tag};
 
 use std::io::{copy, Read, Write};
 
-use drawbridge_type::digest::ContentDigest;
+use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::{Meta, TreePath};
 
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, Context};
 use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use http::StatusCode;
 use mime::Mime;
@@ -20,7 +20,7 @@ pub struct Node<'a> {
 }
 
 impl Node<'_> {
-    fn create_request(&self, _hash: ContentDigest, mime: Mime) -> Result<Request> {
+    fn create_request(&self, hash: ContentDigest, mime: Mime) -> Result<Request> {
         let req = self
             .tag
             .repo
@@ -37,9 +37,8 @@ impl Node<'_> {
                     ))?
                     .as_str(),
             )
-            // TODO: Set Content-Digest
-            // https://github.com/profianinc/drawbridge/issues/102
-            .set(CONTENT_TYPE.as_str(), &mime.to_string());
+            .set("Content-Digest", &hash.to_string())
+            .set(CONTENT_TYPE.as_str(), mime.as_ref());
         Ok(req)
     }
 
@@ -56,9 +55,12 @@ impl Node<'_> {
     }
 
     pub fn create_bytes(&self, mime: Mime, data: impl AsRef<[u8]>) -> Result<bool> {
+        let data = data.as_ref();
+        let content_digest = Algorithms::default()
+            .read_sync(data)
+            .context("failed to compute repository config digest")?;
         let res = self
-            // TODO: Calculate and set Content-Digest
-            .create_request(Default::default(), mime)?
+            .create_request(content_digest, mime)?
             .send_bytes(data.as_ref())?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
