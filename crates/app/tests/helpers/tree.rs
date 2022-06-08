@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
+use super::parse_header;
+
 use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::{RepositoryName, TagName, TreePath};
 
-use axum::http;
 use bytes::Bytes;
-use http::header::HeaderMap;
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::StatusCode;
@@ -38,9 +38,11 @@ pub async fn create_path(
         res.text().await.unwrap()
     );
 
+    let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
     let res = cl
         .put(&url)
         .header(CONTENT_TYPE, mime.to_string())
+        .header("content-digest", &body_digest.to_string())
         .body(body.clone())
         .send()
         .await
@@ -59,7 +61,15 @@ pub async fn create_path(
         "{}",
         res.text().await.unwrap()
     );
-    // TODO: Validate headers
+
+    let content_length = res.content_length().unwrap();
+    assert_eq!(content_length, body.len() as u64);
+
+    let content_type: Mime = parse_header(res.headers(), CONTENT_TYPE.as_str());
+    assert_eq!(content_type, mime);
+
+    let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
+    assert_eq!(body_digest, content_digest);
 
     let res = cl.get(&url).send().await.unwrap();
     assert_eq!(
@@ -68,12 +78,22 @@ pub async fn create_path(
         "{}",
         res.text().await.unwrap()
     );
+
+    let content_length = res.content_length().unwrap();
+    assert_eq!(content_length, body.len() as u64);
+
+    let content_type: Mime = parse_header(res.headers(), CONTENT_TYPE.as_str());
+    assert_eq!(content_type, mime);
+
+    let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
+    assert_eq!(body_digest, content_digest);
+
     assert_eq!(res.bytes().await.unwrap(), body);
-    // TODO: Validate headers
 
     let res = cl
         .put(&url)
         .header(CONTENT_TYPE, mime.to_string())
+        .header("content-digest", &body_digest.to_string())
         .body(body)
         .send()
         .await
@@ -85,14 +105,6 @@ pub async fn create_path(
         "{}",
         res.text().await.unwrap()
     );
-}
-
-pub fn get_header<'a>(headers: &'a HeaderMap, name: &str) -> &'a str {
-    let mut iter = headers.get_all(name).iter();
-    let (first, second) = (iter.next(), iter.next());
-    assert!(first.is_some());
-    assert!(second.is_none());
-    first.unwrap().to_str().unwrap()
 }
 
 pub async fn get_path(
@@ -108,11 +120,8 @@ pub async fn get_path(
     assert_eq!(res.status(), StatusCode::OK);
 
     let content_length = res.content_length().unwrap();
-    let content_type = get_header(res.headers(), CONTENT_TYPE.as_str())
-        .parse()
-        .unwrap();
-    let content_digest: ContentDigest =
-        get_header(res.headers(), "content-digest").parse().unwrap();
+    let content_type = parse_header(res.headers(), CONTENT_TYPE.as_str());
+    let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
 
     let body = res.bytes().await.unwrap();
     assert_eq!(body.len() as u64, content_length);
