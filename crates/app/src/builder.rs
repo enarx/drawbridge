@@ -25,9 +25,11 @@ impl<S: AsRef<Path>> Builder<S> {
 
     /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
     pub fn build(self) -> Result<IntoMakeService<Router>, Box<dyn Error>> {
-        let store = File::open(self.store)
-            .map(Store::from)
-            .context("failed to open store")?;
+        let path = self.store.as_ref();
+        let store = File::open(path).map(Store::from).context(format!(
+            "failed to open store at `{}`",
+            path.to_string_lossy()
+        ))?;
         Ok(Router::new()
             .fallback(handle.into_service())
             .layer(Extension(Arc::new(store)))
