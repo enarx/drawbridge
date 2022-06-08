@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::Path;
 
 use drawbridge_app as app;
 
@@ -11,11 +10,7 @@ use hyper::Server;
 #[tokio::main]
 async fn main() {
     Server::bind(&SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))
-        .serve(
-            app::Builder::new(Path::new("drawbridge-data"))
-                .build()
-                .unwrap(),
-        )
+        .serve(app::Builder::new("drawbridge-data").build().unwrap())
         .await
         .unwrap();
 }

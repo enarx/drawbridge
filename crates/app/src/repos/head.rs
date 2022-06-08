@@ -1,32 +1,26 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use crate::RepoStore;
+use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_store::{Get, GetError};
 use drawbridge_type::RepositoryName;
 
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Extension;
 
 pub async fn head(
-    Extension(repos): Extension<Arc<RepoStore>>,
+    Extension(store): Extension<Arc<Store>>,
     Extension(name): Extension<RepositoryName>,
 ) -> impl IntoResponse {
-    repos
-        .read()
+    store
+        .repository(&name)
+        .get_meta()
         .await
-        .get_meta(name)
-        .await
-        .map_err(|e| match e {
-            GetError::NotFound => (StatusCode::NOT_FOUND, "Repository does not exist"),
-            GetError::Internal(e) => {
-                eprintln!("Failed to get repository metadata: {}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure")
-            }
+        .map_err(|e| {
+            eprintln!("Failed to HEAD repository `{}`: {:?}", name, e);
+            e
         })
         .map(|meta| (meta, ()))
 }
