@@ -7,13 +7,14 @@ edition = "2021"
 [dependencies]
 # Internal dependencies
 drawbridge-jose = { path = "../jose" }
-drawbridge-store = { path = "../store" }
 drawbridge-type = { path = "../type", features = ["server"] }
 
 # External dependencies
+anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
 axum = { version = "0.5.4", default-features = false, features = ["json"] }
-cap-async-std = { version = "0.24.4", default-features = true, features = ["tokio1"] }
-futures = { version = "0.3.21", default-features = false }
+camino = { version = "1.0.9", default-features = false }
+cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
+futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
 mime = { version = "0.3.16", default-features = false }
 serde = { version = "1.0.136", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
