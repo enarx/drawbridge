@@ -3,10 +3,13 @@
 
 use super::{Client, Result, Tag};
 
+use drawbridge_type::digest::Algorithms;
 use drawbridge_type::{RepositoryConfig, RepositoryName, TagName};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
+use http::header::CONTENT_TYPE;
 use http::StatusCode;
+use mime::APPLICATION_JSON;
 
 pub struct Repository<'a> {
     pub(crate) client: &'a Client,
@@ -39,13 +42,20 @@ impl Repository<'_> {
     }
 
     pub fn create(&self, conf: &RepositoryConfig) -> Result<bool> {
+        let body =
+            serde_json::to_vec(&conf).context("failed to encode repository config to JSON")?;
+        let content_digest = Algorithms::default()
+            .read_sync(&body[..])
+            .context("failed to compute repository config digest")?
+            .to_string();
+
         let res = self
             .client
             .inner
             .put(self.client.url.join(&self.name.to_string())?.as_str())
-            // TODO: Calculate and set Content-Digest
-            // https://github.com/profianinc/drawbridge/issues/102
-            .send_json(conf)?;
+            .set(CONTENT_TYPE.as_str(), APPLICATION_JSON.as_ref())
+            .set("Content-Digest", &content_digest)
+            .send_bytes(&body)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),
