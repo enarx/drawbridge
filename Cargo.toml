@@ -28,4 +28,5 @@ drawbridge-client = { path = "./crates/client" }
 
 # External dependencies
 futures = { version = "0.3.21", default-features = false }
+serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
 tempfile = { version = "3.3.0", default-features = false }
