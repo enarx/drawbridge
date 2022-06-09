@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use crate::digest::ContentDigest;
+use super::super::Meta;
 
 use std::collections::HashMap;
 
@@ -14,8 +14,9 @@ use serde_json::Value;
 /// here represent the minimum required fields. Other fields may be present.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Entry {
-    /// The hash of this entry
-    pub digest: ContentDigest,
+    /// The metadata of this entry
+    #[serde(flatten)]
+    pub meta: Meta,
 
     /// Custom fields
     #[serde(flatten)]

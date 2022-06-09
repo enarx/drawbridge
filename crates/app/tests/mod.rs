@@ -10,10 +10,11 @@ use std::time::Duration;
 
 use drawbridge_app::Builder;
 use drawbridge_type::digest::Algorithms;
-use drawbridge_type::{RepositoryConfig, TagEntry, TreeEntry};
+use drawbridge_type::{Meta, RepositoryConfig, TagEntry, TreeEntry};
 
 use axum::Server;
 use futures::channel::oneshot::channel;
+use mime::TEXT_PLAIN;
 use reqwest::StatusCode;
 use tempfile::tempdir;
 
@@ -68,10 +69,14 @@ async fn app() {
         &foo,
         &tag,
         TagEntry::Unsigned(TreeEntry {
-            digest: Algorithms::default()
-                .read(b"testing".as_slice())
-                .await
-                .unwrap(),
+            meta: Meta {
+                hash: Algorithms::default()
+                    .read(b"test".as_slice())
+                    .await
+                    .unwrap(),
+                size: "test".len() as _,
+                mime: TEXT_PLAIN,
+            },
             custom: Default::default(),
         }),
     )
@@ -86,16 +91,16 @@ async fn app() {
         &foo,
         &tag,
         &"/".parse().unwrap(),
-        mime::TEXT_PLAIN,
-        b"testing".to_vec(),
+        TEXT_PLAIN,
+        b"test".to_vec(),
     )
     .await;
 
     let (test_resp, test_type) =
         tree::get_path(&cl, &addr, &foo, &tag, &"/".parse().unwrap()).await;
 
-    assert_eq!(test_type, mime::TEXT_PLAIN);
-    assert_eq!(&test_resp[..], b"testing");
+    assert_eq!(test_type, TEXT_PLAIN);
+    assert_eq!(&test_resp[..], b"test");
 
     // Stop server
     assert_eq!(tx.send(()), Ok(()));
