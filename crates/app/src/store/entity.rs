@@ -22,7 +22,6 @@ const STORAGE_FAILURE_RESPONSE: (StatusCode, &str) =
 
 #[derive(Debug)]
 pub enum CreateError<E> {
-    EmptyDigest,
     Occupied,
     LengthMismatch { expected: u64, got: u64 },
     DigestMismatch,
@@ -32,11 +31,6 @@ pub enum CreateError<E> {
 impl<E> IntoResponse for CreateError<E> {
     fn into_response(self) -> Response {
         match self {
-            CreateError::EmptyDigest => (
-                StatusCode::BAD_REQUEST,
-                "At least one content digest value must be specified",
-            )
-                .into_response(),
             CreateError::Occupied => (StatusCode::CONFLICT, "Already exists").into_response(),
             CreateError::DigestMismatch => {
                 (StatusCode::BAD_REQUEST, "Content digest mismatch").into_response()
@@ -130,10 +124,6 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
         rdr: impl Unpin + AsyncRead,
         dir_builder: &DirBuilder,
     ) -> Result<(), CreateError<anyhow::Error>> {
-        if meta.hash.is_empty() {
-            return Err(CreateError::EmptyDigest);
-        }
-
         self.create_dir_with("", dir_builder).await?;
 
         let meta_json = serde_json::to_vec(&meta)

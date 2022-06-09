@@ -22,6 +22,14 @@ pub async fn put(
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
+    if meta.hash.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "At least one content digest value must be specified",
+        )
+            .into_response());
+    }
+
     let mut req = RequestParts::new(req);
     let entry = match meta.mime.to_string().as_str() {
         TreeEntry::TYPE => req.extract().await.map(|Json(v)| TagEntry::Unsigned(v)),
