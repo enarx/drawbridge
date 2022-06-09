@@ -5,8 +5,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::net::{Ipv4Addr, TcpListener};
 
 use drawbridge_app::Builder;
-use drawbridge_client::types::{RepositoryConfig, TagEntry, TreeDirectory, TreeEntry};
-use drawbridge_client::{mime, Client, Url};
+use drawbridge_client::mime::TEXT_PLAIN;
+use drawbridge_client::types::digest::Algorithms;
+use drawbridge_client::types::{Meta, RepositoryConfig, TagEntry, TreeDirectory, TreeEntry};
+use drawbridge_client::{Client, Url};
 
 use futures::channel::oneshot::channel;
 use hyper::Server;
@@ -44,49 +46,58 @@ async fn app() {
         assert_eq!(foo.tags().unwrap(), vec![]);
         assert_eq!(bar.tags().unwrap(), vec![]);
 
-        let v0_1_0 = "0.1.0".parse().unwrap();
-        let foo_v0_1_0 = foo.tag(&v0_1_0);
+        let test_meta = Meta {
+            hash: Algorithms::default().read_sync(b"test".as_slice()).unwrap(),
+            size: "test".len() as _,
+            mime: TEXT_PLAIN,
+        };
 
-        let entry = TagEntry::Unsigned(TreeEntry {
-            digest: Default::default(),
+        let root = TreeDirectory::from({
+            let mut m = BTreeMap::new();
+            m.insert(
+                "test-file".into(),
+                TreeEntry {
+                    meta: test_meta,
+                    custom: {
+                        let mut m = HashMap::new();
+                        m.insert("custom_field".into(), json!("custom_value"));
+                        m
+                    },
+                },
+            );
+            m
+        });
+        let root_json = serde_json::to_vec(&root).unwrap();
+        let root_meta = Meta {
+            hash: Algorithms::default()
+                .read_sync(root_json.as_slice())
+                .unwrap(),
+            size: root_json.len() as _,
+            mime: TreeDirectory::TYPE.parse().unwrap(),
+        };
+
+        let tag = TagEntry::Unsigned(TreeEntry {
+            meta: root_meta,
             custom: Default::default(),
         });
 
+        let v0_1_0 = "0.1.0".parse().unwrap();
+        let foo_v0_1_0 = foo.tag(&v0_1_0);
+
         assert!(foo_v0_1_0.get().is_err());
-        assert_eq!(foo_v0_1_0.create(&entry).unwrap(), true);
-        assert_eq!(foo_v0_1_0.get().unwrap(), entry);
+        assert_eq!(foo_v0_1_0.create(&tag).unwrap(), true);
+        assert_eq!(foo_v0_1_0.get().unwrap(), tag);
 
         let root_path = "/".parse().unwrap();
-        let root = foo_v0_1_0.path(&root_path);
-        assert!(root.get_string().is_err());
-        assert_eq!(
-            root.create_directory(&TreeDirectory::from({
-                let mut m = BTreeMap::new();
-                m.insert(
-                    "test".into(),
-                    TreeEntry {
-                        digest: Default::default(),
-                        custom: {
-                            let mut m = HashMap::new();
-                            m.insert("custom_field".into(), json!("custom_value"));
-                            m
-                        },
-                    },
-                );
-                m
-            }))
-            .unwrap(),
-            true
-        );
+        let root_node = foo_v0_1_0.path(&root_path);
+        assert!(root_node.get_string().is_err());
+        assert_eq!(root_node.create_directory(&root).unwrap(), true);
 
         let test_path = "/test".parse().unwrap();
-        let test = foo_v0_1_0.path(&test_path);
-        assert!(test.get_string().is_err());
-        assert_eq!(test.create_bytes(mime::TEXT_PLAIN, b"test").unwrap(), true);
-        assert_eq!(
-            test.get_string().unwrap(),
-            ("test".into(), mime::TEXT_PLAIN)
-        );
+        let test_node = foo_v0_1_0.path(&test_path);
+        assert!(test_node.get_string().is_err());
+        assert_eq!(test_node.create_bytes(TEXT_PLAIN, b"test").unwrap(), true);
+        assert_eq!(test_node.get_string().unwrap(), ("test".into(), TEXT_PLAIN));
     });
     assert!(matches!(cl.await, Ok(())));
 
