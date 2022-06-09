@@ -19,7 +19,7 @@ pub async fn head(
     store
         .repository(&repo)
         .tag(&tag)
-        .tree_node(&path)
+        .path(&path)
         .get_meta()
         .await
         .map_err(|e| {

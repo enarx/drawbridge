@@ -22,7 +22,7 @@ pub async fn get(
     store
         .repository(&repo)
         .tag(&tag)
-        .tree_node(&path)
+        .path(&path)
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {

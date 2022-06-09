@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 mod entity;
-mod node;
 mod repo;
 mod tag;
+mod tree;
 
 pub use entity::*;
-pub use node::*;
 pub use repo::*;
 pub use tag::*;
+pub use tree::*;
 
 use drawbridge_type::RepositoryName;
 

@@ -36,7 +36,7 @@ impl<'a, P: AsRef<Utf8Path>> Tag<'a, P> {
         self.0.create_json(meta, entry).await
     }
 
-    pub fn tree_node(&self, path: &TreePath) -> Node<'_, Utf8PathBuf> {
+    pub fn path(&self, path: &TreePath) -> Node<'_, Utf8PathBuf> {
         Node::new(self.0.child("tree"), path)
     }
 }

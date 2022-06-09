@@ -33,7 +33,7 @@ pub async fn put(
             store
                 .repository(&repo)
                 .tag(&tag)
-                .tree_node(&path)
+                .path(&path)
                 .create_directory(meta, &dir)
                 .await
         }
@@ -46,7 +46,7 @@ pub async fn put(
             store
                 .repository(&repo)
                 .tag(&tag)
-                .tree_node(&path)
+                .path(&path)
                 .create_file(meta, body.into_async_read())
                 .await
         }
