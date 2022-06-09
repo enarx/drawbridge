@@ -29,7 +29,7 @@ impl FromStr for Path {
             .map(Into::into)
             .collect::<Vec<_>>();
         if !path.iter().all(valid) {
-            Err("Invalid path")
+            Err("invalid path")
         } else {
             Ok(Self(path))
         }
