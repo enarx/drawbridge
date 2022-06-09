@@ -11,6 +11,7 @@ mod repos;
 mod store;
 mod tags;
 mod trees;
+mod users;
 
 pub use builder::*;
 pub(crate) use handle::*;
@@ -18,3 +19,4 @@ pub use repos::*;
 pub(crate) use store::*;
 pub use tags::*;
 pub use trees::*;
+pub use users::*;

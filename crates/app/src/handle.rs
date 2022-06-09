@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{repos, tags, trees};
+use super::{repos, tags, trees, users};
 
-use drawbridge_type::{RepositoryName, TagName, TreePath};
+use drawbridge_type::{RepositoryName, TagName, TreePath, UserName};
 
 use axum::body::Body;
 use axum::handler::Handler;
@@ -16,25 +16,44 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     let path = req.uri().path().strip_prefix('/').expect("invalid URI");
     let (head, tail) = path
         .split_once("/_")
-        .map(|(left, right)| (left, format!("_{}", right)))
-        .unwrap_or((path, "".into()));
+        .map(|(left, right)| (left.to_string(), format!("_{}", right)))
+        .unwrap_or((path.to_string(), "".into()));
     if head.is_empty() {
         return Err((
             StatusCode::NOT_FOUND,
             format!("Route `/{}` not found", path),
         ));
     }
+
+    let extensions = req.extensions_mut();
+
+    let (user, head) = head.split_once('/').unwrap_or((&head, ""));
+    let user = user.parse::<UserName>().map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Failed to parse user name: {}", e),
+        )
+    })?;
+    assert_eq!(extensions.insert(user), None, "duplicate user name");
+    if head.is_empty() {
+        return match *req.method() {
+            Method::HEAD => Ok(users::head.into_service().call(req).await.into_response()),
+            Method::GET => Ok(users::get.into_service().call(req).await.into_response()),
+            Method::PUT => Ok(users::put.into_service().call(req).await.into_response()),
+            _ => Err((
+                StatusCode::METHOD_NOT_ALLOWED,
+                "Method not allowed for user endpoint".into(),
+            )),
+        };
+    }
+
     let repo = head.parse::<RepositoryName>().map_err(|e| {
         (
             StatusCode::BAD_REQUEST,
             format!("Failed to parse repository name: {}", e),
         )
     })?;
-    assert_eq!(
-        req.extensions_mut().insert(repo),
-        None,
-        "duplicate repository name"
-    );
+    assert_eq!(extensions.insert(repo), None, "duplicate repository name");
 
     let mut tail = tail.split_terminator('/');
     match (tail.next(), tail.next(), tail.next()) {
@@ -61,7 +80,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                     format!("Failed to parse tag name: {}", e),
                 )
             })?;
-            assert_eq!(req.extensions_mut().insert(tag), None, "duplicate tag name");
+            assert_eq!(extensions.insert(tag), None, "duplicate tag name");
 
             if prop.is_none() {
                 return match *req.method() {
@@ -81,11 +100,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                     format!("Failed to parse tree path: {}", e),
                 )
             })?;
-            assert_eq!(
-                req.extensions_mut().insert(path),
-                None,
-                "duplicate tree path"
-            );
+            assert_eq!(extensions.insert(path), None, "duplicate tree path");
             match *req.method() {
                 Method::HEAD => Ok(trees::head.into_service().call(req).await.into_response()),
                 Method::GET => Ok(trees::get.into_service().call(req).await.into_response()),

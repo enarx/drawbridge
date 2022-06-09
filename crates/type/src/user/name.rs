@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-/// A repository name
+/// A user name
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[repr(transparent)]
 pub struct Name(String);
@@ -17,12 +17,12 @@ impl FromStr for Name {
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            Err("repository name cannot be empty")
+            Err("user name cannot be empty")
         } else if s
-            .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-'))
+            .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z'))
             .is_some()
         {
-            Err("invalid repository name")
+            Err("invalid user name")
         } else {
             Ok(Self(s.into()))
         }
@@ -44,21 +44,12 @@ mod tests {
         assert!("".parse::<Name>().is_err());
         assert!(" ".parse::<Name>().is_err());
         assert!("/".parse::<Name>().is_err());
-        assert!("/name".parse::<Name>().is_err());
         assert!("name/".parse::<Name>().is_err());
-        assert!("/name/".parse::<Name>().is_err());
-        assert!("group//name".parse::<Name>().is_err());
-        assert!("group/subgroup///name".parse::<Name>().is_err());
-        assert!("group/subg%roup/name".parse::<Name>().is_err());
-        assert!("group/subgяoup/name".parse::<Name>().is_err());
-        assert!("group /subgroup/name".parse::<Name>().is_err());
-        assert!("group/subgr☣up/name".parse::<Name>().is_err());
-        assert!("gr.oup/subgroup/name".parse::<Name>().is_err());
-        assert!("group/name".parse::<Name>().is_err());
-        assert!("group/subgroup/name".parse::<Name>().is_err());
-        assert!("gr0uP/subgr0up/-n4mE".parse::<Name>().is_err());
+        assert!("/name".parse::<Name>().is_err());
+        assert!("n%ame".parse::<Name>().is_err());
+        assert!("n.ame".parse::<Name>().is_err());
 
         assert_eq!("name".parse(), Ok(Name("name".into())));
-        assert_eq!("-n4M3".parse(), Ok(Name("-n4M3".into())));
+        assert_eq!("n4M3".parse(), Ok(Name("n4M3".into())));
     }
 }

@@ -96,14 +96,19 @@ pub fn dir_builder_defaults(dir_builder: &mut DirBuilder) -> &mut DirBuilder {
     dir_builder.recursive(false).mode(0o700)
 }
 
-impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
-    pub fn new(root: &'a Dir, path: P) -> Self {
-        Self { root, prefix: path }
+impl<'a> Entity<'a, &'static str> {
+    pub fn new(root: &'a Dir) -> Self {
+        Self { root, prefix: "" }
     }
+}
 
-    /// Returns a child [Entity]
+impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
+    /// Returns a child [Entity] rooted at `path`.
     pub fn child(&self, path: impl AsRef<Utf8Path>) -> Entity<'a, Utf8PathBuf> {
-        Entity::new(self.root, self.path(path))
+        Entity {
+            root: self.root,
+            prefix: self.path(path),
+        }
     }
 
     fn path(&self, path: impl AsRef<Utf8Path>) -> Utf8PathBuf {

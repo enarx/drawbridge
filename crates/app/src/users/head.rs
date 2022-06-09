@@ -5,18 +5,18 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::TreeContext;
+use drawbridge_type::UserContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
 
-pub async fn head(Extension(store): Extension<Arc<Store>>, tree: TreeContext) -> impl IntoResponse {
+pub async fn head(Extension(store): Extension<Arc<Store>>, user: UserContext) -> impl IntoResponse {
     store
-        .tree(&tree)
+        .user(&user)
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!("Failed to HEAD `{}`: {:?}", tree, e);
+            eprintln!("Failed to HEAD user `{}`: {:?}", user, e);
             e
         })
         .map(|meta| (meta, ()))

@@ -7,7 +7,9 @@ use std::net::{Ipv4Addr, TcpListener};
 use drawbridge_app::Builder;
 use drawbridge_client::mime::TEXT_PLAIN;
 use drawbridge_client::types::digest::Algorithms;
-use drawbridge_client::types::{Meta, RepositoryConfig, TagEntry, TreeDirectory, TreeEntry};
+use drawbridge_client::types::{
+    Meta, RepositoryConfig, TagEntry, TreeDirectory, TreeEntry, UserConfig,
+};
 use drawbridge_client::{Client, Url};
 
 use futures::channel::oneshot::channel;
@@ -31,11 +33,16 @@ async fn app() {
     let cl = tokio::task::spawn_blocking(move || {
         let cl = Client::builder(addr.parse::<Url>().unwrap()).build();
 
-        let foo_repo = "user/foo".parse().unwrap();
-        let foo = cl.repository(&foo_repo);
+        let user_name = "user".parse().unwrap();
+        let user = cl.user(&user_name);
+        assert!(user.get().is_err());
+        assert_eq!(user.create(&UserConfig {}).unwrap(), true);
 
-        let bar_repo = "user/test/bar".parse().unwrap();
-        let bar = cl.repository(&bar_repo);
+        let foo_repo = "foo".parse().unwrap();
+        let foo = user.repository(&foo_repo);
+
+        let bar_repo = "bar".parse().unwrap();
+        let bar = user.repository(&bar_repo);
 
         assert!(foo.get().is_err());
         assert!(bar.get().is_err());
@@ -96,8 +103,8 @@ async fn app() {
         let test_path = "/test".parse().unwrap();
         let test_node = foo_v0_1_0.path(&test_path);
         assert!(test_node.get_string().is_err());
-        assert_eq!(test_node.create_bytes(TEXT_PLAIN, b"test").unwrap(), true);
-        assert_eq!(test_node.get_string().unwrap(), ("test".into(), TEXT_PLAIN));
+        assert_eq!(test_node.create_bytes(&TEXT_PLAIN, b"test").unwrap(), true);
+        assert_eq!(test_node.get_string().unwrap(), (TEXT_PLAIN, "test".into()));
     });
     assert!(matches!(cl.await, Ok(())));
 

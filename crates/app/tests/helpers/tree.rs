@@ -4,7 +4,7 @@
 use super::parse_header;
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
-use drawbridge_type::{RepositoryName, TagName, TreePath};
+use drawbridge_type::TreeContext;
 
 use bytes::Bytes;
 use mime::Mime;
@@ -14,13 +14,11 @@ use reqwest::StatusCode;
 pub async fn create_path(
     cl: &reqwest::Client,
     addr: &str,
-    repo: &RepositoryName,
-    tag: &TagName,
-    path: &TreePath,
+    TreeContext { tag, path }: &TreeContext,
     mime: Mime,
     body: Vec<u8>,
 ) {
-    let url = format!("{addr}/{repo}/_tag/{tag}/tree{path}");
+    let url = format!("{addr}/{}/_tag/{}/tree/{path}", tag.repository, tag.name);
 
     let res = cl.head(&url).send().await.unwrap();
     assert_eq!(
@@ -111,11 +109,9 @@ pub async fn create_path(
 pub async fn get_path(
     cl: &reqwest::Client,
     addr: &str,
-    repo: &RepositoryName,
-    tag: &TagName,
-    path: &TreePath,
+    TreeContext { tag, path }: &TreeContext,
 ) -> (Bytes, Mime) {
-    let url = format!("{addr}/{repo}/_tag/{tag}/tree{path}");
+    let url = format!("{addr}/{}/_tag/{}/tree/{path}", tag.repository, tag.name);
 
     let res = cl.get(&url).send().await.unwrap();
     assert_eq!(res.status(), StatusCode::OK);

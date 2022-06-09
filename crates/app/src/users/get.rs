@@ -5,21 +5,21 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::TreeContext;
+use drawbridge_type::UserContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
 
-pub async fn get(Extension(store): Extension<Arc<Store>>, tree: TreeContext) -> impl IntoResponse {
+pub async fn get(Extension(store): Extension<Arc<Store>>, user: UserContext) -> impl IntoResponse {
     // TODO: Stream body
     // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
     store
-        .tree(&tree)
+        .user(&user)
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET `{}`: {:?}", tree, e);
+            eprintln!("Failed to GET user `{}`: {:?}", user, e);
             e
         })
         .map(|meta| (meta, body))

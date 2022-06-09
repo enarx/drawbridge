@@ -3,6 +3,7 @@
 
 use super::{CreateError, Entity, Node};
 
+use std::borrow::Borrow;
 use std::ops::Deref;
 
 use drawbridge_type::{Meta, TagEntry, TagName, TreePath};
@@ -22,8 +23,8 @@ impl<'a, P> Deref for Tag<'a, P> {
 }
 
 impl<'a> Tag<'a, Utf8PathBuf> {
-    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, name: &TagName) -> Self {
-        Self(entity.child(name.to_string()))
+    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, name: impl Borrow<TagName>) -> Self {
+        Self(entity.child(name.borrow().to_string()))
     }
 }
 
@@ -36,7 +37,7 @@ impl<'a, P: AsRef<Utf8Path>> Tag<'a, P> {
         self.0.create_json(meta, entry).await
     }
 
-    pub fn path(&self, path: &TreePath) -> Node<'_, Utf8PathBuf> {
+    pub fn path(&self, path: &TreePath) -> Node<'a, Utf8PathBuf> {
         Node::new(self.0.child("tree"), path)
     }
 }

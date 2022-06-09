@@ -4,19 +4,14 @@
 use super::parse_header;
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
-use drawbridge_type::{RepositoryConfig, RepositoryContext};
+use drawbridge_type::{UserConfig, UserContext};
 
 use mime::{Mime, APPLICATION_JSON};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::StatusCode;
 
-pub async fn create(
-    cl: &reqwest::Client,
-    addr: &str,
-    repo: &RepositoryContext,
-    conf: RepositoryConfig,
-) {
-    let url = format!("{addr}/{repo}");
+pub async fn create(cl: &reqwest::Client, addr: &str, user: &UserContext, conf: UserConfig) {
+    let url = format!("{addr}/{user}");
 
     let res = cl.head(&url).send().await.unwrap();
     assert_eq!(
@@ -85,7 +80,7 @@ pub async fn create(
     let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
     assert_eq!(body_digest, content_digest);
 
-    assert_eq!(res.json::<RepositoryConfig>().await.unwrap(), conf);
+    assert_eq!(res.json::<UserConfig>().await.unwrap(), conf);
 
     let res = cl
         .put(&url)

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_jose::MediaTyped;
-use drawbridge_type::{Meta, RepositoryName, TagEntry, TagName, TreeEntry};
+use drawbridge_type::{Meta, TagContext, TagEntry, TreeEntry};
 
 use axum::body::Body;
 use axum::extract::RequestParts;
@@ -17,8 +17,7 @@ use axum::{Extension, Json};
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
-    Extension(repo): Extension<RepositoryName>,
-    Extension(name): Extension<TagName>,
+    tag: TagContext,
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
@@ -38,15 +37,11 @@ pub async fn put(
     }
     .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?;
     store
-        .repository(&repo)
-        .tag(&name)
+        .tag(&tag)
         .create(meta, &entry)
         .await
         .map_err(|e| {
-            eprintln!(
-                "Failed to PUT tag `{}` on repository `{}`: {:?}",
-                name, repo, e
-            );
+            eprintln!("Failed to PUT tag `{}`: {:?}", tag, e);
             e
         })
         .map_err(IntoResponse::into_response)

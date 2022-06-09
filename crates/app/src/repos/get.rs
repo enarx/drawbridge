@@ -5,24 +5,24 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::RepositoryName;
+use drawbridge_type::RepositoryContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
 
 pub async fn get(
     Extension(store): Extension<Arc<Store>>,
-    Extension(name): Extension<RepositoryName>,
+    repo: RepositoryContext,
 ) -> impl IntoResponse {
     // TODO: Stream body
     // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
     store
-        .repository(&name)
+        .repository(&repo)
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET repository `{}`: {:?}", name, e);
+            eprintln!("Failed to GET repository `{}`: {:?}", repo, e);
             e
         })
         .map(|meta| (meta, body))

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{dir_builder_defaults, CreateError, Entity, GetError, Tag};
+use super::{CreateError, Entity, GetError, Tag};
 
+use std::borrow::Borrow;
 use std::ops::Deref;
 
 use drawbridge_type::{Meta, RepositoryConfig, RepositoryName, TagName};
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
-use cap_async_std::fs_utf8::DirBuilder;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
@@ -24,8 +24,11 @@ impl<'a, P> Deref for Repository<'a, P> {
 }
 
 impl<'a> Repository<'a, Utf8PathBuf> {
-    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, name: &RepositoryName) -> Self {
-        Self(entity.child(name.to_string()))
+    pub fn new(
+        entity: Entity<'a, impl AsRef<Utf8Path>>,
+        name: impl Borrow<RepositoryName>,
+    ) -> Self {
+        Self(entity.child(name.borrow().to_string()))
     }
 }
 
@@ -35,13 +38,7 @@ impl<'a, P: AsRef<Utf8Path>> Repository<'a, P> {
         meta: Meta,
         conf: &RepositoryConfig,
     ) -> Result<(), CreateError<anyhow::Error>> {
-        self.0
-            .create_json_with(
-                meta,
-                conf,
-                dir_builder_defaults(&mut DirBuilder::new()).recursive(true),
-            )
-            .await?;
+        self.0.create_json(meta, conf).await?;
         self.0.create_dir("tags").await
     }
 
@@ -60,7 +57,7 @@ impl<'a, P: AsRef<Utf8Path>> Repository<'a, P> {
             .map_err(GetError::Internal)
     }
 
-    pub fn tag(&self, name: &TagName) -> Tag<'_, Utf8PathBuf> {
+    pub fn tag(&self, name: &TagName) -> Tag<'a, Utf8PathBuf> {
         Tag::new(self.child("tags"), name)
     }
 }

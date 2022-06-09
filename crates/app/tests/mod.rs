@@ -10,7 +10,10 @@ use std::time::Duration;
 
 use drawbridge_app::Builder;
 use drawbridge_type::digest::Algorithms;
-use drawbridge_type::{Meta, RepositoryConfig, TagEntry, TreeEntry};
+use drawbridge_type::{
+    Meta, RepositoryConfig, RepositoryContext, TagContext, TagEntry, TreeContext, TreeEntry,
+    UserConfig,
+};
 
 use axum::Server;
 use futures::channel::oneshot::channel;
@@ -53,21 +56,32 @@ async fn app() {
         res.text().await.unwrap()
     );
 
-    let foo = "user/foo".parse().unwrap();
+    let user = "user".parse().unwrap();
+    user::create(&cl, &addr, &user, UserConfig {}).await;
+
+    let foo = RepositoryContext {
+        owner: user.clone(),
+        name: "foo".parse().unwrap(),
+    };
     repo::create(&cl, &addr, &foo, RepositoryConfig {}).await;
 
-    let bar = "user/bar".parse().unwrap();
+    let bar = RepositoryContext {
+        owner: user,
+        name: "bar".parse().unwrap(),
+    };
     repo::create(&cl, &addr, &bar, RepositoryConfig {}).await;
 
     assert_eq!(tag::list(&cl, &addr, &foo).await, vec![]);
     assert_eq!(tag::list(&cl, &addr, &bar).await, vec![]);
 
-    let tag = "0.1.0".parse().unwrap();
+    let v0_1_0 = TagContext {
+        repository: foo.clone(),
+        name: "0.1.0".parse().unwrap(),
+    };
     tag::create(
         &cl,
         &addr,
-        &foo,
-        &tag,
+        &v0_1_0,
         TagEntry::Unsigned(TreeEntry {
             meta: Meta {
                 hash: Algorithms::default()
@@ -82,22 +96,16 @@ async fn app() {
     )
     .await;
 
-    assert_eq!(tag::list(&cl, &addr, &foo).await, vec![tag.clone()]);
+    assert_eq!(tag::list(&cl, &addr, &foo).await, vec![v0_1_0.name.clone()]);
     assert_eq!(tag::list(&cl, &addr, &bar).await, vec![]);
 
-    tree::create_path(
-        &cl,
-        &addr,
-        &foo,
-        &tag,
-        &"/".parse().unwrap(),
-        TEXT_PLAIN,
-        b"test".to_vec(),
-    )
-    .await;
+    let root = TreeContext {
+        tag: v0_1_0,
+        path: "/".parse().unwrap(),
+    };
+    tree::create_path(&cl, &addr, &root, TEXT_PLAIN, b"test".to_vec()).await;
 
-    let (test_resp, test_type) =
-        tree::get_path(&cl, &addr, &foo, &tag, &"/".parse().unwrap()).await;
+    let (test_resp, test_type) = tree::get_path(&cl, &addr, &root).await;
 
     assert_eq!(test_type, TEXT_PLAIN);
     assert_eq!(&test_resp[..], b"test");
