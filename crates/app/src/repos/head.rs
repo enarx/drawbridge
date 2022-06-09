@@ -5,21 +5,21 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::RepositoryName;
+use drawbridge_type::RepositoryContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
 
 pub async fn head(
     Extension(store): Extension<Arc<Store>>,
-    Extension(name): Extension<RepositoryName>,
+    repo: RepositoryContext,
 ) -> impl IntoResponse {
     store
-        .repository(&name)
+        .repository(&repo)
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!("Failed to HEAD repository `{}`: {:?}", name, e);
+            eprintln!("Failed to HEAD repository `{}`: {:?}", repo, e);
             e
         })
         .map(|meta| (meta, ()))

@@ -5,7 +5,7 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::{Meta, RepositoryConfig, RepositoryContext};
+use drawbridge_type::{Meta, UserConfig, UserContext};
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -13,17 +13,17 @@ use axum::{Extension, Json};
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
-    repo: RepositoryContext,
+    user: UserContext,
     meta: Meta,
-    Json(config): Json<RepositoryConfig>,
+    Json(config): Json<UserConfig>,
 ) -> impl IntoResponse {
     store
-        .repository(&repo)
+        .user(&user)
         .create(meta, &config)
         .await
         .map_err(|e| {
-            eprintln!("Failed to PUT repository `{}`: {:?}", repo, e);
-            e.into_response()
+            eprintln!("Failed to PUT user `{}`: {:?}", user, e);
+            e
         })
         .map(|_| StatusCode::CREATED)
 }

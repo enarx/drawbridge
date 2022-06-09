@@ -4,7 +4,7 @@
 use super::parse_header;
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
-use drawbridge_type::{RepositoryName, TagEntry, TagName, TreeEntry};
+use drawbridge_type::{RepositoryContext, TagContext, TagEntry, TagName, TreeEntry};
 
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
@@ -13,11 +13,10 @@ use reqwest::StatusCode;
 pub async fn create(
     cl: &reqwest::Client,
     addr: &str,
-    repo: &RepositoryName,
-    name: &TagName,
-    tag: TagEntry,
+    TagContext { repository, name }: &TagContext,
+    entry: TagEntry,
 ) {
-    let url = format!("{addr}/{repo}/_tag/{name}");
+    let url = format!("{addr}/{repository}/_tag/{name}");
 
     let res = cl.head(&url).send().await.unwrap();
     assert_eq!(
@@ -35,14 +34,14 @@ pub async fn create(
         res.text().await.unwrap()
     );
 
-    let body = serde_json::to_vec(&tag).unwrap();
+    let body = serde_json::to_vec(&entry).unwrap();
     let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
 
     let res = cl
         .put(&url)
         .header(CONTENT_TYPE, TreeEntry::TYPE)
         .header("content-digest", &body_digest.to_string())
-        .body(serde_json::to_vec(&tag).unwrap())
+        .body(serde_json::to_vec(&entry).unwrap())
         .send()
         .await
         .unwrap();
@@ -88,13 +87,13 @@ pub async fn create(
     let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
     assert_eq!(body_digest, content_digest);
 
-    assert_eq!(res.json::<TagEntry>().await.unwrap(), tag);
+    assert_eq!(res.json::<TagEntry>().await.unwrap(), entry);
 
     let res = cl
         .put(&url)
         .header(CONTENT_TYPE, TreeEntry::TYPE)
         .header("content-digest", &body_digest.to_string())
-        .body(serde_json::to_vec(&tag).unwrap())
+        .body(serde_json::to_vec(&entry).unwrap())
         .send()
         .await
         .unwrap();
@@ -107,7 +106,7 @@ pub async fn create(
     );
 }
 
-pub async fn list(cl: &reqwest::Client, addr: &str, repo: &RepositoryName) -> Vec<TagName> {
+pub async fn list(cl: &reqwest::Client, addr: &str, repo: &RepositoryContext) -> Vec<TagName> {
     let res = cl.get(format!("{addr}/{repo}/_tag")).send().await.unwrap();
     assert_eq!(
         res.status(),

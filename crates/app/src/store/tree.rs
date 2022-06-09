@@ -3,6 +3,7 @@
 
 use super::{CreateError, Entity};
 
+use std::borrow::Borrow;
 use std::ops::Deref;
 
 use drawbridge_type::{Meta, TreeDirectory, TreePath};
@@ -23,7 +24,8 @@ impl<'a, P> Deref for Node<'a, P> {
 }
 
 impl<'a> Node<'a, Utf8PathBuf> {
-    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, path: &TreePath) -> Self {
+    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, path: impl Borrow<TreePath>) -> Self {
+        let path = path.borrow();
         if path.is_empty() {
             Self(entity.child(""))
         } else {

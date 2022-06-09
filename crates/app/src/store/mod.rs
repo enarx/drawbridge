@@ -5,13 +5,15 @@ mod entity;
 mod repo;
 mod tag;
 mod tree;
+mod user;
 
 pub use entity::*;
 pub use repo::*;
 pub use tag::*;
 pub use tree::*;
+pub use user::*;
 
-use drawbridge_type::RepositoryName;
+use drawbridge_type::{RepositoryContext, TagContext, TreeContext, UserContext};
 
 use cap_async_std::fs_utf8::Dir;
 
@@ -21,8 +23,23 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn repository(&self, name: &RepositoryName) -> Repository<'_> {
-        Repository::new(Entity::new(&self.root, ""), name)
+    pub fn user(&self, UserContext { name }: &UserContext) -> User<'_> {
+        User::new(Entity::new(&self.root), name)
+    }
+
+    pub fn repository<'a>(
+        &'a self,
+        RepositoryContext { owner, name }: &'a RepositoryContext,
+    ) -> Repository<'_> {
+        self.user(owner).repository(name)
+    }
+
+    pub fn tag<'a>(&'a self, TagContext { repository, name }: &'a TagContext) -> Tag<'_> {
+        self.repository(repository).tag(name)
+    }
+
+    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_> {
+        self.tag(tag).path(path)
     }
 }
 

@@ -5,7 +5,7 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::{Meta, RepositoryName, TagName, TreeDirectory, TreePath};
+use drawbridge_type::{Meta, TreeContext, TreeDirectory};
 
 use axum::body::Body;
 use axum::extract::{BodyStream, RequestParts};
@@ -16,9 +16,7 @@ use futures::{io, TryStreamExt};
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
-    Extension(repo): Extension<RepositoryName>,
-    Extension(tag): Extension<TagName>,
-    Extension(path): Extension<TreePath>,
+    tree: TreeContext,
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
@@ -38,12 +36,7 @@ pub async fn put(
                 .await
                 .map(|Json(v)| v)
                 .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?;
-            store
-                .repository(&repo)
-                .tag(&tag)
-                .path(&path)
-                .create_directory(meta, &dir)
-                .await
+            store.tree(&tree).create_directory(meta, &dir).await
         }
         _ => {
             let body = req
@@ -52,18 +45,13 @@ pub async fn put(
                 .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
             store
-                .repository(&repo)
-                .tag(&tag)
-                .path(&path)
+                .tree(&tree)
                 .create_file(meta, body.into_async_read())
                 .await
         }
     }
     .map_err(|e| {
-        eprintln!(
-            "Failed to PUT path `{}` on tag `{}` of repository `{}`: {:?}",
-            path, tag, repo, e
-        );
+        eprintln!("Failed to PUT `{}`: {:?}", tree, e);
         e
     })
     .map_err(IntoResponse::into_response)

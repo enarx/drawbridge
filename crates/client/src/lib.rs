@@ -4,26 +4,30 @@
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
 
+mod entity;
 mod repo;
 mod tag;
 mod tree;
+mod user;
 
+pub use entity::*;
 pub use repo::*;
 pub use tag::*;
 pub use tree::*;
+pub use user::*;
 
 pub use drawbridge_type as types;
 
-pub use anyhow::Result;
+pub use anyhow::{Context, Result};
 pub use mime;
 pub use url::Url;
 
-use drawbridge_type::RepositoryName;
+use drawbridge_type::{RepositoryContext, TagContext, TreeContext, UserContext};
 
 #[derive(Debug)]
 pub struct Client {
     inner: ureq::Agent,
-    url: Url,
+    root: Url,
 }
 
 impl Client {
@@ -31,8 +35,27 @@ impl Client {
         ClientBuilder::new(url)
     }
 
-    pub fn repository<'a>(&'a self, name: &'a RepositoryName) -> Repository<'_> {
-        Repository { client: self, name }
+    fn url(&self, path: &str) -> Result<Url> {
+        self.root.join(path).context("failed to construct URL")
+    }
+
+    pub fn user(&self, UserContext { name }: &UserContext) -> User<'_> {
+        User::new(Entity::new(self), name)
+    }
+
+    pub fn repository<'a>(
+        &'a self,
+        RepositoryContext { owner, name }: &'a RepositoryContext,
+    ) -> Repository<'_> {
+        self.user(owner).repository(name)
+    }
+
+    pub fn tag<'a>(&'a self, TagContext { repository, name }: &'a TagContext) -> Tag<'_> {
+        self.repository(repository).tag(name)
+    }
+
+    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_> {
+        self.tag(tag).path(path)
     }
 }
 
@@ -54,7 +77,7 @@ impl ClientBuilder {
     pub fn build(self) -> Client {
         Client {
             inner: self.inner.build(),
-            url: self.url,
+            root: self.url,
         }
     }
 }

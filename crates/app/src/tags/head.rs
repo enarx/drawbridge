@@ -5,26 +5,18 @@ use super::super::Store;
 
 use std::sync::Arc;
 
-use drawbridge_type::{RepositoryName, TagName};
+use drawbridge_type::TagContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
 
-pub async fn head(
-    Extension(store): Extension<Arc<Store>>,
-    Extension(repo): Extension<RepositoryName>,
-    Extension(name): Extension<TagName>,
-) -> impl IntoResponse {
+pub async fn head(Extension(store): Extension<Arc<Store>>, tag: TagContext) -> impl IntoResponse {
     store
-        .repository(&repo)
-        .tag(&name)
+        .tag(&tag)
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!(
-                "Failed to HEAD tag `{}` on repository `{}`: {:?}",
-                name, repo, e
-            );
+            eprintln!("Failed to HEAD tag `{}`: {:?}", tag, e);
             e
         })
         .map(|meta| (meta, ()))

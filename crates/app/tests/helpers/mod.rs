@@ -4,6 +4,7 @@
 pub mod repo;
 pub mod tag;
 pub mod tree;
+pub mod user;
 
 use std::fmt::Debug;
 use std::str::FromStr;

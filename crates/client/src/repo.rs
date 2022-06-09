@@ -1,80 +1,42 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{Client, Result, Tag};
+use super::{Entity, Result, Tag};
 
-use drawbridge_type::digest::Algorithms;
+use std::ops::Deref;
+
 use drawbridge_type::{RepositoryConfig, RepositoryName, TagName};
 
-use anyhow::{bail, Context};
-use http::header::CONTENT_TYPE;
-use http::StatusCode;
 use mime::APPLICATION_JSON;
 
-pub struct Repository<'a> {
-    pub(crate) client: &'a Client,
-    pub(crate) name: &'a RepositoryName,
+pub struct Repository<'a>(Entity<'a>);
+
+impl<'a> Deref for Repository<'a> {
+    type Target = Entity<'a>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl Repository<'_> {
-    pub fn tag<'a>(&'a self, name: &'a TagName) -> Tag<'_> {
-        Tag { repo: self, name }
-    }
-
-    pub fn tags(&self) -> Result<Vec<TagName>> {
-        let res = self
-            .client
-            .inner
-            .get(
-                self.client
-                    .url
-                    .join(&format!("{}/_tag", self.name))?
-                    .as_str(),
-            )
-            .call()?;
-        // TODO: Verify Content-Digest
-        // TODO: Verify Content-Length
-        // https://github.com/profianinc/drawbridge/issues/103
-        match StatusCode::from_u16(res.status()) {
-            Ok(StatusCode::OK) => res.into_json().map_err(Into::into),
-            _ => bail!("unexpected status code: {}", res.status()),
-        }
+impl<'a> Repository<'a> {
+    pub fn new(entity: Entity<'a>, name: &RepositoryName) -> Repository<'a> {
+        Repository(entity.child(&name.to_string()))
     }
 
     pub fn create(&self, conf: &RepositoryConfig) -> Result<bool> {
-        let body =
-            serde_json::to_vec(&conf).context("failed to encode repository config to JSON")?;
-        let content_digest = Algorithms::default()
-            .read_sync(&body[..])
-            .context("failed to compute repository config digest")?
-            .to_string();
-
-        let res = self
-            .client
-            .inner
-            .put(self.client.url.join(&self.name.to_string())?.as_str())
-            .set(CONTENT_TYPE.as_str(), APPLICATION_JSON.as_ref())
-            .set("Content-Digest", &content_digest)
-            .send_bytes(&body)?;
-        match StatusCode::from_u16(res.status()) {
-            Ok(StatusCode::CREATED) => Ok(true),
-            Ok(StatusCode::OK) => Ok(false),
-            _ => bail!("unexpected status code: {}", res.status()),
-        }
+        self.0.create_json(&APPLICATION_JSON, conf)
     }
 
     pub fn get(&self) -> Result<RepositoryConfig> {
-        let res = self
-            .client
-            .inner
-            .get(self.client.url.join(&self.name.to_string())?.as_str())
-            .call()?;
-        // TODO: Verify Content-Digest
-        // TODO: Verify Content-Length
-        // https://github.com/profianinc/drawbridge/issues/103
-        match StatusCode::from_u16(res.status()) {
-            Ok(StatusCode::OK) => res.into_json().map_err(Into::into),
-            _ => bail!("unexpected status code: {}", res.status()),
-        }
+        self.0.get_json()
+    }
+
+    pub fn tags(&self) -> Result<Vec<TagName>> {
+        self.0.child("_tag").get_json()
+    }
+
+    pub fn tag(&self, name: &TagName) -> Tag<'a> {
+        Tag::new(self.child("_tag"), name)
     }
 }
