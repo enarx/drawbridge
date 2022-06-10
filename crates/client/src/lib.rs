@@ -31,7 +31,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn builder(url: impl Into<Url>) -> ClientBuilder {
+    pub fn builder(url: Url) -> ClientBuilder {
         ClientBuilder::new(url)
     }
 
@@ -65,10 +65,10 @@ pub struct ClientBuilder {
 }
 
 impl ClientBuilder {
-    pub fn new(url: impl Into<Url>) -> Self {
+    pub fn new(url: Url) -> Self {
         Self {
             inner: ureq::AgentBuilder::new(),
-            url: url.into(),
+            url,
         }
     }
 
