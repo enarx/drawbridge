@@ -6,6 +6,7 @@ use super::{CreateError, Entity, GetError, Tag};
 use std::borrow::Borrow;
 use std::ops::Deref;
 
+use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::{Meta, RepositoryConfig, RepositoryName, TagName};
 
 use anyhow::Context;
@@ -55,6 +56,19 @@ impl<'a, P: AsRef<Utf8Path>> Repository<'a, P> {
                 Ok(names)
             })
             .map_err(GetError::Internal)
+    }
+
+    pub async fn tags_json(&self) -> Result<(ContentDigest, Vec<u8>), GetError<anyhow::Error>> {
+        // TODO: Optimize hash computation
+        let tags = self.tags().await?;
+        let buf = serde_json::to_vec(&tags)
+            .context("failed to encode tags as JSON")
+            .map_err(GetError::Internal)?;
+        let hash = Algorithms::default()
+            .read_sync(&buf[..])
+            .context("failed to compute tag digest")
+            .map_err(GetError::Internal)?;
+        Ok((hash, buf))
     }
 
     pub fn tag(&self, name: &TagName) -> Tag<'a, Utf8PathBuf> {
