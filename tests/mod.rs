@@ -10,7 +10,7 @@ use drawbridge_client::types::digest::Algorithms;
 use drawbridge_client::types::{
     Meta, RepositoryConfig, TagEntry, TreeDirectory, TreeEntry, UserConfig,
 };
-use drawbridge_client::{Client, Url};
+use drawbridge_client::Client;
 
 use futures::channel::oneshot::channel;
 use hyper::Server;
@@ -31,7 +31,7 @@ async fn app() {
             .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
     );
     let cl = tokio::task::spawn_blocking(move || {
-        let cl = Client::builder(addr.parse::<Url>().unwrap()).build();
+        let cl = Client::builder(addr.parse().unwrap()).build();
 
         let user_name = "user".parse().unwrap();
         let user = cl.user(&user_name);
