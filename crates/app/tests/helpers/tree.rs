@@ -36,7 +36,9 @@ pub async fn create_path(
         res.text().await.unwrap()
     );
 
-    let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
+    let (size, body_digest) = Algorithms::default().read(&body[..]).await.unwrap();
+    assert_eq!(size, body.len() as u64);
+
     let res = cl
         .put(&url)
         .header(CONTENT_TYPE, mime.to_string())
@@ -123,7 +125,8 @@ pub async fn get_path(
     let body = res.bytes().await.unwrap();
     assert_eq!(body.len() as u64, content_length);
 
-    let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
+    let (size, body_digest) = Algorithms::default().read(&body[..]).await.unwrap();
+    assert_eq!(size, body.len() as u64);
     assert_eq!(body_digest, content_digest);
 
     (body, content_type)

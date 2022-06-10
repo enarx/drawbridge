@@ -82,17 +82,20 @@ async fn app() {
         &cl,
         &addr,
         &v0_1_0,
-        TagEntry::Unsigned(TreeEntry {
-            meta: Meta {
-                hash: Algorithms::default()
-                    .read(b"test".as_slice())
-                    .await
-                    .unwrap(),
-                size: "test".len() as _,
-                mime: TEXT_PLAIN,
-            },
-            custom: Default::default(),
-        }),
+        Algorithms::default()
+            .read(b"test".as_slice())
+            .await
+            .map(|(size, hash)| {
+                TagEntry::Unsigned(TreeEntry {
+                    meta: Meta {
+                        hash,
+                        size,
+                        mime: TEXT_PLAIN,
+                    },
+                    custom: Default::default(),
+                })
+            })
+            .unwrap(),
     )
     .await;
 
