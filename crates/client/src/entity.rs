@@ -61,12 +61,16 @@ impl<'a> Entity<'a> {
 
     pub(super) fn create_bytes(&self, mime: &Mime, data: impl AsRef<[u8]>) -> Result<bool> {
         let data = data.as_ref();
-        let content_digest = Algorithms::default()
-            .read_sync(data)
+        let (n, hash) = Algorithms::default()
+            .read_sync(&data[..])
             .context("failed to compute content digest")?;
-        let res = self
-            .create_request(&content_digest, mime)?
-            .send_bytes(data)?;
+        if n != data.len() as u64 {
+            bail!(
+                "invalid amount of bytes read, expected: {}, got {n}",
+                data.len(),
+            )
+        }
+        let res = self.create_request(&hash, &mime)?.send_bytes(&data)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),

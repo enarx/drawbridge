@@ -56,17 +56,17 @@ impl Algorithms {
     }
 
     /// Calculates a digest from an async reader
-    pub async fn read(&self, reader: impl Unpin + AsyncRead) -> io::Result<ContentDigest> {
+    pub async fn read(&self, reader: impl Unpin + AsyncRead) -> io::Result<(u64, ContentDigest)> {
         let mut r = self.reader(reader);
-        copy(&mut r, &mut sink()).await?;
-        Ok(r.digests())
+        let n = copy(&mut r, &mut sink()).await?;
+        Ok((n, r.digests()))
     }
 
     /// Calculates a digest from a sync reader
-    pub fn read_sync(&self, reader: impl std::io::Read) -> io::Result<ContentDigest> {
+    pub fn read_sync(&self, reader: impl std::io::Read) -> io::Result<(u64, ContentDigest)> {
         let mut r = self.reader(reader);
-        std::io::copy(&mut r, &mut std::io::sink())?;
-        Ok(r.digests())
+        let n = std::io::copy(&mut r, &mut std::io::sink())?;
+        Ok((n, r.digests()))
     }
 }
 
@@ -81,7 +81,13 @@ mod tests {
         let content_digest = "sha-224=:CAj2TmDViXn8tnbJbsk4Jw3qQkRa7vzTpOb42w==:,sha-256=:LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564=:,sha-384=:mMEf/f3VQGdrGhN8saIrKnA1DJpEFx1rEYDGvly7LuP3nVMsih3Z7y6OCOdSo7q7:,sha-512=:9/u6bgY2+JDlb7vzKD5STG+jIErimDgtYkdB0NxmODJuKCxBvl5CVNiCB3LFUYosWowMf37aGVlKfrU5RT4e1w==:"
                 .parse::<ContentDigest>()
                 .unwrap();
-        assert_eq!(algorithms.read(rdr).await.unwrap(), content_digest);
-        assert_eq!(algorithms.read_sync(rdr).unwrap(), content_digest);
+        assert_eq!(
+            algorithms.read(rdr).await.unwrap(),
+            ("foo".len() as _, content_digest.clone())
+        );
+        assert_eq!(
+            algorithms.read_sync(rdr).unwrap(),
+            ("foo".len() as _, content_digest)
+        );
     }
 }

@@ -53,9 +53,12 @@ async fn app() {
         assert_eq!(foo.tags().unwrap(), vec![]);
         assert_eq!(bar.tags().unwrap(), vec![]);
 
+        let (size, hash) = Algorithms::default().read_sync(b"test".as_slice()).unwrap();
+        assert_eq!(size, "test".len() as u64);
+
         let test_meta = Meta {
-            hash: Algorithms::default().read_sync(b"test".as_slice()).unwrap(),
-            size: "test".len() as _,
+            hash,
+            size,
             mime: TEXT_PLAIN,
         };
 
@@ -75,11 +78,14 @@ async fn app() {
             m
         });
         let root_json = serde_json::to_vec(&root).unwrap();
+
+        let (size, hash) = Algorithms::default()
+            .read_sync(root_json.as_slice())
+            .unwrap();
+        assert_eq!(size, root_json.len() as u64);
         let root_meta = Meta {
-            hash: Algorithms::default()
-                .read_sync(root_json.as_slice())
-                .unwrap(),
-            size: root_json.len() as _,
+            hash,
+            size,
             mime: TreeDirectory::TYPE.parse().unwrap(),
         };
 

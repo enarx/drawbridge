@@ -9,7 +9,7 @@ use std::ops::Deref;
 use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::{Meta, RepositoryConfig, RepositoryName, TagName};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use camino::{Utf8Path, Utf8PathBuf};
 
 #[repr(transparent)]
@@ -64,10 +64,16 @@ impl<'a, P: AsRef<Utf8Path>> Repository<'a, P> {
         let buf = serde_json::to_vec(&tags)
             .context("failed to encode tags as JSON")
             .map_err(GetError::Internal)?;
-        let hash = Algorithms::default()
+        let (n, hash) = Algorithms::default()
             .read_sync(&buf[..])
             .context("failed to compute tag digest")
             .map_err(GetError::Internal)?;
+        if n != buf.len() as u64 {
+            return Err(GetError::Internal(anyhow!(
+                "invalid amount of bytes read, expected: {}, got {n}",
+                buf.len(),
+            )));
+        }
         Ok((hash, buf))
     }
 

@@ -30,7 +30,9 @@ pub async fn create(cl: &reqwest::Client, addr: &str, user: &UserContext, conf: 
     );
 
     let body = serde_json::to_vec(&conf).unwrap();
-    let body_digest = Algorithms::default().read(&body[..]).await.unwrap();
+    let (size, body_digest) = Algorithms::default().read(&body[..]).await.unwrap();
+    assert_eq!(size, body.len() as u64);
+
     let res = cl
         .put(&url)
         .header("content-digest", &body_digest.to_string())
