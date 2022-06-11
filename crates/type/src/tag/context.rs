@@ -5,8 +5,7 @@ use super::super::RepositoryContext;
 use super::Name;
 
 use std::fmt::Display;
-// TODO: Uncomment once compiler bug is fixed
-//use std::str::FromStr;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Context {
@@ -14,17 +13,17 @@ pub struct Context {
     pub name: Name,
 }
 
-// TODO: Uncomment once compiler bug is fixed
-//impl FromStr for Context {
-//    type Err = &'static str;
-//
-//    fn from_str(s: &str) -> Result<Self, Self::Err> {
-//        let (repository, name) = s.split_once(":").ok_or("invalid tag context")?;
-//        let repository = repository.parse()?;
-//        let name = name.parse().map_err(Into::into)?;
-//        Ok(Self { repository, name })
-//    }
-//}
+impl FromStr for Context {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (repository, name) = s.split_once(':').ok_or("invalid tag context")?;
+        let repository = repository.parse()?;
+        // TODO: propagate SemVer validation error
+        let name = name.parse().or(Err("invalid semver"))?;
+        Ok(Self { repository, name })
+    }
+}
 
 impl Display for Context {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
