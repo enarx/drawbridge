@@ -4,9 +4,11 @@
 mod context;
 mod directory;
 mod entry;
+mod name;
 mod path;
 
 pub use context::*;
 pub use directory::*;
 pub use entry::*;
+pub use name::*;
 pub use path::*;

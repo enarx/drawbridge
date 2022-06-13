@@ -29,7 +29,7 @@ impl<'a> Node<'a, Utf8PathBuf> {
         if path.is_empty() {
             Self(entity.child(""))
         } else {
-            Self(entity.child(format!("entries/{}", path.join("/entries/"))))
+            Self(entity.child(format!("entries/{}", path.intersperse("/entries/"))))
         }
     }
 }

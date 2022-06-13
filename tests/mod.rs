@@ -65,7 +65,7 @@ async fn app() {
         let root = TreeDirectory::from({
             let mut m = BTreeMap::new();
             m.insert(
-                "test-file".into(),
+                "test-file".parse().unwrap(),
                 TreeEntry {
                     meta: test_meta,
                     custom: {
