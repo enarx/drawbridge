@@ -43,7 +43,7 @@ impl<'a> Tag<'a> {
         self.0.get_json()
     }
 
-    pub fn path(&self, name: &TreePath) -> Node<'a> {
-        Node::new(self.child("tree"), name)
+    pub fn path(&self, path: &TreePath) -> Node<'a> {
+        Node::new(self.child("tree"), path)
     }
 }
