@@ -3,7 +3,6 @@
 
 #![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
-#![feature(str_split_as_str)]
 
 mod builder;
 mod handle;
