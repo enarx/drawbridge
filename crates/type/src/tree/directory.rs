@@ -10,29 +10,35 @@ use serde::{Deserialize, Serialize};
 
 /// A directory
 ///
-/// A directory is simply a sorted name to `Entry` map.
+/// A directory is simply a sorted name to `E` map.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Directory(BTreeMap<Name, Entry>);
+pub struct Directory<E = Entry>(BTreeMap<Name, E>);
 
-impl Directory {
+impl<E> Directory<E> {
     pub const TYPE: &'static str = "application/vnd.drawbridge.directory.v1+json";
 }
 
-impl From<BTreeMap<Name, Entry>> for Directory {
-    fn from(m: BTreeMap<Name, Entry>) -> Self {
+impl<E> From<BTreeMap<Name, E>> for Directory<E> {
+    fn from(m: BTreeMap<Name, E>) -> Self {
         Self(m)
     }
 }
 
-impl Deref for Directory {
-    type Target = BTreeMap<Name, Entry>;
+impl<E> FromIterator<(Name, E)> for Directory<E> {
+    fn from_iter<T: IntoIterator<Item = (Name, E)>>(iter: T) -> Self {
+        Self(BTreeMap::from_iter(iter))
+    }
+}
+
+impl<E> Deref for Directory<E> {
+    type Target = BTreeMap<Name, E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl DerefMut for Directory {
+impl<E> DerefMut for Directory<E> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

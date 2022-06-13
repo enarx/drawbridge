@@ -40,7 +40,7 @@ pub async fn create(
 
     let res = cl
         .put(&url)
-        .header(CONTENT_TYPE, TreeEntry::TYPE)
+        .header(CONTENT_TYPE, TreeEntry::<()>::TYPE)
         .header("content-digest", &body_digest.to_string())
         .body(serde_json::to_vec(&entry).unwrap())
         .send()
@@ -66,7 +66,7 @@ pub async fn create(
     //assert_eq!(content_length, body.len() as u64);
 
     let content_type: Mime = parse_header(res.headers(), CONTENT_TYPE.as_str());
-    assert_eq!(content_type, TreeEntry::TYPE);
+    assert_eq!(content_type, TreeEntry::<()>::TYPE);
 
     let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
     assert_eq!(body_digest, content_digest);
@@ -83,7 +83,7 @@ pub async fn create(
     assert_eq!(content_length, body.len() as u64);
 
     let content_type: Mime = parse_header(res.headers(), CONTENT_TYPE.as_str());
-    assert_eq!(content_type, TreeEntry::TYPE);
+    assert_eq!(content_type, TreeEntry::<()>::TYPE);
 
     let content_digest: ContentDigest = parse_header(res.headers(), "content-digest");
     assert_eq!(body_digest, content_digest);
@@ -92,7 +92,7 @@ pub async fn create(
 
     let res = cl
         .put(&url)
-        .header(CONTENT_TYPE, TreeEntry::TYPE)
+        .header(CONTENT_TYPE, TreeEntry::<()>::TYPE)
         .header("content-digest", &body_digest.to_string())
         .body(serde_json::to_vec(&entry).unwrap())
         .send()

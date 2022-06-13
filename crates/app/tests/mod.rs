@@ -93,6 +93,7 @@ async fn app() {
                         mime: TEXT_PLAIN,
                     },
                     custom: Default::default(),
+                    content: (),
                 })
             })
             .unwrap(),

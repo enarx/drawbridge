@@ -13,7 +13,7 @@ use serde_json::Value;
 /// Note that this type is designed to be extensible. Therefore, the fields
 /// here represent the minimum required fields. Other fields may be present.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Entry {
+pub struct Entry<C: ?Sized = ()> {
     /// The metadata of this entry
     #[serde(flatten)]
     pub meta: Meta,
@@ -21,8 +21,11 @@ pub struct Entry {
     /// Custom fields
     #[serde(flatten)]
     pub custom: HashMap<String, Value>,
+
+    #[serde(skip)]
+    pub content: C,
 }
 
-impl Entry {
+impl<C> Entry<C> {
     pub const TYPE: &'static str = "application/vnd.drawbridge.entry.v1+json";
 }
