@@ -55,7 +55,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     })?;
     assert_eq!(extensions.insert(repo), None, "duplicate repository name");
 
-    let mut tail = tail.split_terminator('/');
+    let mut tail = tail.splitn(4, '/');
     match (tail.next(), tail.next(), tail.next()) {
         (None | Some(""), None, None) => match *req.method() {
             Method::HEAD => Ok(repos::head.into_service().call(req).await.into_response()),
@@ -94,7 +94,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                 };
             }
 
-            let path = tail.as_str().parse::<TreePath>().map_err(|e| {
+            let path = tail.next().unwrap_or("").parse::<TreePath>().map_err(|e| {
                 (
                     StatusCode::BAD_REQUEST,
                     format!("Failed to parse tree path: {}", e),
