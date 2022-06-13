@@ -22,8 +22,12 @@ impl<'a> Deref for Node<'a> {
 }
 
 impl<'a> Node<'a> {
-    pub fn new(entity: Entity<'a>, name: &TreePath) -> Self {
-        Node(entity.child(&name.to_string()))
+    pub fn new(entity: Entity<'a>, path: &TreePath) -> Self {
+        if path.is_empty() {
+            Self(entity)
+        } else {
+            Self(entity.child(&path.to_string()))
+        }
     }
 
     pub fn create_bytes(&self, mime: &Mime, data: impl AsRef<[u8]>) -> Result<bool> {
