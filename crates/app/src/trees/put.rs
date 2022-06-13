@@ -30,7 +30,7 @@ pub async fn put(
 
     let mut req = RequestParts::new(req);
     match meta.mime.to_string().as_str() {
-        TreeDirectory::TYPE => {
+        TreeDirectory::<()>::TYPE => {
             let dir = req
                 .extract()
                 .await

@@ -6,7 +6,7 @@ use super::{Entity, Result};
 use std::io::Read;
 use std::ops::Deref;
 
-use drawbridge_type::{Meta, TreeDirectory, TreePath};
+use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 
 use mime::Mime;
 use ureq::serde::Serialize;
@@ -38,8 +38,8 @@ impl<'a> Node<'a> {
         self.0.create_from(meta, rdr)
     }
 
-    pub fn create_directory(&self, dir: &TreeDirectory) -> Result<bool> {
-        let mime = TreeDirectory::TYPE
+    pub fn create_directory<C>(&self, dir: &TreeDirectory<TreeEntry<C>>) -> Result<bool> {
+        let mime = TreeDirectory::<C>::TYPE
             .parse()
             .expect("failed to parse tree directory media type");
         self.create_json(&mime, dir)

@@ -6,7 +6,7 @@ use super::{CreateError, Entity};
 use std::borrow::Borrow;
 use std::ops::Deref;
 
-use drawbridge_type::{Meta, TreeDirectory, TreePath};
+use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use futures::AsyncRead;
@@ -48,7 +48,7 @@ impl<'a, P: AsRef<Utf8Path>> Node<'a, P> {
     pub async fn create_directory(
         &self,
         meta: Meta,
-        dir: &TreeDirectory,
+        dir: &TreeDirectory<TreeEntry>,
     ) -> Result<(), CreateError<anyhow::Error>> {
         // TODO: Validate node hash against parents' expected values
         // https://github.com/profianinc/drawbridge/issues/77

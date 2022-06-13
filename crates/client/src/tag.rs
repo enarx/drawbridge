@@ -3,11 +3,16 @@
 
 use super::{Entity, Node, Result};
 
+use std::collections::BTreeMap;
 use std::ops::Deref;
+use std::path::Path;
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_jose::MediaTyped;
-use drawbridge_type::{TagEntry, TagName, TreeEntry, TreePath};
+use drawbridge_type::TreeContent::{Directory, File};
+use drawbridge_type::{TagEntry, TagName, Tree, TreeEntry, TreePath};
+
+use ureq::serde::Serialize;
 
 pub struct Tag<'a>(Entity<'a>);
 
@@ -24,9 +29,9 @@ impl<'a> Tag<'a> {
         Tag(entity.child(&name.to_string()))
     }
 
-    pub fn create(&self, entry: &TagEntry) -> Result<bool> {
+    pub fn create(&self, entry: &TagEntry<impl Serialize>) -> Result<bool> {
         let mime = match entry {
-            TagEntry::Unsigned(..) => TreeEntry::TYPE,
+            TagEntry::Unsigned(..) => TreeEntry::<()>::TYPE,
             TagEntry::Signed(..) => Jws::TYPE,
         }
         .parse()

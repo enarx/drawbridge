@@ -31,7 +31,7 @@ pub async fn put(
 
     let mut req = RequestParts::new(req);
     let entry = match meta.mime.to_string().as_str() {
-        TreeEntry::TYPE => req.extract().await.map(|Json(v)| TagEntry::Unsigned(v)),
+        TreeEntry::<()>::TYPE => req.extract().await.map(|Json(v)| TagEntry::Unsigned(v)),
         Jws::TYPE => req.extract().await.map(|Json(v)| TagEntry::Signed(v)),
         _ => return Err((StatusCode::BAD_REQUEST, "Invalid content type").into_response()),
     }
