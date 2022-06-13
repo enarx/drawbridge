@@ -62,11 +62,11 @@ impl<'a> Entity<'a> {
     pub(super) fn create_bytes(&self, mime: &Mime, data: impl AsRef<[u8]>) -> Result<bool> {
         let data = data.as_ref();
         let content_digest = Algorithms::default()
-            .read_sync(&data[..])
+            .read_sync(data)
             .context("failed to compute content digest")?;
         let res = self
-            .create_request(&content_digest, &mime)?
-            .send_bytes(&data)?;
+            .create_request(&content_digest, mime)?
+            .send_bytes(data)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),
