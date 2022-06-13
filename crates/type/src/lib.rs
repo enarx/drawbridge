@@ -18,7 +18,7 @@ pub use repository::{
 };
 pub use tag::{Context as TagContext, Entry as TagEntry, Name as TagName};
 pub use tree::{
-    Context as TreeContext, Directory as TreeDirectory, Entry as TreeEntry, Name as TreeName,
-    Path as TreePath,
+    Content as TreeContent, Context as TreeContext, Directory as TreeDirectory, Entry as TreeEntry,
+    Name as TreeName, Path as TreePath, Tree,
 };
 pub use user::{Config as UserConfig, Context as UserContext, Name as UserName};

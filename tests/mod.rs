@@ -1,20 +1,15 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use std::collections::{BTreeMap, HashMap};
+use std::fs::{create_dir, write};
 use std::net::{Ipv4Addr, TcpListener};
 
 use drawbridge_app::Builder;
-use drawbridge_client::mime::TEXT_PLAIN;
-use drawbridge_client::types::digest::Algorithms;
-use drawbridge_client::types::{
-    Meta, RepositoryConfig, TagEntry, TreeDirectory, TreeEntry, UserConfig,
-};
+use drawbridge_client::types::{RepositoryConfig, TreePath, UserConfig};
 use drawbridge_client::Client;
 
 use futures::channel::oneshot::channel;
 use hyper::Server;
-use serde_json::json;
 use tempfile::tempdir;
 
 #[tokio::test]
@@ -33,16 +28,12 @@ async fn app() {
     let cl = tokio::task::spawn_blocking(move || {
         let cl = Client::builder(addr.parse().unwrap()).build();
 
-        let user_name = "user".parse().unwrap();
-        let user = cl.user(&user_name);
+        let user = cl.user(&"user".parse().unwrap());
         assert!(user.get().is_err());
         assert_eq!(user.create(&UserConfig {}).unwrap(), true);
 
-        let foo_repo = "foo".parse().unwrap();
-        let foo = user.repository(&foo_repo);
-
-        let bar_repo = "bar".parse().unwrap();
-        let bar = user.repository(&bar_repo);
+        let foo = user.repository(&"foo".parse().unwrap());
+        let bar = user.repository(&"bar".parse().unwrap());
 
         assert!(foo.get().is_err());
         assert!(bar.get().is_err());
@@ -53,64 +44,79 @@ async fn app() {
         assert_eq!(foo.tags().unwrap(), vec![]);
         assert_eq!(bar.tags().unwrap(), vec![]);
 
-        let (size, hash) = Algorithms::default().read_sync(b"test".as_slice()).unwrap();
-        assert_eq!(size, "test".len() as u64);
+        let pkg = tempdir().expect("failed to create temporary package directory");
 
-        let test_meta = Meta {
-            hash,
-            size,
-            mime: TEXT_PLAIN,
-        };
+        write(pkg.path().join("test-file"), "no extension").unwrap();
+        write(pkg.path().join("test-file.txt"), "text").unwrap();
+        write(pkg.path().join("test-file.json"), "not valid json").unwrap();
+        write(pkg.path().join("tEst-file..__.foo.42."), "invalidext").unwrap();
 
-        let root = TreeDirectory::from({
-            let mut m = BTreeMap::new();
-            m.insert(
-                "test-file".parse().unwrap(),
-                TreeEntry {
-                    meta: test_meta,
-                    custom: {
-                        let mut m = HashMap::new();
-                        m.insert("custom_field".into(), json!("custom_value"));
-                        m
-                    },
-                },
-            );
-            m
-        });
-        let root_json = serde_json::to_vec(&root).unwrap();
+        create_dir(pkg.path().join("test-dir-1")).unwrap();
+        write(pkg.path().join("test-dir-1").join("test-file.txt"), "text").unwrap();
+        write(pkg.path().join("test-dir-1").join("test-file"), "test").unwrap();
 
-        let (size, hash) = Algorithms::default()
-            .read_sync(root_json.as_slice())
-            .unwrap();
-        assert_eq!(size, root_json.len() as u64);
-        let root_meta = Meta {
-            hash,
-            size,
-            mime: TreeDirectory::TYPE.parse().unwrap(),
-        };
-
-        let tag = TagEntry::Unsigned(TreeEntry {
-            meta: root_meta,
-            custom: Default::default(),
-        });
+        create_dir(pkg.path().join("test-dir-1").join("test-subdir-1")).unwrap();
+        create_dir(pkg.path().join("test-dir-1").join("test-subdir-2")).unwrap();
+        write(
+            pkg.path()
+                .join("test-dir-1")
+                .join("test-subdir-2")
+                .join("test-file"),
+            "test",
+        )
+        .unwrap();
 
         let v0_1_0 = "0.1.0".parse().unwrap();
-        let foo_v0_1_0 = foo.tag(&v0_1_0);
 
-        assert!(foo_v0_1_0.get().is_err());
-        assert_eq!(foo_v0_1_0.create(&tag).unwrap(), true);
-        assert_eq!(foo_v0_1_0.get().unwrap(), tag);
+        let (tag_created, tree_created) = foo
+            .tag(&v0_1_0)
+            .create_from_path_unsigned(pkg.path())
+            .expect("failed to create a tag and upload the tree");
+        assert!(tag_created);
+        assert_eq!(
+            tree_created.clone().into_iter().collect::<Vec<_>>(),
+            vec![
+                (TreePath::ROOT, true),
+                ("tEst-file..__.foo.42.".parse().unwrap(), true),
+                ("test-dir-1".parse().unwrap(), true),
+                ("test-dir-1/test-file".parse().unwrap(), true),
+                ("test-dir-1/test-file.txt".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-1".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-2".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-2/test-file".parse().unwrap(), true),
+                ("test-file".parse().unwrap(), true),
+                ("test-file.json".parse().unwrap(), true),
+                ("test-file.txt".parse().unwrap(), true),
+            ]
+        );
 
-        let root_path = "/".parse().unwrap();
-        let root_node = foo_v0_1_0.path(&root_path);
-        assert!(root_node.get_string().is_err());
-        assert_eq!(root_node.create_directory(&root).unwrap(), true);
+        assert_eq!(foo.tags().unwrap(), vec![v0_1_0.clone()]);
+        assert_eq!(bar.tags().unwrap(), vec![]);
 
-        let test_path = "/test".parse().unwrap();
-        let test_node = foo_v0_1_0.path(&test_path);
-        assert!(test_node.get_string().is_err());
-        assert_eq!(test_node.create_bytes(&TEXT_PLAIN, b"test").unwrap(), true);
-        assert_eq!(test_node.get_string().unwrap(), (TEXT_PLAIN, "test".into()));
+        let (tag_created, tree_created) = bar
+            .tag(&v0_1_0)
+            .create_from_path_unsigned(pkg.path())
+            .expect("failed to create a tag and upload the tree");
+        assert!(tag_created);
+        assert_eq!(
+            tree_created.clone().into_iter().collect::<Vec<_>>(),
+            vec![
+                (TreePath::ROOT, true),
+                ("tEst-file..__.foo.42.".parse().unwrap(), true),
+                ("test-dir-1".parse().unwrap(), true),
+                ("test-dir-1/test-file".parse().unwrap(), true),
+                ("test-dir-1/test-file.txt".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-1".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-2".parse().unwrap(), true),
+                ("test-dir-1/test-subdir-2/test-file".parse().unwrap(), true),
+                ("test-file".parse().unwrap(), true),
+                ("test-file.json".parse().unwrap(), true),
+                ("test-file.txt".parse().unwrap(), true),
+            ]
+        );
+
+        assert_eq!(foo.tags().unwrap(), vec![v0_1_0.clone()]);
+        assert_eq!(bar.tags().unwrap(), vec![v0_1_0]);
     });
     assert!(matches!(cl.await, Ok(())));
 
