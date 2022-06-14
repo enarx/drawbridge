@@ -9,6 +9,7 @@ mod handle;
 mod repos;
 mod store;
 mod tags;
+mod tls;
 mod trees;
 mod users;
 
@@ -17,5 +18,6 @@ pub(crate) use handle::*;
 pub use repos::*;
 pub(crate) use store::*;
 pub use tags::*;
+pub use tls::Config as TLSConfig;
 pub use trees::*;
 pub use users::*;
