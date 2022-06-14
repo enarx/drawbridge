@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
+use crate::providers::certificate::CertificateSession;
+use crate::providers::github::ValidateError;
+
 use super::providers::{github, Provider};
 use super::redirect::{AuthRedirect, AuthRedirectRoot};
 
@@ -66,13 +69,26 @@ impl std::error::Error for DecryptError {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     pub provider: Provider,
-    pub token: AccessToken,
+    pub token: Option<AccessToken>,
 }
 
 impl Session {
     /// Create a new session instance.
-    pub fn new(provider: Provider, token: AccessToken) -> Self {
+    pub fn new(provider: Provider, token: Option<AccessToken>) -> Self {
         Self { provider, token }
+    }
+
+    pub(crate) async fn validate(&self) -> Result<(), ValidateError> {
+        match self.provider {
+            Provider::GitHub => {
+                github::validate(self).await?;
+            }
+            Provider::Certificate => {
+                // NOTE: The certificate must be validated by the server before this point.
+            }
+        }
+
+        Ok(())
     }
 
     /// Encrypt the session so that it can be securely stored by the user.
@@ -103,6 +119,55 @@ impl fmt::Display for Session {
     }
 }
 
+pub(crate) async fn cookie_session_from_request<B: Send>(
+    redirect: &Extension<AuthRedirectRoot>,
+    req: &mut RequestParts<B>,
+) -> Option<Result<Session, AuthRedirect>> {
+    let cookies = TypedHeader::<headers::Cookie>::from_request(req)
+        .await
+        .map_err(|e| match *e.name() {
+            COOKIE => match e.reason() {
+                TypedHeaderRejectionReason::Missing => None,
+                TypedHeaderRejectionReason::Error(e) => {
+                    Some(redirect.error(format!("Failed to parse HTTP headers: {}", e)))
+                }
+                _ => Some(redirect.no_error()),
+            },
+            _ => Some(redirect.no_error()),
+        });
+
+    // No cookie exists
+    if let Some(None) = cookies.as_ref().err() {
+        return None;
+    }
+
+    let key = Extension::<RsaPrivateKey>::from_request(req).await.unwrap();
+
+    Some(
+        cookies
+            .map_err(|e| {
+                // We know there is a cookie by this point because of the above check.
+                e.unwrap()
+            })
+            .and_then(|cookies| {
+                cookies
+                    .get(COOKIE_NAME)
+                    .ok_or_else(|| redirect.no_error())
+                    .and_then(|session_data| {
+                        Session::decrypt(session_data, &key.0).map_err(|_| redirect.no_error())
+                    })
+            }),
+    )
+}
+
+pub(crate) async fn certificate_session_from_request<B: Send>(
+    req: &mut RequestParts<B>,
+) -> Option<Session> {
+    req.extensions()
+        .get::<CertificateSession>()
+        .map(|_| Session::new(Provider::Certificate, None))
+}
+
 #[async_trait]
 impl<B> FromRequest<B> for Session
 where
@@ -114,31 +179,17 @@ where
         let redirect = Extension::<AuthRedirectRoot>::from_request(req)
             .await
             .unwrap();
-        let key = Extension::<RsaPrivateKey>::from_request(req).await.unwrap();
-        let cookies = TypedHeader::<headers::Cookie>::from_request(req)
-            .await
-            .map_err(|e| match *e.name() {
-                COOKIE => match e.reason() {
-                    TypedHeaderRejectionReason::Missing => redirect.no_error(),
-                    TypedHeaderRejectionReason::Error(e) => {
-                        redirect.error(format!("Failed to parse HTTP headers: {}", e))
-                    }
-                    _ => redirect.no_error(),
-                },
-                _ => redirect.no_error(),
-            })?;
 
-        let session_data = cookies
-            .get(COOKIE_NAME)
-            .ok_or_else(|| redirect.no_error())?;
-        let session = Session::decrypt(session_data, &key.0).map_err(|_| redirect.no_error())?;
+        let session = match cookie_session_from_request(&redirect, req).await {
+            Some(result) => Some(result?),
+            None => certificate_session_from_request(req).await,
+        };
 
-        match session.provider {
-            Provider::GitHub => github::validate(&session)
-                .await
-                .map(|_| session)
-                .map_err(|_| redirect.no_error()),
+        if let Some(session) = &session {
+            session.validate().await.map_err(|_| redirect.no_error())?;
         }
+
+        session.ok_or_else(|| redirect.no_error())
     }
 }
 
@@ -155,7 +206,10 @@ mod tests {
         assert_eq!(
             format!(
                 "{}",
-                Session::new(Provider::GitHub, AccessToken::new("some_token".to_owned()))
+                Session::new(
+                    Provider::GitHub,
+                    Some(AccessToken::new("some_token".to_owned()))
+                )
             ),
             "(Session via GitHub.com)"
         );
@@ -166,7 +220,10 @@ mod tests {
         use rsa::pkcs8::DecodePrivateKey;
 
         let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../rsa2048-priv.der")).unwrap();
-        let session = Session::new(Provider::GitHub, AccessToken::new("some_token".to_owned()));
+        let session = Session::new(
+            Provider::GitHub,
+            Some(AccessToken::new("some_token".to_owned())),
+        );
 
         assert_eq!(
             serde_json::to_string(

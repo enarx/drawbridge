@@ -41,7 +41,7 @@ pub async fn authorized(
         .map_err(|e| format!("Failed to get token: {}", e))?;
 
     // TODO: pull user info from the GitHub API here: https://github.com/profianinc/drawbridge/issues/7
-    Session::new(Provider::GitHub, token.access_token().clone())
+    Session::new(Provider::GitHub, Some(token.access_token().clone()))
         .encrypt(&key.0)
         .map_err(|e| format!("Failed to encrypt token: {}", e))
 }

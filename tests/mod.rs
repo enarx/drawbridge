@@ -23,7 +23,7 @@ async fn app() {
     let srv = tokio::spawn(
         Server::from_tcp(lis)
             .unwrap()
-            .serve(Builder::new(store.path()).build().unwrap())
+            .serve(Builder::new(store.path()).build_service().unwrap())
             .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
     );
     let cl = tokio::task::spawn_blocking(move || {

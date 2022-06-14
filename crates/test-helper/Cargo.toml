@@ -1,0 +1,15 @@
+[package]
+name = "drawbridge-test-helper"
+version = "0.1.0"
+authors = ["Profian Inc"]
+edition = "2021"
+description = "Test helpers only for use in unit tests"
+publish = false
+
+[dependencies]
+# Internal dependencies
+drawbridge-byte = { path = "../byte", features = ["serde"] }
+
+# External dependencies
+rcgen = { version = "0.9.2", default-features = false, features = ["pem"] }
+reqwest = { version = "0.11.10", default-features = false, features = ["json", "rustls-tls"] }

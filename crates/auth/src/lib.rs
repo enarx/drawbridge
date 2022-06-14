@@ -7,6 +7,7 @@ mod redirect;
 mod session;
 
 pub use builder::Builder;
+pub use providers::certificate::CertificateSession;
 pub use providers::Provider;
 pub use redirect::AuthRedirectRoot;
 pub use session::{Session, COOKIE_NAME};

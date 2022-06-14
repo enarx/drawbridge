@@ -23,6 +23,7 @@ pub enum ValidateError {
     Json(io::Error),
     InvalidStatusCode(InvalidStatusCode),
     GitHub(String),
+    Internal(String),
 }
 
 impl fmt::Display for ValidateError {
@@ -35,6 +36,7 @@ impl fmt::Display for ValidateError {
                 ValidateError::Json(e) => format!("JSON deserialization error: {}", e),
                 ValidateError::InvalidStatusCode(e) => format!("invalid status code: {}", e),
                 ValidateError::GitHub(e) => format!("github error: {}", e),
+                ValidateError::Internal(e) => format!("internal error: {}", e),
             }
         )
     }
@@ -42,7 +44,7 @@ impl fmt::Display for ValidateError {
 
 impl std::error::Error for ValidateError {}
 
-pub async fn validate(session: &Session) -> Result<String, ValidateError> {
+pub(crate) async fn validate(session: &Session) -> Result<String, ValidateError> {
     #[derive(Deserialize)]
     struct User {
         login: String,
@@ -53,11 +55,16 @@ pub async fn validate(session: &Session) -> Result<String, ValidateError> {
         message: String,
     }
 
+    let token = session
+        .token
+        .as_ref()
+        .ok_or_else(|| ValidateError::Internal("No token in session".to_string()))?;
+
     let res = ureq::get("https://api.github.com/user")
         .set(USER_AGENT.as_str(), "drawbridge")
         .set(
             AUTHORIZATION.as_str(),
-            &format!("Bearer {}", session.token.secret()),
+            &format!("Bearer {}", token.secret()),
         )
         .call()
         .map_err(ValidateError::Http)?;

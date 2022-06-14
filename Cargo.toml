@@ -12,6 +12,7 @@ members = [
     "crates/hash",
     "crates/jose",
     "crates/type",
+    "crates/test-helper",
 ]
 
 [dependencies]
@@ -20,7 +21,7 @@ drawbridge-app = { path = "./crates/app" }
 
 # External dependencies
 hyper = { version = "0.14.18", default-features = false, features = ["http1", "server", "tcp"] }
-tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt-multi-thread", "fs"] }
 
 [dev-dependencies]
 # Internal dependencies

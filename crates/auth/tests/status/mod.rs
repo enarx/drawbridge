@@ -27,7 +27,7 @@ async fn status_authenticated() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(
         Provider::GitHub,
-        AccessToken::new(std::env::var("GITHUB_TOKEN").unwrap()),
+        Some(AccessToken::new(std::env::var("GITHUB_TOKEN").unwrap())),
     );
     let app = test_app("localhost/auth".to_owned());
     let response = app
@@ -53,7 +53,10 @@ async fn status_authenticated() {
 #[tokio::test]
 async fn status_bad_token() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
-    let session = Session::new(Provider::GitHub, AccessToken::new("BAD TOKEN".to_owned()));
+    let session = Session::new(
+        Provider::GitHub,
+        Some(AccessToken::new("BAD TOKEN".to_owned())),
+    );
     let app = test_app("localhost/auth".to_owned());
     let response = app
         .oneshot(
