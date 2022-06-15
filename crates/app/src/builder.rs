@@ -3,12 +3,11 @@
 
 use super::{handle, Store};
 
-use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::handler::Handler;
 use axum::routing::IntoMakeService;
 use axum::{Extension, Router};
@@ -24,9 +23,9 @@ impl<S: AsRef<Path>> Builder<S> {
     }
 
     /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
-    pub fn build(self) -> Result<IntoMakeService<Router>, Box<dyn Error>> {
+    pub fn build(self) -> anyhow::Result<IntoMakeService<Router>> {
         let path = self.store.as_ref();
-        let store = File::open(path).map(Store::from).context(format!(
+        let store = File::open(path).map(Store::from).context(anyhow!(
             "failed to open store at `{}`",
             path.to_string_lossy()
         ))?;
