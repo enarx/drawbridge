@@ -13,6 +13,8 @@ drawbridge-type = { path = "../type" }
 anyhow = { version = "1.0", default-features = false, features = ["std"] }
 http = { version = "0.2.6", default-features = false }
 mime = { version = "0.3.16", default-features = false }
+rustls = { version = "0.20.6", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
-ureq = { version = "2.4.0", default-features = false, features = ["json"] }
+ureq = { version = "2.4.0", default-features = false, features = ["json", "tls"] }
 url = { version = "2.2.2", default-features = false, features = ["serde"] }
+webpki-roots = { version = "0.22.3", default-features = false }
