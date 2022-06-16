@@ -9,6 +9,7 @@ use drawbridge_type::TreeContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn head(Extension(store): Extension<Arc<Store>>, tree: TreeContext) -> impl IntoResponse {
     store
@@ -16,7 +17,7 @@ pub async fn head(Extension(store): Extension<Arc<Store>>, tree: TreeContext) ->
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!("Failed to HEAD `{}`: {:?}", tree, e);
+            warn!(target: "app::trees::head", "failed for `{tree}`: {:?}", e);
             e
         })
         .map(|meta| (meta, ()))

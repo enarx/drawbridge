@@ -9,6 +9,7 @@ use drawbridge_type::UserContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn get(Extension(store): Extension<Arc<Store>>, user: UserContext) -> impl IntoResponse {
     // TODO: Stream body
@@ -19,7 +20,7 @@ pub async fn get(Extension(store): Extension<Arc<Store>>, user: UserContext) -> 
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET user `{}`: {:?}", user, e);
+            warn!(target: "app::users::get", "failed for `{user}`: {:?}", e);
             e
         })
         .map(|meta| (meta, body))

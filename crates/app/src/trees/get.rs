@@ -9,6 +9,7 @@ use drawbridge_type::TreeContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn get(Extension(store): Extension<Arc<Store>>, tree: TreeContext) -> impl IntoResponse {
     // TODO: Stream body
@@ -19,7 +20,7 @@ pub async fn get(Extension(store): Extension<Arc<Store>>, tree: TreeContext) -> 
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET `{}`: {:?}", tree, e);
+            warn!(target: "app::trees::get", "failed for `{tree}`: {:?}", e);
             e
         })
         .map(|meta| (meta, body))

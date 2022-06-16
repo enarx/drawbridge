@@ -10,6 +10,7 @@ use drawbridge_type::{Meta, RepositoryConfig, RepositoryContext};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
+use log::warn;
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
@@ -22,7 +23,7 @@ pub async fn put(
         .create(meta, &config)
         .await
         .map_err(|e| {
-            eprintln!("Failed to PUT repository `{}`: {:?}", repo, e);
+            warn!(target: "app::repos::put", "failed for `{repo}`: {:?}", e);
             e.into_response()
         })
         .map(|_| StatusCode::CREATED)

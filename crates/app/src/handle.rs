@@ -9,10 +9,12 @@ use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Method, Request, StatusCode};
 use axum::response::IntoResponse;
+use log::trace;
 use tower::Service;
 
 /// Parses the URI of `req` and routes it to respective component.
 pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
+    trace!(target: "app::handle", "begin HTTP request handling {:?}", req);
     let path = req.uri().path().strip_prefix('/').expect("invalid URI");
     let (head, tail) = path
         .split_once("/_")
@@ -34,6 +36,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             format!("Failed to parse user name: {}", e),
         )
     })?;
+    trace!(target: "app::handle", "parsed user name: `{user}`");
     assert_eq!(extensions.insert(user), None, "duplicate user name");
     if head.is_empty() {
         return match *req.method() {
@@ -53,6 +56,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             format!("Failed to parse repository name: {}", e),
         )
     })?;
+    trace!(target: "app::handle", "parsed repository name: `{repo}`");
     assert_eq!(extensions.insert(repo), None, "duplicate repository name");
 
     let mut tail = tail.splitn(4, '/');
@@ -80,6 +84,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                     format!("Failed to parse tag name: {}", e),
                 )
             })?;
+            trace!(target: "app::handle", "parsed tag name: `{tag}`");
             assert_eq!(extensions.insert(tag), None, "duplicate tag name");
 
             if prop.is_none() {
@@ -100,6 +105,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
                     format!("Failed to parse tree path: {}", e),
                 )
             })?;
+            trace!(target: "app::handle", "parsed tree path: `{path}`");
             assert_eq!(extensions.insert(path), None, "duplicate tree path");
             match *req.method() {
                 Method::HEAD => Ok(trees::head.into_service().call(req).await.into_response()),

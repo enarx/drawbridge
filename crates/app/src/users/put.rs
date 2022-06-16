@@ -10,6 +10,7 @@ use drawbridge_type::{Meta, UserConfig, UserContext};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
+use log::warn;
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
@@ -22,7 +23,7 @@ pub async fn put(
         .create(meta, &config)
         .await
         .map_err(|e| {
-            eprintln!("Failed to PUT user `{}`: {:?}", user, e);
+            warn!(target: "app::users::put", "failed for `{user}`: {:?}", e);
             e
         })
         .map(|_| StatusCode::CREATED)

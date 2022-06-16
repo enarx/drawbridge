@@ -15,6 +15,7 @@ axum = { version = "0.5.4", default-features = false, features = ["json"] }
 camino = { version = "1.0.9", default-features = false }
 cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
 futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
+log = { version = "0.4.17", default-features = false }
 mime = { version = "0.3.16", default-features = false }
 rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }

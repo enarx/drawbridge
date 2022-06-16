@@ -9,6 +9,7 @@ use drawbridge_type::RepositoryContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn get(
     Extension(store): Extension<Arc<Store>>,
@@ -22,7 +23,7 @@ pub async fn get(
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET repository `{}`: {:?}", repo, e);
+            warn!(target: "app::repos::get", "failed for `{repo}`: {:?}", e);
             e
         })
         .map(|meta| (meta, body))
