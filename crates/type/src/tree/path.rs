@@ -55,7 +55,7 @@ impl FromIterator<Name> for Path {
 }
 
 impl FromStr for Path {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.trim_start_matches('/')
@@ -78,12 +78,18 @@ mod tests {
 
     #[test]
     fn from_str() {
-        assert_eq!("/".parse::<Path>(), Ok(Path::ROOT));
-        assert_eq!("/foo".parse(), Ok(Path(vec!["foo".parse().unwrap()])));
-        assert_eq!("/foo/".parse(), Ok(Path(vec!["foo".parse().unwrap()])));
+        assert_eq!("/".parse::<Path>().unwrap(), Path::ROOT);
         assert_eq!(
-            "/foo/bar".parse(),
-            Ok(Path(vec!["foo".parse().unwrap(), "bar".parse().unwrap()]))
+            "/foo".parse::<Path>().unwrap(),
+            Path(vec!["foo".parse().unwrap()])
+        );
+        assert_eq!(
+            "/foo/".parse::<Path>().unwrap(),
+            Path(vec!["foo".parse().unwrap()])
+        );
+        assert_eq!(
+            "/foo/bar".parse::<Path>().unwrap(),
+            Path(vec!["foo".parse().unwrap(), "bar".parse().unwrap()])
         );
     }
 }
