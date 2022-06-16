@@ -9,6 +9,7 @@ use drawbridge_type::RepositoryContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn head(
     Extension(store): Extension<Arc<Store>>,
@@ -19,7 +20,7 @@ pub async fn head(
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!("Failed to HEAD repository `{}`: {:?}", repo, e);
+            warn!(target: "app::repos::head", "failed for `{repo}`: {:?}", e);
             e
         })
         .map(|meta| (meta, ()))

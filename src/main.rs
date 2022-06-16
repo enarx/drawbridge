@@ -35,6 +35,8 @@ fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let Args {
         store,
         cert,

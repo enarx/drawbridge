@@ -9,6 +9,7 @@ use drawbridge_type::{Meta, RepositoryContext};
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 use mime::APPLICATION_JSON;
 
 pub async fn query(
@@ -30,7 +31,7 @@ pub async fn query(
             )
         })
         .map_err(|e| {
-            eprintln!("Failed to GET tags on `{}`: {:?}", repo, e);
+            warn!(target: "app::tags::query", "failed: {:?}", e);
             e
         })
 }

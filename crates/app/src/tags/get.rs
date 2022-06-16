@@ -9,6 +9,7 @@ use drawbridge_type::TagContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn get(Extension(store): Extension<Arc<Store>>, tag: TagContext) -> impl IntoResponse {
     // TODO: Stream body
@@ -19,7 +20,7 @@ pub async fn get(Extension(store): Extension<Arc<Store>>, tag: TagContext) -> im
         .get_to_writer(&mut body)
         .await
         .map_err(|e| {
-            eprintln!("Failed to GET tag `{}`: {:?}", tag, e);
+            warn!(target: "app::tags::get", "failed for `{tag}`: {:?}", e);
             e
         })
         .map(|meta| (meta, body))

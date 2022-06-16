@@ -13,6 +13,7 @@ use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use futures::{io, TryStreamExt};
+use log::warn;
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
@@ -51,7 +52,7 @@ pub async fn put(
         }
     }
     .map_err(|e| {
-        eprintln!("Failed to PUT `{}`: {:?}", tree, e);
+        warn!(target: "app::trees::put", "failed for `{tree}`: {:?}", e);
         e
     })
     .map_err(IntoResponse::into_response)

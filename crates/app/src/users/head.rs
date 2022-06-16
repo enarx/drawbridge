@@ -9,6 +9,7 @@ use drawbridge_type::UserContext;
 
 use axum::response::IntoResponse;
 use axum::Extension;
+use log::warn;
 
 pub async fn head(Extension(store): Extension<Arc<Store>>, user: UserContext) -> impl IntoResponse {
     store
@@ -16,7 +17,7 @@ pub async fn head(Extension(store): Extension<Arc<Store>>, user: UserContext) ->
         .get_meta()
         .await
         .map_err(|e| {
-            eprintln!("Failed to HEAD user `{}`: {:?}", user, e);
+            warn!(target: "app::users::head", "failed for `{user}`: {:?}", e);
             e
         })
         .map(|meta| (meta, ()))
