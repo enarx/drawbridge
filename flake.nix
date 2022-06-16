@@ -20,6 +20,8 @@
       {
         devShell = pkgs.mkShell {
           buildInputs = [
+            pkgs.openssl
+
             rust
           ];
         };
