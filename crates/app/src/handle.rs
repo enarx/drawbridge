@@ -18,13 +18,10 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     let path = req.uri().path().strip_prefix('/').expect("invalid URI");
     let (head, tail) = path
         .split_once("/_")
-        .map(|(left, right)| (left.to_string(), format!("_{}", right)))
+        .map(|(left, right)| (left.to_string(), format!("_{right}")))
         .unwrap_or((path.to_string(), "".into()));
     if head.is_empty() {
-        return Err((
-            StatusCode::NOT_FOUND,
-            format!("Route `/{}` not found", path),
-        ));
+        return Err((StatusCode::NOT_FOUND, format!("Route `/{path}` not found")));
     }
 
     let extensions = req.extensions_mut();
@@ -33,7 +30,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     let user = user.parse::<UserName>().map_err(|e| {
         (
             StatusCode::BAD_REQUEST,
-            format!("Failed to parse user name: {}", e),
+            format!("Failed to parse user name: {e}"),
         )
     })?;
     trace!(target: "app::handle", "parsed user name: `{user}`");
@@ -53,7 +50,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     let repo = head.parse::<RepositoryName>().map_err(|e| {
         (
             StatusCode::BAD_REQUEST,
-            format!("Failed to parse repository name: {}", e),
+            format!("Failed to parse repository name: {e}"),
         )
     })?;
     trace!(target: "app::handle", "parsed repository name: `{repo}`");
@@ -81,7 +78,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             let tag = tag.parse::<TagName>().map_err(|e| {
                 (
                     StatusCode::BAD_REQUEST,
-                    format!("Failed to parse tag name: {}", e),
+                    format!("Failed to parse tag name: {e}"),
                 )
             })?;
             trace!(target: "app::handle", "parsed tag name: `{tag}`");
@@ -102,7 +99,7 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             let path = tail.next().unwrap_or("").parse::<TreePath>().map_err(|e| {
                 (
                     StatusCode::BAD_REQUEST,
-                    format!("Failed to parse tree path: {}", e),
+                    format!("Failed to parse tree path: {e}"),
                 )
             })?;
             trace!(target: "app::handle", "parsed tree path: `{path}`");
