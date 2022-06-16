@@ -3,10 +3,9 @@
 
 use super::super::Store;
 
-use std::sync::Arc;
-
 use drawbridge_type::{Meta, TreeContext, TreeDirectory};
 
+use async_std::sync::Arc;
 use axum::body::Body;
 use axum::extract::{BodyStream, RequestParts};
 use axum::http::{Request, StatusCode};

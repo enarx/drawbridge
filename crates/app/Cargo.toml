@@ -11,20 +11,25 @@ drawbridge-type = { path = "../type", features = ["server"] }
 
 # External dependencies
 anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
+async-std = { version = "1.11.0", default-features = false }
 axum = { version = "0.5.4", default-features = false, features = ["json"] }
 camino = { version = "1.0.9", default-features = false }
 cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
 futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
+futures-rustls = { version = "0.22.1", default-features = false }
+hyper = { version = "0.14.18", default-features = false, features = ["http1", "server"] }
 log = { version = "0.4.17", default-features = false }
 mime = { version = "0.3.16", default-features = false }
 rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }
 serde = { version = "1.0.136", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
+tokio-util = { version = "0.7.3", default-features = false, features = ["compat"] }
 tower = { version = "0.4.12", default-features = false }
 
 [dev-dependencies]
+async-std = { version = "1.11.0", default-features = false, features = ["attributes"] }
 bytes = { version = "1.1.0", default-features = false }
+env_logger = { version = "0.9.0", default-features = false, features = ["atty", "termcolor"] }
 reqwest = { version = "0.11.10", default-features = false, features = ["json"] }
 tempfile = { version = "3.3.0", default-features = false }
-tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt"] }

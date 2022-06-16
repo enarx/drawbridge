@@ -5,26 +5,38 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
-use drawbridge_app::{self as app, TLSConfig};
+use drawbridge_app::{App, TlsConfig};
 
-use axum_server::bind_rustls;
-use axum_server::tls_rustls::RustlsConfig;
+use anyhow::Context as _;
+use async_std::net::TcpListener;
 use clap::Parser;
+use futures::StreamExt;
+use log::{debug, error};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
+    /// Address to bind to.
+    #[clap(long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))]
+    addr: SocketAddr,
+
+    /// Path to the Drawbridge store.
     #[clap(long)]
     store: PathBuf,
 
+    /// Path to PEM-encoded server certificate.
     #[clap(long)]
     cert: PathBuf,
 
+    /// Path to PEM-encoded server certificate key.
     #[clap(long)]
     key: PathBuf,
 
+    /// Path to PEM-encoded trusted CA certificate.
+    ///
+    /// Clients that present a valid certificate signed by this CA
+    /// are granted read-only access to all repositories in the store.
     #[clap(long)]
     ca: PathBuf,
 }
@@ -33,8 +45,8 @@ fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
     File::open(p).map(BufReader::new)
 }
 
-#[tokio::main]
-async fn main() {
+#[async_std::main]
+async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
     let Args {
@@ -42,25 +54,40 @@ async fn main() {
         cert,
         key,
         ca,
+        addr,
     } = Args::parse();
 
-    // TODO: Proper error handling
+    let cert = open_buffered(cert).context("Failed to open server certificate file")?;
+    let key = open_buffered(key).context("Failed to open server key file")?;
+    let ca = open_buffered(ca).context("Failed to open CA certificate file")?;
+    let tls = TlsConfig::read(cert, key, ca).context("Failed to construct server TLS config")?;
 
-    let cert = open_buffered(cert).expect("Failed to open server certificate file");
-    let key = open_buffered(key).expect("Failed to open server key file");
-    let ca = open_buffered(ca).expect("Failed to open CA certificate file");
-
-    let tls = TLSConfig::read(cert, key, ca)
-        .map(Into::into)
-        .map(Arc::new)
-        .map(RustlsConfig::from_config)
-        .expect("Failed to construct server TLS config");
-
-    bind_rustls(
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080),
-        tls,
-    )
-    .serve(app::Builder::new(store).build().unwrap())
-    .await
-    .unwrap();
+    let app = App::builder(store, tls)
+        .build()
+        .await
+        .context("Failed to build app")?;
+    TcpListener::bind(addr)
+        .await
+        .with_context(|| format!("Failed to bind to {}", addr))?
+        .incoming()
+        .for_each_concurrent(Some(1), |stream| async {
+            if let Err(e) = async {
+                let stream = stream.context("failed to initialize connection")?;
+                debug!(
+                    target: "main",
+                    "received TCP connection from {}",
+                    stream
+                        .peer_addr()
+                        .map(|peer| peer.to_string())
+                        .unwrap_or_else(|_| "unknown address".into())
+                );
+                app.handle(stream).await
+            }
+            .await
+            {
+                error!(target: "main", "failed to handle request: {e}");
+            }
+        })
+        .await;
+    Ok(())
 }

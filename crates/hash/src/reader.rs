@@ -56,7 +56,7 @@ mod tests {
 
     use futures::io::{copy, sink};
 
-    #[tokio::test]
+    #[async_std::test]
     async fn read_success() {
         const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
         let hash: Hash = HASH.parse().unwrap();
@@ -64,7 +64,7 @@ mod tests {
         copy(&mut read, &mut sink()).await.unwrap();
     }
 
-    #[tokio::test]
+    #[async_std::test]
     async fn read_failure() {
         const HASH: &str = "sha256:LCa0a2j_xo_5m0U8HTBBNBNCLXBkg7-g-YpeiGJm564";
         let hash: Hash = HASH.parse().unwrap();
@@ -75,7 +75,7 @@ mod tests {
         }
     }
 
-    #[tokio::test]
+    #[async_std::test]
     async fn meta_hash() {
         // printf "sha384:%s" $(printf '%s' '{"contentLength":42,"contentType":"text/plain","eTag":"sha384:mqVuAfXRKap7bdgcCY5uykM6-R9GqQ8K_uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"}' | openssl dgst -sha384 -binary | openssl base64 -A | tr '/' '_' | tr '+' '-')
         const HASH: &str =

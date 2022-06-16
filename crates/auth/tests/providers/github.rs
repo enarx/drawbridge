@@ -10,7 +10,7 @@ use hyper::Body;
 use regex::Regex;
 use tower::ServiceExt;
 
-#[tokio::test]
+#[async_std::test]
 async fn login() {
     let app = test_app("localhost/auth".to_owned());
     let response = app
@@ -38,7 +38,7 @@ async fn login() {
     ));
 }
 
-#[tokio::test]
+#[async_std::test]
 async fn authorized() {
     // TODO: write a successful test for this endpoint
     let app = test_app("localhost/auth".to_owned());

@@ -21,7 +21,7 @@ pub async fn status(session: Option<Session>) -> (StatusCode, String) {
     }
 }
 
-#[tokio::test]
+#[async_std::test]
 #[cfg_attr(not(has_github_token), ignore)]
 async fn status_authenticated() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
@@ -50,7 +50,7 @@ async fn status_authenticated() {
     assert_eq!(body, "Logged in with (Session via GitHub.com)");
 }
 
-#[tokio::test]
+#[async_std::test]
 async fn status_bad_token() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(Provider::GitHub, AccessToken::new("BAD TOKEN".to_owned()));
@@ -75,7 +75,7 @@ async fn status_bad_token() {
     assert_eq!(body, "Not logged in.");
 }
 
-#[tokio::test]
+#[async_std::test]
 async fn status_unauthenticated() {
     let app = test_app("localhost/auth".to_owned());
     let response = app
