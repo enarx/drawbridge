@@ -9,10 +9,14 @@ use rustls::cipher_suite::{
     TLS13_AES_128_GCM_SHA256, TLS13_AES_256_GCM_SHA384, TLS13_CHACHA20_POLY1305_SHA256,
 };
 use rustls::kx_group::{SECP256R1, SECP384R1, X25519};
-use rustls::server::AllowAnyAuthenticatedClient;
+use rustls::server::AllowAnyAnonymousOrAuthenticatedClient;
 use rustls::version::TLS13;
 use rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig};
 use rustls_pemfile::Item::{ECKey, PKCS8Key, RSAKey, X509Certificate};
+
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct TrustedCertificate;
 
 #[repr(transparent)]
 pub struct Config(ServerConfig);
@@ -54,7 +58,7 @@ impl Config {
                 .context("failed to read server certificate key")?;
             let key = items
                 .pop()
-                .ok_or(anyhow!("server certificate key missing"))
+                .ok_or_else(|| anyhow!("server certificate key missing"))
                 .and_then(|item| match item {
                     RSAKey(buf) | PKCS8Key(buf) | ECKey(buf) => Ok(PrivateKey(buf)),
                     _ => bail!("unsupported key type"),
@@ -72,10 +76,11 @@ impl Config {
                 .into_iter()
                 .try_for_each(|ref cert| roots.add(cert))
                 .context("failed to construct root certificate store")?;
-            AllowAnyAuthenticatedClient::new(roots)
+            // TODO: Allow client certificates signed by unknown CAs.
+            AllowAnyAnonymousOrAuthenticatedClient::new(roots)
         };
 
-        // TODO: load policy from config.
+        // TODO: Load policy from config.
         ServerConfig::builder()
             .with_cipher_suites(&[
                 TLS13_AES_256_GCM_SHA384,

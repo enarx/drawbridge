@@ -74,7 +74,7 @@ impl Algorithms {
 mod tests {
     use super::*;
 
-    #[tokio::test]
+    #[async_std::test]
     async fn digest() {
         let algorithms = Algorithms::default();
         let rdr = &b"foo"[..];

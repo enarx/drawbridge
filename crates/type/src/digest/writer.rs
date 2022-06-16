@@ -87,7 +87,7 @@ mod tests {
 
     use super::*;
 
-    #[tokio::test]
+    #[async_std::test]
     async fn success() {
         const HASH: &str = "sha-256=:LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564=:";
         let set = HASH.parse::<ContentDigest>().unwrap();
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(writer.digests(), set);
     }
 
-    #[tokio::test]
+    #[async_std::test]
     async fn failure() {
         const HASH: &str = "sha-256=:LCa0a2j/xo/5m0U8HTBBNBNCLXBkg7+g+YpeiGJm564=:";
         let set = HASH.parse::<ContentDigest>().unwrap();

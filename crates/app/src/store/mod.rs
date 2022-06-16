@@ -43,10 +43,23 @@ impl Store {
     }
 }
 
+impl From<Dir> for Store {
+    #[inline]
+    fn from(root: Dir) -> Self {
+        Self { root }
+    }
+}
+
+impl From<async_std::fs::File> for Store {
+    #[inline]
+    fn from(root: async_std::fs::File) -> Self {
+        Self::from(Dir::from_std_file(root))
+    }
+}
+
 impl From<std::fs::File> for Store {
-    fn from(dir: std::fs::File) -> Self {
-        Store {
-            root: Dir::from_std_file(dir.into()),
-        }
+    #[inline]
+    fn from(root: std::fs::File) -> Self {
+        Self::from(async_std::fs::File::from(root))
     }
 }

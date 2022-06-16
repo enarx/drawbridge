@@ -5,35 +5,48 @@ mod helpers;
 
 use helpers::*;
 
-use std::net::{Ipv4Addr, TcpListener};
 use std::time::Duration;
 
-use drawbridge_app::Builder;
+use drawbridge_app::{App, TlsConfig};
 use drawbridge_type::digest::Algorithms;
 use drawbridge_type::{
     Meta, RepositoryConfig, RepositoryContext, TagContext, TagEntry, TreeContext, TreeEntry,
     UserConfig,
 };
 
-use axum::Server;
+use async_std::net::{Ipv4Addr, TcpListener};
 use futures::channel::oneshot::channel;
+use futures::StreamExt;
 use mime::TEXT_PLAIN;
 use reqwest::StatusCode;
 use tempfile::tempdir;
 
-#[tokio::test]
+#[async_std::test]
 async fn app() {
-    let lis = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
-    let addr = format!("http://{}", lis.local_addr().unwrap());
+    env_logger::builder().is_test(true).init();
+
+    let lis = TcpListener::bind((Ipv4Addr::UNSPECIFIED, 0)).await.unwrap();
+    let addr = format!("https://{}", lis.local_addr().unwrap());
     let store = tempdir().expect("failed to create temporary store directory");
 
     let (tx, rx) = channel::<()>();
-    let srv = tokio::spawn(
-        Server::from_tcp(lis)
-            .unwrap()
-            .serve(Builder::new(store.path()).build().unwrap())
-            .with_graceful_shutdown(async { rx.await.ok().unwrap() }),
-    );
+    let srv = async_std::task::spawn(async move {
+        let tls = TlsConfig::read(
+            include_bytes!("../../../testdata/server.crt").as_slice(),
+            include_bytes!("../../../testdata/server.key").as_slice(),
+            include_bytes!("../../../testdata/ca.crt").as_slice(),
+        )
+        .unwrap();
+        let app = App::new(store.path(), tls).await.unwrap();
+        lis.incoming()
+            .take_until(rx)
+            .for_each_concurrent(None, |stream| async {
+                app.handle(stream.expect("failed to initialize stream"))
+                    .await
+                    .expect("failed to handle stream")
+            })
+            .await
+    });
 
     let cl = reqwest::Client::builder()
         .timeout(Duration::new(1, 0))
@@ -116,5 +129,5 @@ async fn app() {
 
     // Stop server
     assert_eq!(tx.send(()), Ok(()));
-    assert!(matches!(srv.await, Ok(Ok(()))));
+    assert!(matches!(srv.await, ()));
 }

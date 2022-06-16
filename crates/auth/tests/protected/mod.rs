@@ -21,7 +21,7 @@ pub async fn protected(session: Session) -> impl IntoResponse {
     )
 }
 
-#[tokio::test]
+#[async_std::test]
 #[cfg_attr(not(has_github_token), ignore)]
 async fn protected_authenticated() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
@@ -55,7 +55,7 @@ Session { provider: GitHub, token: AccessToken([redacted]) }"#
     );
 }
 
-#[tokio::test]
+#[async_std::test]
 async fn protected_invalid_token() {
     let key = RsaPrivateKey::from_pkcs8_der(include_bytes!("../../rsa2048-priv.der")).unwrap();
     let session = Session::new(Provider::GitHub, AccessToken::new("BAD TOKEN".to_owned()));
@@ -86,7 +86,7 @@ async fn protected_invalid_token() {
     );
 }
 
-#[tokio::test]
+#[async_std::test]
 async fn protected_no_token() {
     let app = test_app("localhost/auth".to_owned());
     let response = app

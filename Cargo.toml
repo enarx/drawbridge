@@ -19,17 +19,21 @@ members = [
 drawbridge-app = { path = "./crates/app" }
 
 # External dependencies
-axum-server = { version = "0.4.0", default-features = false, features = ["tls-rustls"] }
+anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
+async-std = { version = "1.11.0", default-features = false, features = ["attributes"] }
 clap = { version = "3.2.3", default-features = false, features = ["derive", "std"] }
 env_logger = { version = "0.9.0", default-features = false, features = ["atty", "termcolor"] }
-tokio = { version = "1.17.0", default-features = false, features = ["macros", "rt-multi-thread"] }
+futures = { version = "0.3.21", default-features = false, features = ["io-compat"] }
+log = { version = "0.4.17", default-features = false }
 
 [dev-dependencies]
 # Internal dependencies
 drawbridge-client = { path = "./crates/client" }
 
 # External dependencies
+async-std = { version = "1.11.0", default-features = false, features = ["attributes", "default"] }
 futures = { version = "0.3.21", default-features = false }
-hyper = { version = "0.14.18", default-features = false, features = ["http1", "server", "tcp"] }
+rustls = { version = "0.20.6", default-features = false }
+rustls-pemfile = { version = "1.0.0", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
 tempfile = { version = "3.3.0", default-features = false }
