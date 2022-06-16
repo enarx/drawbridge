@@ -21,18 +21,19 @@ impl Display for Context {
 #[cfg(feature = "axum")]
 #[axum::async_trait]
 impl<B: Send> axum::extract::FromRequest<B> for Context {
-    type Rejection = axum::http::StatusCode;
+    type Rejection = (axum::http::StatusCode, String);
 
     async fn from_request(
         req: &mut axum::extract::RequestParts<B>,
     ) -> Result<Self, Self::Rejection> {
         let tag = req.extract().await?;
         let axum::Extension(path) = req.extract().await.map_err(|e| {
-            eprintln!(
-                "{}",
-                anyhow::Error::new(e).context("failed to extract tree path")
-            );
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                anyhow::Error::new(e)
+                    .context("failed to extract tree context")
+                    .to_string(),
+            )
         })?;
         Ok(Self { tag, path })
     }

@@ -7,6 +7,7 @@ use std::fmt::Display;
 use std::ops::Deref;
 use std::str::FromStr;
 
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialOrd, PartialEq, Serialize)]
@@ -19,7 +20,7 @@ impl Name {
 }
 
 impl FromStr for Name {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -27,7 +28,7 @@ impl FromStr for Name {
             || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.'))
                 .is_some()
         {
-            Err("invalid name")
+            Err(anyhow!("invalid characters in entry name"))
         } else {
             Ok(Self(s.into()))
         }
@@ -64,12 +65,15 @@ mod tests {
         assert!("/test".parse::<Name>().is_err());
         assert!("test/".parse::<Name>().is_err());
 
-        assert_eq!("foo".parse(), Ok(Name("foo".into())));
-        assert_eq!("some.txt".parse(), Ok(Name("some.txt".into())));
-        assert_eq!("my_wasm.wasm".parse(), Ok(Name("my_wasm.wasm".into())));
+        assert_eq!("foo".parse::<Name>().unwrap(), Name("foo".into()));
+        assert_eq!("some.txt".parse::<Name>().unwrap(), Name("some.txt".into()));
         assert_eq!(
-            "not.a.cor-Rec.t.eX.tens.si0n_".parse(),
-            Ok(Name("not.a.cor-Rec.t.eX.tens.si0n_".into()))
+            "my_wasm.wasm".parse::<Name>().unwrap(),
+            Name("my_wasm.wasm".into())
+        );
+        assert_eq!(
+            "not.a.cor-Rec.t.eX.tens.si0n_".parse::<Name>().unwrap(),
+            Name("not.a.cor-Rec.t.eX.tens.si0n_".into())
         );
     }
 }

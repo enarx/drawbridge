@@ -7,6 +7,8 @@ use super::Name;
 use std::fmt::Display;
 use std::str::FromStr;
 
+use anyhow::{anyhow, Context as _};
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Context {
     pub owner: UserContext,
@@ -14,12 +16,14 @@ pub struct Context {
 }
 
 impl FromStr for Context {
-    type Err = &'static str;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (owner, name) = s.split_once('/').ok_or("invalid repository context")?;
-        let owner = owner.parse()?;
-        let name = name.parse()?;
+        let (owner, name) = s
+            .split_once('/')
+            .ok_or_else(|| anyhow!("`/` character not found"))?;
+        let owner = owner.parse().context("failed to parse user context")?;
+        let name = name.parse().context("failed to parse repository name")?;
         Ok(Self { owner, name })
     }
 }
@@ -33,18 +37,19 @@ impl Display for Context {
 #[cfg(feature = "axum")]
 #[axum::async_trait]
 impl<B: Send> axum::extract::FromRequest<B> for Context {
-    type Rejection = axum::http::StatusCode;
+    type Rejection = (axum::http::StatusCode, String);
 
     async fn from_request(
         req: &mut axum::extract::RequestParts<B>,
     ) -> Result<Self, Self::Rejection> {
         let owner = req.extract().await?;
         let axum::Extension(name) = req.extract().await.map_err(|e| {
-            eprintln!(
-                "{}",
-                anyhow::Error::new(e).context("failed to extract repository name")
-            );
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                anyhow::Error::new(e)
+                    .context("failed to extract repository context")
+                    .to_string(),
+            )
         })?;
         Ok(Self { owner, name })
     }
