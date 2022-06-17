@@ -182,10 +182,8 @@ async fn app() {
         assert_eq!(bar.tags().unwrap(), vec![v0_1_0.clone()]);
 
         let test_file = "test-file.txt".parse().unwrap();
-        assert_eq!(
-            foo.tag(&v0_1_0).path(&test_file).get_string().unwrap(),
-            (APPLICATION_OCTET_STREAM, "text".into())
-        );
+        // TODO: This should succeed once user auth is implemented.
+        assert!(foo.tag(&v0_1_0).path(&test_file).get_string().is_err());
 
         let test_file_cx = TreeContext {
             tag: "user/foo:0.1.0".parse().unwrap(),
@@ -195,10 +193,7 @@ async fn app() {
             cert_cl.tree(&test_file_cx).get_string().unwrap(),
             (APPLICATION_OCTET_STREAM, "text".into())
         );
-        assert_eq!(
-            anon_cl.tree(&test_file_cx).get_string().unwrap(),
-            (APPLICATION_OCTET_STREAM, "text".into())
-        );
+        assert!(anon_cl.tree(&test_file_cx).get_string().is_err());
     });
     assert!(matches!(cl.await.await, ()));
 
