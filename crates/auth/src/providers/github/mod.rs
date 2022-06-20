@@ -42,12 +42,14 @@ impl fmt::Display for ValidateError {
 
 impl std::error::Error for ValidateError {}
 
-pub async fn validate(session: &Session) -> Result<String, ValidateError> {
-    #[derive(Deserialize)]
-    struct User {
-        login: String,
-    }
+#[derive(Deserialize)]
+pub struct GitHubUser {
+    #[serde(rename = "login")]
+    pub username: String,
+    pub id: u64,
+}
 
+pub async fn validate(session: &Session) -> Result<GitHubUser, ValidateError> {
     #[derive(Deserialize)]
     struct Error {
         message: String,
@@ -62,10 +64,7 @@ pub async fn validate(session: &Session) -> Result<String, ValidateError> {
         .call()
         .map_err(ValidateError::Http)?;
     match StatusCode::from_u16(res.status()) {
-        Ok(s) if s.is_success() => res
-            .into_json()
-            .map_err(ValidateError::Json)
-            .map(|User { login }| login),
+        Ok(s) if s.is_success() => res.into_json().map_err(ValidateError::Json),
         Ok(_) => res
             .into_json()
             .map_err(ValidateError::Json)

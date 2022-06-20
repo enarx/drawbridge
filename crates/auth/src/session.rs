@@ -67,12 +67,25 @@ impl std::error::Error for DecryptError {}
 pub struct Session {
     pub provider: Provider,
     pub token: AccessToken,
+    pub username: Option<String>,
+    pub user_id: Option<String>,
 }
 
 impl Session {
     /// Create a new session instance.
     pub fn new(provider: Provider, token: AccessToken) -> Self {
-        Self { provider, token }
+        Self {
+            provider,
+            token,
+            username: None,
+            user_id: None,
+        }
+    }
+
+    pub fn set_user_info(mut self, username: String, user_id: String) -> Self {
+        self.username = Some(username);
+        self.user_id = Some(user_id);
+        self
     }
 
     /// Encrypt the session so that it can be securely stored by the user.
@@ -99,7 +112,11 @@ impl Session {
 
 impl fmt::Display for Session {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(Session via {})", self.provider)
+        write!(
+            f,
+            "(Session via {}, username: {:?}, user_id: {:?})",
+            self.provider, self.username, self.user_id
+        )
     }
 }
 
@@ -136,7 +153,7 @@ where
         match session.provider {
             Provider::GitHub => github::validate(&session)
                 .await
-                .map(|_| session)
+                .map(|github| session.set_user_info(github.username, github.id.to_string()))
                 .map_err(|_| redirect.no_error()),
         }
     }
@@ -155,9 +172,10 @@ mod tests {
         assert_eq!(
             format!(
                 "{}",
-                Session::new(Provider::GitHub, AccessToken::new("some_token".to_owned()))
+                Session::new(Provider::GitHub, AccessToken::new("some_token".to_owned()),)
+                    .set_user_info("some_user".to_string(), "123".to_string())
             ),
-            "(Session via GitHub.com)"
+            "(Session via GitHub.com, username: Some(\"some_user\"), user_id: Some(\"123\"))"
         );
     }
 
