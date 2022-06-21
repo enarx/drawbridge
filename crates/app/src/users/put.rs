@@ -9,15 +9,17 @@ use async_std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use log::{debug, warn};
+use log::{debug, trace, warn};
 
 pub async fn put(
-    Extension(store): Extension<Arc<Store>>,
+    Extension(ref store): Extension<Arc<Store>>,
     claims: OidcClaims,
-    cx: UserContext,
+    ref cx: UserContext,
     meta: Meta,
-    Json(record): Json<UserRecord>,
+    Json(ref record): Json<UserRecord>,
 ) -> impl IntoResponse {
+    trace!(target: "app::users::put", "called for `{cx}`");
+
     if record.subject != claims.subject().as_str() {
         return Err((StatusCode::UNAUTHORIZED, "OpenID Connect subject mismatch").into_response());
     }
@@ -44,7 +46,7 @@ pub async fn put(
     }
 
     store
-        .create_user(&cx, meta, &record)
+        .create_user(cx, meta, record)
         .await
         .map_err(|e| {
             debug!(target: "app::users::put", "failed for `{cx}`: {:?}", e);

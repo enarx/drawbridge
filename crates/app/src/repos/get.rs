@@ -6,30 +6,21 @@ use super::super::{OidcClaims, Store};
 use drawbridge_type::RepositoryContext;
 
 use async_std::sync::Arc;
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Extension;
-use log::debug;
+use log::{debug, trace};
 
 pub async fn get(
-    Extension(store): Extension<Arc<Store>>,
+    Extension(ref store): Extension<Arc<Store>>,
     claims: OidcClaims,
     cx: RepositoryContext,
 ) -> impl IntoResponse {
-    let (oidc_cx, user) = claims
-        .get_user(&store)
+    trace!(target: "app::trees::get", "called for `{cx}`");
+
+    let user = claims
+        .assert_user(store, &cx.owner)
         .await
         .map_err(IntoResponse::into_response)?;
-    if oidc_cx != cx.owner {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!(
-                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                cx.owner
-            ),
-        )
-            .into_response());
-    }
 
     // TODO: Stream body
     // https://github.com/profianinc/drawbridge/issues/56

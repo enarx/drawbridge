@@ -13,7 +13,7 @@ use axum::extract::RequestParts;
 use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use log::debug;
+use log::{debug, trace};
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
@@ -22,6 +22,8 @@ pub async fn put(
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
+    trace!(target: "app::tags::put", "called for `{cx}`");
+
     if meta.hash.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -30,20 +32,10 @@ pub async fn put(
             .into_response());
     }
 
-    let (oidc_cx, user) = claims
-        .get_user(&store)
+    let user = claims
+        .assert_user(&store, &cx.repository.owner)
         .await
         .map_err(IntoResponse::into_response)?;
-    if oidc_cx != cx.repository.owner {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!(
-                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                cx.repository.owner
-            ),
-        )
-            .into_response());
-    }
 
     let mut req = RequestParts::new(req);
     let entry = match meta.mime.to_string().as_str() {

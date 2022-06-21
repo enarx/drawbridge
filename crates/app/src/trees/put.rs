@@ -12,15 +12,17 @@ use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use futures::{io, TryStreamExt};
-use log::debug;
+use log::{debug, trace};
 
 pub async fn put(
-    Extension(store): Extension<Arc<Store>>,
+    Extension(ref store): Extension<Arc<Store>>,
     claims: OidcClaims,
     cx: TreeContext,
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
+    trace!(target: "app::trees::put", "called for `{cx}`");
+
     if meta.hash.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -29,20 +31,10 @@ pub async fn put(
             .into_response());
     }
 
-    let (oidc_cx, user) = claims
-        .get_user(&store)
+    let user = claims
+        .assert_user(store, &cx.tag.repository.owner)
         .await
         .map_err(IntoResponse::into_response)?;
-    if oidc_cx != cx.tag.repository.owner {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!(
-                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                cx.tag.repository.owner
-            ),
-        )
-            .into_response());
-    }
 
     let mut req = RequestParts::new(req);
     let tag = user.repository(&cx.tag.repository.name).tag(&cx.tag.name);

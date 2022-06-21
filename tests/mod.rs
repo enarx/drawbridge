@@ -202,45 +202,84 @@ async fn app() {
                 .expect("failed to create user"),
             true
         );
+        assert!(oidc_cl
+            .user(&format!("{user_name}other").parse().unwrap())
+            .create(&user_record)
+            .is_err());
 
         assert!(anon_user.get().is_err());
         assert!(cert_user.get().is_err());
         assert_eq!(oidc_user.get().expect("failed to get user"), user_record);
 
-        let repo_name = "test-repo-private".parse().unwrap();
-        let repo_conf = RepositoryConfig {};
+        let prv_repo_name = "test-repo-private".parse().unwrap();
+        let prv_repo_conf = RepositoryConfig { public: false };
 
-        let anon_repo = anon_user.repository(&repo_name);
-        let cert_repo = cert_user.repository(&repo_name);
-        let oidc_repo = oidc_user.repository(&repo_name);
+        let pub_repo_name = "test-repo-public".parse().unwrap();
+        let pub_repo_conf = RepositoryConfig { public: true };
 
-        assert!(anon_repo.get().is_err());
-        assert!(cert_repo.get().is_err());
-        assert!(oidc_repo.get().is_err());
+        let anon_prv_repo = anon_user.repository(&prv_repo_name);
+        let cert_prv_repo = cert_user.repository(&prv_repo_name);
+        let oidc_prv_repo = oidc_user.repository(&prv_repo_name);
 
-        assert!(anon_repo.tags().is_err());
-        assert!(cert_repo.tags().is_err());
-        assert!(oidc_repo.tags().is_err());
+        let anon_pub_repo = anon_user.repository(&pub_repo_name);
+        let cert_pub_repo = cert_user.repository(&pub_repo_name);
+        let oidc_pub_repo = oidc_user.repository(&pub_repo_name);
 
-        assert!(anon_repo.create(&repo_conf).is_err());
-        assert!(cert_repo.create(&repo_conf).is_err());
+        assert!(anon_prv_repo.get().is_err());
+        assert!(cert_prv_repo.get().is_err());
+        assert!(oidc_prv_repo.get().is_err());
+
+        assert!(anon_pub_repo.get().is_err());
+        assert!(cert_pub_repo.get().is_err());
+        assert!(oidc_pub_repo.get().is_err());
+
+        assert!(anon_prv_repo.tags().is_err());
+        assert!(cert_prv_repo.tags().is_err());
+        assert!(oidc_prv_repo.tags().is_err());
+
+        assert!(anon_pub_repo.tags().is_err());
+        assert!(cert_pub_repo.tags().is_err());
+        assert!(oidc_pub_repo.tags().is_err());
+
+        assert!(anon_prv_repo.create(&prv_repo_conf).is_err());
+        assert!(cert_prv_repo.create(&prv_repo_conf).is_err());
         assert_eq!(
-            oidc_repo
-                .create(&repo_conf)
+            oidc_prv_repo
+                .create(&prv_repo_conf)
                 .expect("failed to create repository"),
             true
         );
 
-        assert!(anon_repo.get().is_err());
-        assert!(cert_repo.get().is_err());
+        assert!(anon_pub_repo.create(&pub_repo_conf).is_err());
+        assert!(cert_pub_repo.create(&pub_repo_conf).is_err());
         assert_eq!(
-            oidc_repo.get().expect("failed to get repository"),
-            repo_conf
+            oidc_pub_repo
+                .create(&pub_repo_conf)
+                .expect("failed to create repository"),
+            true
         );
 
-        assert!(anon_repo.tags().is_err());
-        assert!(cert_repo.tags().is_err());
-        assert_eq!(oidc_repo.tags().expect("failed to get tags"), vec![]);
+        assert!(anon_prv_repo.get().is_err());
+        assert!(cert_prv_repo.get().is_err());
+        assert_eq!(
+            oidc_prv_repo.get().expect("failed to get repository"),
+            prv_repo_conf
+        );
+
+        assert!(anon_pub_repo.get().is_err());
+        assert!(cert_pub_repo.get().is_err());
+        assert_eq!(
+            oidc_pub_repo.get().expect("failed to get repository"),
+            pub_repo_conf
+        );
+
+        assert!(anon_prv_repo.tags().is_err());
+        assert!(cert_prv_repo.tags().is_err());
+        assert_eq!(oidc_prv_repo.tags().expect("failed to get tags"), vec![]);
+
+        assert_eq!(anon_pub_repo.tags().expect("failed to get tags"), vec![]);
+        assert_eq!(cert_pub_repo.tags().expect("failed to get tags"), vec![]);
+        assert_eq!(oidc_pub_repo.tags().expect("failed to get tags"), vec![]);
 
         let pkg = tempdir().expect("failed to create temporary package directory");
 
@@ -273,22 +312,30 @@ async fn app() {
 
         let tag_name = "0.1.0".parse().unwrap();
 
-        let anon_tag = anon_repo.tag(&tag_name);
-        let cert_tag = cert_repo.tag(&tag_name);
-        let oidc_tag = oidc_repo.tag(&tag_name);
+        let anon_prv_tag = anon_prv_repo.tag(&tag_name);
+        let cert_prv_tag = cert_prv_repo.tag(&tag_name);
+        let oidc_prv_tag = oidc_prv_repo.tag(&tag_name);
 
-        assert!(anon_tag.get().is_err());
-        assert!(cert_tag.get().is_err());
-        assert!(oidc_tag.get().is_err());
+        let anon_pub_tag = anon_pub_repo.tag(&tag_name);
+        let cert_pub_tag = cert_pub_repo.tag(&tag_name);
+        let oidc_pub_tag = oidc_pub_repo.tag(&tag_name);
 
-        assert!(anon_tag.create_from_path_unsigned(pkg.path()).is_err());
-        assert!(cert_tag.create_from_path_unsigned(pkg.path()).is_err());
-        let (tag_created, tree_created) = oidc_tag
+        assert!(anon_prv_tag.get().is_err());
+        assert!(cert_prv_tag.get().is_err());
+        assert!(oidc_prv_tag.get().is_err());
+
+        assert!(anon_pub_tag.get().is_err());
+        assert!(cert_pub_tag.get().is_err());
+        assert!(oidc_pub_tag.get().is_err());
+
+        assert!(anon_prv_tag.create_from_path_unsigned(pkg.path()).is_err());
+        assert!(cert_prv_tag.create_from_path_unsigned(pkg.path()).is_err());
+        let (prv_tag_created, prv_tree_created) = oidc_prv_tag
             .create_from_path_unsigned(pkg.path())
             .expect("failed to create a tag and upload the tree");
-        assert!(tag_created);
+        assert!(prv_tag_created);
         assert_eq!(
-            tree_created.clone().into_iter().collect::<Vec<_>>(),
+            prv_tree_created.clone().into_iter().collect::<Vec<_>>(),
             vec![
                 (TreePath::ROOT, true),
                 ("tEst-file..__.foo.42.".parse().unwrap(), true),
@@ -304,26 +351,65 @@ async fn app() {
             ]
         );
 
-        assert!(anon_repo.tags().is_err());
-        assert!(cert_repo.tags().is_err());
+        assert!(anon_pub_tag.create_from_path_unsigned(pkg.path()).is_err());
+        assert!(cert_pub_tag.create_from_path_unsigned(pkg.path()).is_err());
         assert_eq!(
-            oidc_repo.tags().expect("failed to get tags"),
+            oidc_pub_tag
+                .create_from_path_unsigned(pkg.path())
+                .expect("failed to create a tag and upload the tree"),
+            (prv_tag_created, prv_tree_created)
+        );
+
+        assert!(anon_prv_repo.tags().is_err());
+        assert!(cert_prv_repo.tags().is_err());
+        assert_eq!(
+            oidc_prv_repo.tags().expect("failed to get tags"),
+            vec![tag_name.clone()]
+        );
+
+        assert_eq!(
+            anon_pub_repo.tags().expect("failed to get tags"),
+            vec![tag_name.clone()]
+        );
+        assert_eq!(
+            cert_pub_repo.tags().expect("failed to get tags"),
+            vec![tag_name.clone()]
+        );
+        assert_eq!(
+            oidc_pub_repo.tags().expect("failed to get tags"),
             vec![tag_name.clone()]
         );
 
         let file_name = "test-file.txt".parse().unwrap();
 
-        let anon_file = anon_tag.path(&file_name);
-        let cert_file = cert_tag.path(&file_name);
-        let oidc_file = oidc_tag.path(&file_name);
+        let anon_prv_file = anon_prv_tag.path(&file_name);
+        let cert_prv_file = cert_prv_tag.path(&file_name);
+        let oidc_prv_file = oidc_prv_tag.path(&file_name);
 
-        assert!(anon_file.get_string().is_err());
+        let anon_pub_file = anon_pub_tag.path(&file_name);
+        let cert_pub_file = cert_pub_tag.path(&file_name);
+        let oidc_pub_file = oidc_pub_tag.path(&file_name);
+
+        assert!(anon_prv_file.get_string().is_err());
         assert_eq!(
-            cert_file.get_string().expect("failed to get file"),
+            cert_prv_file.get_string().expect("failed to get file"),
             (APPLICATION_OCTET_STREAM, "text".into())
         );
         assert_eq!(
-            oidc_file.get_string().expect("failed to get file"),
+            oidc_prv_file.get_string().expect("failed to get file"),
+            (APPLICATION_OCTET_STREAM, "text".into())
+        );
+
+        assert_eq!(
+            anon_pub_file.get_string().expect("failed to get file"),
+            (APPLICATION_OCTET_STREAM, "text".into())
+        );
+        assert_eq!(
+            cert_pub_file.get_string().expect("failed to get file"),
+            (APPLICATION_OCTET_STREAM, "text".into())
+        );
+        assert_eq!(
+            oidc_pub_file.get_string().expect("failed to get file"),
             (APPLICATION_OCTET_STREAM, "text".into())
         );
     });
