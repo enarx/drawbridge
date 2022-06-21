@@ -33,6 +33,19 @@ pub struct Entity<'a> {
     path: String,
 }
 
+fn parse_ureq_error(e: ureq::Error) -> anyhow::Error {
+    match e {
+        ureq::Error::Status(code, msg) => match msg.into_string() {
+            Ok(msg) if !msg.is_empty() => {
+                anyhow!(msg).context(format!("request failed with status code `{code}`"))
+            }
+            _ => anyhow!("request failed with status code `{code}`"),
+        },
+
+        ureq::Error::Transport(e) => anyhow::Error::new(e).context("transport layer failure"),
+    }
+}
+
 impl<'a> Entity<'a> {
     pub fn new(client: &'a Client) -> Self {
         Self {
@@ -70,7 +83,10 @@ impl<'a> Entity<'a> {
                 data.len(),
             )
         }
-        let res = self.create_request(&hash, &mime)?.send_bytes(&data)?;
+        let res = self
+            .create_request(&hash, &mime)?
+            .send_bytes(&data)
+            .map_err(parse_ureq_error)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),
@@ -91,7 +107,8 @@ impl<'a> Entity<'a> {
         let res = self
             .create_request(hash, mime)?
             .set(CONTENT_LENGTH.as_str(), &size.to_string())
-            .send(rdr)?;
+            .send(rdr)
+            .map_err(parse_ureq_error)?;
         match StatusCode::from_u16(res.status()) {
             Ok(StatusCode::CREATED) => Ok(true),
             Ok(StatusCode::OK) => Ok(false),
@@ -106,7 +123,8 @@ impl<'a> Entity<'a> {
             .inner
             .get(url.as_str())
             .call()
-            .context("failed to perform a GET request")?;
+            .map_err(parse_ureq_error)
+            .context("GET request failed")?;
 
         let hash: ContentDigest = parse_header(&res, "Content-Digest")?;
         let mime = parse_header(&res, CONTENT_TYPE.as_str())?;
