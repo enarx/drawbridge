@@ -1,37 +1,29 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::Store;
+use crate::auth::assert_repository_read;
 
 use drawbridge_type::TagContext;
 
 use async_std::sync::Arc;
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::Request;
 use axum::response::IntoResponse;
 use axum::Extension;
-use log::debug;
+use log::{debug, trace};
 
 pub async fn head(
-    Extension(store): Extension<Arc<Store>>,
-    claims: OidcClaims,
+    Extension(ref store): Extension<Arc<Store>>,
     cx: TagContext,
+    req: Request<Body>,
 ) -> impl IntoResponse {
-    let (oidc_cx, user) = claims
-        .get_user(&store)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    if oidc_cx != cx.repository.owner {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!(
-                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                cx.repository.owner
-            ),
-        )
-            .into_response());
-    }
+    trace!(target: "app::tags::head", "called for `{cx}`");
 
-    user.repository(&cx.repository.name)
+    assert_repository_read(store, &cx.repository, req)
+        .await
+        .map_err(IntoResponse::into_response)
+        .map(|(repo, _)| repo)?
         .tag(&cx.name)
         .get_meta()
         .await

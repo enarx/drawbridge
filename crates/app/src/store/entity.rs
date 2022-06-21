@@ -17,7 +17,7 @@ use futures::io::copy;
 use futures::try_join;
 use futures::{AsyncRead, AsyncWrite};
 use log::{debug, trace};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 const STORAGE_FAILURE_RESPONSE: (StatusCode, &str) =
     (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure");
@@ -301,7 +301,7 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
             })
     }
 
-    /// Returns metadata of an entity
+    /// Returns metadata of the entity.
     pub async fn get_meta(&self) -> Result<Meta, GetError<anyhow::Error>> {
         let buf = self
             .root
@@ -316,21 +316,49 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
             .map_err(GetError::Internal)
     }
 
-    /// Returns metadata of an entity and a reader of its contents.
-    pub async fn get(&self) -> Result<(Meta, impl '_ + AsyncRead), GetError<anyhow::Error>> {
-        try_join!(
-            self.get_meta(),
-            self.root
-                .open(self.content_path())
-                .map_err(|e| match e.kind() {
-                    io::ErrorKind::NotFound => GetError::NotFound,
-                    _ => GetError::Internal(
-                        anyhow::Error::new(e).context("failed to open content file")
-                    ),
-                })
-        )
+    /// Returns contents of the entity as [AsyncRead].
+    pub async fn get_content(&self) -> Result<impl '_ + AsyncRead, GetError<anyhow::Error>> {
+        self.root
+            .open(self.content_path())
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::NotFound => GetError::NotFound,
+                _ => {
+                    GetError::Internal(anyhow::Error::new(e).context("failed to open content file"))
+                }
+            })
+            .await
     }
 
+    /// Reads contents of the entity.
+    pub async fn read_content(&self) -> Result<Vec<u8>, GetError<anyhow::Error>> {
+        self.root
+            .read(self.content_path())
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::NotFound => GetError::NotFound,
+                _ => {
+                    GetError::Internal(anyhow::Error::new(e).context("failed to read content file"))
+                }
+            })
+            .await
+    }
+
+    /// Returns the contents of the entity as JSON.
+    pub async fn get_content_json<T>(&self) -> Result<T, GetError<anyhow::Error>>
+    where
+        for<'de> T: Deserialize<'de>,
+    {
+        let buf = self.read_content().await?;
+        serde_json::from_slice(&buf)
+            .context("failed to decode content as JSON")
+            .map_err(GetError::Internal)
+    }
+
+    /// Returns metadata of the entity and a reader of its contents.
+    pub async fn get(&self) -> Result<(Meta, impl '_ + AsyncRead), GetError<anyhow::Error>> {
+        try_join!(self.get_meta(), self.get_content())
+    }
+
+    /// Returns metadata of the entity and writes its contents into `dst`.
     pub async fn get_to_writer(
         &self,
         dst: &mut (impl Unpin + AsyncWrite),

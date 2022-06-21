@@ -9,31 +9,22 @@ use async_std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use log::debug;
+use log::{debug, trace};
 
 pub async fn put(
-    Extension(store): Extension<Arc<Store>>,
+    Extension(ref store): Extension<Arc<Store>>,
     claims: OidcClaims,
     cx: RepositoryContext,
     meta: Meta,
     Json(config): Json<RepositoryConfig>,
 ) -> impl IntoResponse {
-    let (oidc_cx, user) = claims
-        .get_user(&store)
-        .await
-        .map_err(IntoResponse::into_response)?;
-    if oidc_cx != cx.owner {
-        return Err((
-            StatusCode::UNAUTHORIZED,
-            format!(
-                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                cx.owner
-            ),
-        )
-            .into_response());
-    }
+    trace!(target: "app::trees::put", "called for `{cx}`");
 
-    user.create_repository(&cx.name, meta, &config)
+    claims
+        .assert_user(store, &cx.owner)
+        .await
+        .map_err(IntoResponse::into_response)?
+        .create_repository(&cx.name, meta, &config)
         .await
         .map_err(|e| {
             debug!(target: "app::repos::put", "failed for `{cx}`: {:?}", e);

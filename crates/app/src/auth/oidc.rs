@@ -48,6 +48,26 @@ e.into_response()
             }
         })
     }
+
+    /// Assert that the client is the user identified by `cx`.
+    pub async fn assert_user<'a>(
+        &self,
+        store: &'a Store,
+        cx: &UserContext,
+    ) -> Result<User<'a>, impl IntoResponse> {
+        let (ref oidc_cx, user) = self
+            .get_user(store)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        if oidc_cx != cx {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                format!( "You are logged in as `{oidc_cx}`, please relogin as `{cx}` to access the resource"),
+            )
+                .into_response());
+        }
+        Ok(user)
+    }
 }
 
 #[async_trait]

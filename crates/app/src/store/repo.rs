@@ -6,7 +6,7 @@ use super::{CreateError, Entity, GetError, Tag};
 use std::ops::Deref;
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
-use drawbridge_type::{Meta, TagEntry, TagName};
+use drawbridge_type::{Meta, RepositoryConfig, TagEntry, TagName};
 
 use anyhow::{anyhow, Context};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -30,6 +30,15 @@ impl<'a, P> From<Entity<'a, P>> for Repository<'a, P> {
 }
 
 impl<'a, P: AsRef<Utf8Path>> Repository<'a, P> {
+    pub async fn get_json(&self) -> Result<RepositoryConfig, GetError<anyhow::Error>> {
+        self.get_content_json().await
+    }
+
+    pub async fn is_public(&self) -> Result<bool, GetError<anyhow::Error>> {
+        let conf = self.get_json().await?;
+        Ok(conf.public)
+    }
+
     pub async fn tags(&self) -> Result<Vec<TagName>, GetError<anyhow::Error>> {
         self.read_dir("tags")
             .await?

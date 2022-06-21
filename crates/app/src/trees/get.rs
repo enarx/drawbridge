@@ -1,52 +1,39 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store, TrustedCertificate};
+use super::super::{Store, TrustedCertificate};
+use crate::auth::assert_repository_read;
 
 use drawbridge_type::TreeContext;
 
 use async_std::sync::Arc;
 use axum::body::Body;
-use axum::extract::RequestParts;
-use axum::http::{Request, StatusCode};
+use axum::http::Request;
 use axum::response::IntoResponse;
 use axum::Extension;
-use log::debug;
+use log::{debug, trace};
 
 pub async fn get(
-    Extension(store): Extension<Arc<Store>>,
+    Extension(ref store): Extension<Arc<Store>>,
     cert: Option<Extension<TrustedCertificate>>,
     cx: TreeContext,
     req: Request<Body>,
 ) -> impl IntoResponse {
-    // TODO: Check if repo is public
-    let user = if cert.is_none() {
-        let (oidc_cx, user) = RequestParts::new(req)
-            .extract::<OidcClaims>()
-            .await?
-            .get_user(&store)
+    trace!(target: "app::trees::get", "called for `{cx}`");
+
+    let repo = if cert.is_none() {
+        assert_repository_read(store, &cx.tag.repository, req)
             .await
-            .map_err(IntoResponse::into_response)?;
-        if oidc_cx != cx.tag.repository.owner {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                format!(
-                    "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
-                    cx.tag.repository.owner
-                ),
-            )
-                .into_response());
-        }
-        user
+            .map_err(IntoResponse::into_response)
+            .map(|(repo, _)| repo)?
     } else {
-        store.user(&cx.tag.repository.owner)
+        store.repository(&cx.tag.repository)
     };
 
     // TODO: Stream body
     // https://github.com/profianinc/drawbridge/issues/56
     let mut body = vec![];
-    user.repository(&cx.tag.repository.name)
-        .tag(&cx.tag.name)
+    repo.tag(&cx.tag.name)
         .node(&cx.path)
         .get_to_writer(&mut body)
         .await
