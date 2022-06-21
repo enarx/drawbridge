@@ -37,6 +37,7 @@ use rustls::{Certificate, OwnedTrustAnchor, PrivateKey, RootCertStore};
 pub struct Client {
     inner: ureq::Agent,
     root: Url,
+    token: Option<String>,
 }
 
 impl Client {
@@ -77,6 +78,7 @@ pub struct ClientBuilder {
     url: Url,
     credentials: Option<(Vec<Certificate>, PrivateKey)>,
     roots: Option<RootCertStore>,
+    token: Option<String>,
 }
 
 impl ClientBuilder {
@@ -85,6 +87,7 @@ impl ClientBuilder {
             url,
             credentials: None,
             roots: None,
+            token: None,
         }
     }
 
@@ -98,6 +101,13 @@ impl ClientBuilder {
     pub fn roots(self, roots: RootCertStore) -> Self {
         Self {
             roots: Some(roots),
+            ..self
+        }
+    }
+
+    pub fn token(self, token: impl Into<String>) -> Self {
+        Self {
+            token: Some(token.into()),
             ..self
         }
     }
@@ -135,6 +145,7 @@ impl ClientBuilder {
         Ok(Client {
             inner: ureq::AgentBuilder::new().tls_config(Arc::new(tls)).build(),
             root: self.url,
+            token: self.token,
         })
     }
 }
