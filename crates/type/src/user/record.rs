@@ -3,7 +3,10 @@
 
 use serde::{Deserialize, Serialize};
 
-/// A repository config
+/// A user record
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct Config {}
+pub struct Record {
+    /// OpenID Connect identity subject uniquely identifying the user
+    pub subject: String,
+}

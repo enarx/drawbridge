@@ -3,12 +3,13 @@
 
 use super::{CreateError, Entity, Node};
 
-use std::borrow::Borrow;
 use std::ops::Deref;
 
-use drawbridge_type::{Meta, TagEntry, TagName, TreePath};
+use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 
 use camino::{Utf8Path, Utf8PathBuf};
+use futures::{try_join, AsyncRead};
+use log::debug;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
@@ -22,22 +23,54 @@ impl<'a, P> Deref for Tag<'a, P> {
     }
 }
 
-impl<'a> Tag<'a, Utf8PathBuf> {
-    pub fn new(entity: Entity<'a, impl AsRef<Utf8Path>>, name: impl Borrow<TagName>) -> Self {
-        Self(entity.child(name.borrow().to_string()))
+impl<'a, P> From<Entity<'a, P>> for Tag<'a, P> {
+    fn from(entity: Entity<'a, P>) -> Self {
+        Self(entity)
     }
 }
 
 impl<'a, P: AsRef<Utf8Path>> Tag<'a, P> {
-    pub async fn create(
-        &self,
-        meta: Meta,
-        entry: &TagEntry,
-    ) -> Result<(), CreateError<anyhow::Error>> {
-        self.0.create_json(meta, entry).await
+    pub fn node(&self, path: &TreePath) -> Node<'a, Utf8PathBuf> {
+        if path.is_empty() {
+            self.0.child("tree").into()
+        } else {
+            self.0
+                .child(format!("tree/entries/{}", path.intersperse("/entries/")))
+                .into()
+        }
     }
 
-    pub fn path(&self, path: &TreePath) -> Node<'a, Utf8PathBuf> {
-        Node::new(self.0.child("tree"), path)
+    pub async fn create_file_node(
+        &self,
+        path: &TreePath,
+        meta: Meta,
+        rdr: impl Unpin + AsyncRead,
+    ) -> Result<Node<'a, Utf8PathBuf>, CreateError<anyhow::Error>> {
+        // TODO: Validate node hash against parents' expected values
+        // https://github.com/profianinc/drawbridge/issues/77
+        let node = self.node(path);
+        node.create_dir("").await.map_err(|e| {
+            debug!(target: "app::store::Tag::create_file_node", "failed to create content directory: {:?}", e);
+            e
+        })?;
+        node.create_from_reader(meta, rdr).await?;
+        Ok(node)
+    }
+
+    pub async fn create_directory_node(
+        &self,
+        path: &TreePath,
+        meta: Meta,
+        dir: &TreeDirectory<TreeEntry>,
+    ) -> Result<Node<'a, Utf8PathBuf>, CreateError<anyhow::Error>> {
+        // TODO: Validate node hash against parents' expected values
+        // https://github.com/profianinc/drawbridge/issues/77
+        let node = self.node(path);
+        node.create_dir("").await.map_err(|e| {
+            debug!(target: "app::store::Tag::create_directory_node", "failed to create content directory: {:?}", e);
+            e
+        })?;
+        try_join!(node.create_json(meta, dir), node.create_dir("entries"))?;
+        Ok(node)
     }
 }

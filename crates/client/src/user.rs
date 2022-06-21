@@ -5,7 +5,7 @@ use super::{Entity, Repository, Result};
 
 use std::ops::Deref;
 
-use drawbridge_type::{RepositoryName, UserConfig, UserName};
+use drawbridge_type::{RepositoryName, UserName, UserRecord};
 
 use mime::APPLICATION_JSON;
 
@@ -25,11 +25,11 @@ impl<'a> User<'a> {
         User(entity.child(&name.to_string()))
     }
 
-    pub fn create(&self, conf: &UserConfig) -> Result<bool> {
+    pub fn create(&self, conf: &UserRecord) -> Result<bool> {
         self.0.create_json(&APPLICATION_JSON, conf)
     }
 
-    pub fn get(&self) -> Result<UserConfig> {
+    pub fn get(&self) -> Result<UserRecord> {
         self.0.get_json()
     }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::Store;
+use super::super::{OidcClaims, Store};
 
 use drawbridge_type::{Meta, TreeContext, TreeDirectory};
 
@@ -12,11 +12,12 @@ use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use futures::{io, TryStreamExt};
-use log::warn;
+use log::debug;
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,
-    tree: TreeContext,
+    claims: OidcClaims,
+    cx: TreeContext,
     meta: Meta,
     req: Request<Body>,
 ) -> impl IntoResponse {
@@ -28,7 +29,23 @@ pub async fn put(
             .into_response());
     }
 
+    let (oidc_cx, user) = claims
+        .get_user(&store)
+        .await
+        .map_err(IntoResponse::into_response)?;
+    if oidc_cx != cx.tag.repository.owner {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            format!(
+                "You are logged in as `{oidc_cx}`, please relogin as `{}` to access `{cx}`",
+                cx.tag.repository.owner
+            ),
+        )
+            .into_response());
+    }
+
     let mut req = RequestParts::new(req);
+    let tag = user.repository(&cx.tag.repository.name).tag(&cx.tag.name);
     match meta.mime.to_string().as_str() {
         TreeDirectory::<()>::TYPE => {
             let dir = req
@@ -36,7 +53,7 @@ pub async fn put(
                 .await
                 .map(|Json(v)| v)
                 .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?;
-            store.tree(&tree).create_directory(meta, &dir).await
+            tag.create_directory_node(&cx.path, meta, &dir).await
         }
         _ => {
             let body = req
@@ -44,16 +61,13 @@ pub async fn put(
                 .await
                 .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
-            store
-                .tree(&tree)
-                .create_file(meta, body.into_async_read())
+            tag.create_file_node(&cx.path, meta, body.into_async_read())
                 .await
         }
     }
     .map_err(|e| {
-        warn!(target: "app::trees::put", "failed for `{tree}`: {:?}", e);
-        e
+        debug!(target: "app::trees::put", "failed for `{cx}`: {:?}", e);
+        e.into_response()
     })
-    .map_err(IntoResponse::into_response)
     .map(|_| StatusCode::CREATED)
 }

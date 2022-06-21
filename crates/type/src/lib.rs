@@ -21,4 +21,4 @@ pub use tree::{
     Content as TreeContent, Context as TreeContext, Directory as TreeDirectory, Entry as TreeEntry,
     Name as TreeName, Path as TreePath, Tree,
 };
-pub use user::{Config as UserConfig, Context as UserContext, Name as UserName};
+pub use user::{Context as UserContext, Name as UserName, Record as UserRecord};
