@@ -6,7 +6,8 @@ use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 
-use drawbridge_app::{App, TlsConfig};
+use drawbridge_app::url::Url;
+use drawbridge_app::{App, OidcConfig, TlsConfig};
 
 use anyhow::Context as _;
 use async_std::net::TcpListener;
@@ -39,6 +40,22 @@ struct Args {
     /// are granted read-only access to all repositories in the store.
     #[clap(long)]
     ca: PathBuf,
+
+    /// OpenID Connect provider label.
+    #[clap(long)]
+    oidc_label: String,
+
+    /// OpenID Connect issuer URL.
+    #[clap(long)]
+    oidc_issuer: Url,
+
+    /// OpenID Connect client ID.
+    #[clap(long)]
+    oidc_client: String,
+
+    /// OpenID Connect secret.
+    #[clap(long)]
+    oidc_secret: Option<String>,
 }
 
 fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
@@ -55,6 +72,10 @@ async fn main() -> anyhow::Result<()> {
         key,
         ca,
         addr,
+        oidc_label,
+        oidc_issuer,
+        oidc_client,
+        oidc_secret,
     } = Args::parse();
 
     let cert = open_buffered(cert).context("Failed to open server certificate file")?;
@@ -62,10 +83,18 @@ async fn main() -> anyhow::Result<()> {
     let ca = open_buffered(ca).context("Failed to open CA certificate file")?;
     let tls = TlsConfig::read(cert, key, ca).context("Failed to construct server TLS config")?;
 
-    let app = App::builder(store, tls)
-        .build()
-        .await
-        .context("Failed to build app")?;
+    let app = App::new(
+        store,
+        tls,
+        OidcConfig {
+            label: oidc_label,
+            issuer: oidc_issuer,
+            client_id: oidc_client,
+            client_secret: oidc_secret,
+        },
+    )
+    .await
+    .context("Failed to build app")?;
     TcpListener::bind(addr)
         .await
         .with_context(|| format!("Failed to bind to {}", addr))?

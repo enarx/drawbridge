@@ -19,6 +19,8 @@ pub use builder::*;
 pub(crate) use handle::*;
 pub(crate) use store::*;
 
+pub use openidconnect::url;
+
 use anyhow::Context as _;
 use axum::extract::Extension;
 use axum::routing::IntoMakeService;
@@ -38,12 +40,16 @@ pub struct App {
 }
 
 impl App {
-    pub fn builder<S: AsRef<Path>>(store: S, tls: TlsConfig) -> Builder<S> {
-        Builder::new(store, tls)
+    pub fn builder<S: AsRef<Path>>(store: S, tls: TlsConfig, oidc: OidcConfig) -> Builder<S> {
+        Builder::new(store, tls, oidc)
     }
 
-    pub async fn new(store: impl AsRef<Path>, tls: TlsConfig) -> anyhow::Result<Self> {
-        Self::builder(store, tls).build().await
+    pub async fn new(
+        store: impl AsRef<Path>,
+        tls: TlsConfig,
+        oidc: OidcConfig,
+    ) -> anyhow::Result<Self> {
+        Self::builder(store, tls, oidc).build().await
     }
 
     pub async fn handle(

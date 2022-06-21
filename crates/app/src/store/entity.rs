@@ -6,15 +6,17 @@ use std::os::unix::fs::DirBuilderExt;
 
 use drawbridge_type::Meta;
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use camino::{Utf8Path, Utf8PathBuf};
 use cap_async_std::fs_utf8::{Dir, DirBuilder, ReadDir};
+use drawbridge_type::digest::ContentDigest;
 use futures::future::TryFutureExt;
 use futures::io::copy;
 use futures::try_join;
 use futures::{AsyncRead, AsyncWrite};
+use log::{debug, trace};
 use serde::Serialize;
 
 const STORAGE_FAILURE_RESPONSE: (StatusCode, &str) =
@@ -85,15 +87,40 @@ impl<E> IntoResponse for GetToWriterError<E> {
     }
 }
 
+#[derive(Debug)]
+pub(super) enum SymlinkError<E> {
+    AlreadyExists,
+    Internal(E),
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct Entity<'a, P> {
     root: &'a Dir,
     prefix: P,
 }
 
-/// Sets default options on a [DirBuilder]
-pub fn dir_builder_defaults(dir_builder: &mut DirBuilder) -> &mut DirBuilder {
-    dir_builder.recursive(false).mode(0o700)
+async fn create_verified(
+    dir: &Dir,
+    path: impl AsRef<Utf8Path>,
+    hash: ContentDigest,
+    size: u64,
+    rdr: impl Unpin + AsyncRead,
+) -> Result<(), CreateError<anyhow::Error>> {
+    let mut file = dir.create(path).await.map_err(|e| match e.kind() {
+        io::ErrorKind::AlreadyExists => CreateError::Occupied,
+        _ => CreateError::Internal(anyhow::Error::new(e).context("failed to create file")),
+    })?;
+    match copy(hash.verifier(rdr), &mut file).await {
+        Err(e) if e.kind() == io::ErrorKind::InvalidData => Err(CreateError::DigestMismatch),
+        Err(e) => Err(CreateError::Internal(
+            anyhow::Error::new(e).context("failed to write file"),
+        )),
+        Ok(n) if n != size => Err(CreateError::LengthMismatch {
+            expected: size,
+            got: n,
+        }),
+        Ok(_) => Ok(()),
+    }
 }
 
 impl<'a> Entity<'a, &'static str> {
@@ -123,18 +150,16 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
         self.path("content")
     }
 
-    pub(super) async fn create_from_reader_with(
+    pub(super) async fn create_from_reader(
         &self,
         meta: Meta,
         rdr: impl Unpin + AsyncRead,
-        dir_builder: &DirBuilder,
     ) -> Result<(), CreateError<anyhow::Error>> {
-        self.create_dir_with("", dir_builder).await?;
-
+        trace!(target: "app::store::Entity::create_from_reader", "create entity at `{}`", self.prefix.as_ref());
         let meta_json = serde_json::to_vec(&meta)
             .context("failed to encode metadata")
             .map_err(CreateError::Internal)?;
-        let ((), mut cont) = try_join!(
+        try_join!(
             self.root
                 .write(self.meta_path(), meta_json)
                 .map_err(|e| match e.kind() {
@@ -142,53 +167,17 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
                     _ => CreateError::Internal(
                         anyhow::Error::new(e).context("failed to write metadata"),
                     ),
+                })
+                .map_err(|e| {
+                    debug!(target: "app::store::Entity::create_from_reader", "failed to create meta file `{:?}`", e);
+                    e
                 }),
-            self.root
-                .create(self.content_path())
-                .map_err(|e| match e.kind() {
-                    io::ErrorKind::AlreadyExists => CreateError::Occupied,
-                    _ => CreateError::Internal(
-                        anyhow::Error::new(e).context("failed to create content file"),
-                    ),
-                }),
+            create_verified(self.root, self.content_path(), meta.hash, meta.size, rdr).map_err(|e| {
+                debug!(target: "app::store::Entity::create_from_reader", "failed to create content file `{:?}`", e);
+                e
+            })
         )?;
-        let n = copy(meta.hash.verifier(rdr), &mut cont)
-            .await
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::InvalidData => CreateError::DigestMismatch,
-                _ => {
-                    CreateError::Internal(anyhow::Error::new(e).context("failed to write content"))
-                }
-            })?;
-        if n != meta.size {
-            return Err(CreateError::LengthMismatch {
-                expected: meta.size,
-                got: n,
-            });
-        }
         Ok(())
-    }
-
-    pub(super) async fn create_from_reader(
-        &self,
-        meta: Meta,
-        rdr: impl Unpin + AsyncRead,
-    ) -> Result<(), CreateError<anyhow::Error>> {
-        self.create_from_reader_with(meta, rdr, dir_builder_defaults(&mut DirBuilder::new()))
-            .await
-    }
-
-    pub(super) async fn create_json_with(
-        &self,
-        meta: Meta,
-        val: &impl Serialize,
-        dir_builder: &DirBuilder,
-    ) -> Result<(), CreateError<anyhow::Error>> {
-        let buf = serde_json::to_vec(val)
-            .context("failed to encode value to JSON")
-            .map_err(CreateError::Internal)?;
-        self.create_from_reader_with(meta, buf.as_slice(), dir_builder)
-            .await
     }
 
     pub(super) async fn create_json(
@@ -196,35 +185,107 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
         meta: Meta,
         val: &impl Serialize,
     ) -> Result<(), CreateError<anyhow::Error>> {
-        self.create_json_with(meta, val, dir_builder_defaults(&mut DirBuilder::new()))
-            .await
-    }
-
-    pub(super) async fn create_dir_with(
-        &self,
-        path: impl AsRef<Utf8Path>,
-        dir_builder: &DirBuilder,
-    ) -> Result<(), CreateError<anyhow::Error>> {
-        let path = self.path(path);
-        debug_assert_ne!(path, self.meta_path());
-        debug_assert_ne!(path, self.content_path());
-
-        self.root
-            .create_dir_with(path, dir_builder)
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::AlreadyExists => CreateError::Occupied,
-                _ => CreateError::Internal(
-                    anyhow::Error::new(e).context("failed to create directory"),
-                ),
-            })
+        let buf = serde_json::to_vec(val)
+            .context("failed to encode value to JSON")
+            .map_err(CreateError::Internal)?;
+        self.create_from_reader(meta, buf.as_slice()).await
     }
 
     pub(super) async fn create_dir(
         &self,
         path: impl AsRef<Utf8Path>,
     ) -> Result<(), CreateError<anyhow::Error>> {
-        self.create_dir_with(path, dir_builder_defaults(&mut DirBuilder::new()))
+        let path = self.path(path);
+        debug_assert_ne!(path, self.meta_path());
+        debug_assert_ne!(path, self.content_path());
+
+        trace!(target: "app::store::Entity::create_dir", "create directory at `{path}`");
+        self.root
+            .create_dir_with(path, DirBuilder::new().mode(0o700))
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::AlreadyExists => CreateError::Occupied,
+                _ => CreateError::Internal(
+                    anyhow::Error::new(e).context("failed to create directory"),
+                ),
+            })
+            .map_err(|e| {
+                debug!(target: "app::store::Entity::create_dir", "failed to create directory: `{:?}`", e);
+                e
+            })
+    }
+
+    pub(super) async fn symlink(
+        &self,
+        path: impl AsRef<Utf8Path>,
+    ) -> Result<(), SymlinkError<anyhow::Error>> {
+        let path = path.as_ref();
+        let dest = {
+            let mut dest = self.prefix.as_ref().components().peekable();
+            let parents = path
+                .components()
+                .skip_while(|pc| match dest.peek() {
+                    Some(dc) if pc == dc => {
+                        // Components are equal, advance the `dest` iterator
+                        dest.next().unwrap();
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
+            let dest = dest.collect::<Utf8PathBuf>();
+            let mut buf = (0..parents - 1).fold(
+                Utf8PathBuf::with_capacity(parents * "../".len() + dest.as_str().len()),
+                |mut buf, _| {
+                    buf.push("../");
+                    buf
+                },
+            );
+            buf.push(dest);
+            buf
+        };
+
+        trace!(target: "app::store::entity", "create symlink to `{dest}` at `{path}`");
+        self.root
+            .symlink(dest, path)
             .await
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::AlreadyExists => SymlinkError::AlreadyExists,
+                _ => SymlinkError::Internal(anyhow::Error::new(e).context("failed to create symlink")),
+            })
+            .map_err(|e| {
+                debug!(target: "app::store::Entity::symlink", "failed to create symlink: `{:?}`", e);
+                e
+            })
+    }
+
+    pub(super) async fn read_link(
+        &self,
+        path: impl AsRef<Utf8Path>,
+    ) -> Result<(String, Entity<'a, Utf8PathBuf>), GetError<anyhow::Error>> {
+        let path = self.path(path);
+        let dest = self
+            .root
+            .read_link(&path)
+            .await
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::NotFound => GetError::NotFound,
+                _ => GetError::Internal(anyhow::Error::new(e).context("failed to read link")),
+            })?;
+        let path = self
+            .root
+            .canonicalize(path.join(dest))
+            .await
+            .map_err(|e| match e.kind() {
+                io::ErrorKind::NotFound => GetError::NotFound,
+                _ => {
+                    GetError::Internal(anyhow::Error::new(e).context("failed to canonicalize link"))
+                }
+            })?;
+        let name = path.file_name().ok_or_else(|| {
+            GetError::Internal(anyhow!("failed to read name of dereferenced file"))
+        })?;
+        Ok((name.into(), Entity::new(self.root).child(path)))
     }
 
     pub(super) async fn read_dir(

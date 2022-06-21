@@ -31,8 +31,11 @@ log = { version = "0.4.17", default-features = false }
 drawbridge-client = { path = "./crates/client" }
 
 # External dependencies
+async-h1 = { version = "2.3.3", default-features = false }
 async-std = { version = "1.11.0", default-features = false, features = ["attributes", "default"] }
 futures = { version = "0.3.21", default-features = false }
+http-types = { version = "2.12.0", default-features = false }
+openidconnect = { version = "2.3.1", default-features = false }
 rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
