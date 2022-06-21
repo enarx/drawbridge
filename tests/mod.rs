@@ -57,7 +57,7 @@ async fn app() {
                 .unwrap();
                 roots
             });
-            let user_cl = cl.clone().build().unwrap();
+            let user_cl = cl.clone().token("test").build().unwrap();
             let cert_cl = cl
                 .clone()
                 .credentials(

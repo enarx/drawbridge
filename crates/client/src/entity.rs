@@ -63,11 +63,15 @@ impl<'a> Entity<'a> {
     }
 
     pub(super) fn create_request(&self, hash: &ContentDigest, mime: &Mime) -> Result<Request> {
+        let token = self.client.token.as_ref().ok_or_else(|| {
+            anyhow!("endpoint requires authorization, but no token was configured")
+        })?;
         let url = self.client.url(&self.path)?;
         Ok(self
             .client
             .inner
             .put(url.as_str())
+            .set("Authorization", &format!("Bearer {token}"))
             .set("Content-Digest", &hash.to_string())
             .set(CONTENT_TYPE.as_str(), mime.as_ref()))
     }
@@ -118,10 +122,11 @@ impl<'a> Entity<'a> {
 
     pub fn get(&self) -> Result<(u64, Mime, impl Read)> {
         let url = self.client.url(&self.path)?;
-        let res = self
-            .client
-            .inner
-            .get(url.as_str())
+        let mut req = self.client.inner.get(url.as_str());
+        if let Some(ref token) = self.client.token {
+            req = req.set("Authorization", &format!("Bearer {token}"))
+        }
+        let res = req
             .call()
             .map_err(parse_ureq_error)
             .context("GET request failed")?;
