@@ -1,7 +1,7 @@
 name: Lint
 on: [ push, pull_request ]
 jobs:
-  lint:
+  rust:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2.4.0
@@ -17,3 +17,10 @@ jobs:
       with:
         command: clippy
         args: --workspace
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.4.0
+    - uses: cachix/install-nix-action@v17
+    - name: nix flake check
+      run: nix flake check
