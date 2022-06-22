@@ -5,7 +5,6 @@ use std::fs::{read_to_string, File};
 use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use drawbridge_app::url::Url;
 use drawbridge_app::{App, OidcConfig, TlsConfig};
@@ -15,10 +14,17 @@ use async_std::net::TcpListener;
 use clap::Parser;
 use futures::StreamExt;
 use log::{debug, error};
-use toml::Value;
 
+/// Server for hosting WebAssembly modules for use in Enarx keeps.
+///
+/// Any command-line options listed here may be specified by one or
+/// more configuration files, which can be used by passing the
+/// name of the file on the command-line with the syntax `@my_file`.
+/// Each line of the configuration file will be interpreted as one
+/// argument to the shell, so keys and values must either be
+/// separated by line breaks or by an `=` as in `--foo=bar`.
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version, about)]
 struct Args {
     /// Address to bind to.
     ///
@@ -26,120 +32,77 @@ struct Args {
     /// the command line or in a configuration file,
     /// the value will default to the unspecified IPv4 address
     /// 0.0.0.0 and port 8080.
-    #[clap(long)]
-    addr: Option<SocketAddr>,
+    #[clap(long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))]
+    addr: SocketAddr,
 
     /// Path to the Drawbridge store.
     #[clap(long)]
-    store: Option<PathBuf>,
+    store: PathBuf,
 
     /// Path to PEM-encoded server certificate.
     #[clap(long)]
-    cert: Option<PathBuf>,
+    cert: PathBuf,
 
     /// Path to PEM-encoded server certificate key.
     #[clap(long)]
-    key: Option<PathBuf>,
+    key: PathBuf,
 
     /// Path to PEM-encoded trusted CA certificate.
     ///
     /// Clients that present a valid certificate signed by this CA
     /// are granted read-only access to all repositories in the store.
     #[clap(long)]
-    ca: Option<PathBuf>,
+    ca: PathBuf,
 
     /// OpenID Connect provider label.
     #[clap(long)]
-    oidc_label: Option<String>,
+    oidc_label: String,
 
     /// OpenID Connect issuer URL.
     #[clap(long)]
-    oidc_issuer: Option<Url>,
+    oidc_issuer: Url,
 
     /// OpenID Connect client ID.
     #[clap(long)]
-    oidc_client: Option<String>,
+    oidc_client: String,
 
     /// OpenID Connect secret.
     #[clap(long)]
     oidc_secret: Option<String>,
-
-    /// Path to a TOML configuration file.
-    ///
-    /// As an alternative to passing options to Drawbridge as
-    /// command-line arguments, options can be read from a file.
-    /// Options passed on the command-line will take precedence
-    /// over options defined in the configuration file.
-    #[clap(long)]
-    config: Option<PathBuf>,
 }
 
 fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
     File::open(p).map(BufReader::new)
 }
 
-fn optional_arg<T>(arg: Option<T>, config: &Option<Value>, name: &str) -> anyhow::Result<Option<T>>
-where
-    T: FromStr,
-    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
-{
-    // Unwrap the argument if present
-    if let Some(a) = arg {
-        return Ok(Some(a));
-    }
-
-    // Otherwise, look for a config file
-    if let Some(vals) = config {
-        // Look for the arg in the config file
-        if let Some(val) = vals.get(name) {
-            // Return the arg unless an error occurs
-            return Ok(Some(
-                val.as_str()
-                    .with_context(|| format!("Failed to read field from config file: {name}"))?
-                    .parse()
-                    .with_context(|| format!("Failed to parse field from config file: {name}"))?,
-            ));
-        }
-    }
-
-    // Argument not found, but no error occurred
-    Ok(None)
-}
-
-fn required_arg<T>(arg: Option<T>, config: &Option<Value>, name: &str) -> anyhow::Result<T>
-where
-    T: FromStr,
-    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
-{
-    optional_arg(arg, config, name)?.with_context(|| format!("Missing required argument: {name}"))
-}
-
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let args = Args::parse();
+    let mut processed_args = Vec::new();
+    for arg in std::env::args() {
+        match arg.strip_prefix('@') {
+            None => processed_args.push(arg),
+            Some(path) => {
+                let config = read_to_string(path).context("Failed to read config file")?;
+                for line in config.lines() {
+                    processed_args.push(line.to_string());
+                }
+            }
+        }
+    }
 
-    let config = match args.config {
-        Some(path) => Some(
-            read_to_string(path)
-                .context("Failed to read config file")?
-                .parse::<Value>()
-                .context("Failed to parse config file")?,
-        ),
-        None => None,
-    };
-
-    let addr: SocketAddr = optional_arg(args.addr, &config, "addr")?
-        .unwrap_or_else(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080));
-    let store = required_arg(args.store, &config, "store")?;
-    let cert = required_arg(args.cert, &config, "cert")?;
-    let key = required_arg(args.key, &config, "key")?;
-    let ca = required_arg(args.ca, &config, "ca")?;
-    let oidc_label = required_arg(args.oidc_label, &config, "oidc_label")?;
-    let oidc_issuer = required_arg(args.oidc_issuer, &config, "oidc_issuer")?;
-    let oidc_client = required_arg(args.oidc_client, &config, "oidc_client")?;
-    let oidc_secret = optional_arg(args.oidc_secret, &config, "oidc_secret")?;
+    let Args {
+        addr,
+        store,
+        cert,
+        key,
+        ca,
+        oidc_label,
+        oidc_issuer,
+        oidc_client,
+        oidc_secret,
+    } = Args::parse_from(processed_args);
 
     let cert = open_buffered(cert).context("Failed to open server certificate file")?;
     let key = open_buffered(key).context("Failed to open server key file")?;
