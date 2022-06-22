@@ -76,6 +76,8 @@ jobs:
     # TODO: Attempt to run `drawbridge --help` within the loaded container
 
   release:
+    permissions:
+      contents: write
     if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
     needs: [ build, test-bin, test-oci ]
     runs-on: ubuntu-20.04
