@@ -8,23 +8,31 @@
   inputs.flake-utils.url = github:numtide/flake-utils;
   inputs.nixpkgs.url = github:NixOS/nixpkgs/master;
 
-  outputs = { self, nixpkgs, flake-utils, fenix, ... }:
+  outputs =
+    { self
+
+    , fenix
+    , flake-utils
+    , nixpkgs
+    , ...
+    }:
+
     flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
+    let
+      pkgs = nixpkgs.legacyPackages.${system};
 
-        rust = fenix.packages."${system}".fromToolchainFile {
-          file = "${self}/rust-toolchain.toml";
-        };
-      in
-      {
-        devShell = pkgs.mkShell {
-          buildInputs = [
-            pkgs.openssl
+      rust = fenix.packages."${system}".fromToolchainFile {
+        file = "${self}/rust-toolchain.toml";
+      };
+    in
+    {
+      devShell = pkgs.mkShell {
+        buildInputs = [
+          pkgs.openssl
 
-            rust
-          ];
-        };
-      }
+          rust
+        ];
+      };
+    }
     );
 }
