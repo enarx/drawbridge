@@ -83,6 +83,12 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/download-artifact@v3
+      with:
+        name: drawbridge-x86_64-unknown-linux-musl
+    - uses: actions/download-artifact@v3
+      with:
+        name: drawbridge-x86_64-unknown-linux-musl-oci
+
     - uses: softprops/action-gh-release@v1
       with:
         draft: true
