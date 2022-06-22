@@ -88,5 +88,5 @@ jobs:
         draft: true
         prerelease: true
         files: |
-          enarx-x86_64-unknown-linux-musl
-          enarx-x86_64-unknown-linux-musl-oci
+          drawbridge-x86_64-unknown-linux-musl
+          drawbridge-x86_64-unknown-linux-musl-oci
