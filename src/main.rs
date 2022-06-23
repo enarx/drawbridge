@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use std::fs::{read_to_string, File};
+use std::fs::{read, File};
 use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use drawbridge_app::url::Url;
 use drawbridge_app::{App, OidcConfig, TlsConfig};
 
-use anyhow::Context as _;
+use anyhow::{bail, Context as _};
 use async_std::net::TcpListener;
 use clap::Parser;
 use futures::StreamExt;
@@ -19,10 +19,9 @@ use log::{debug, error};
 ///
 /// Any command-line options listed here may be specified by one or
 /// more configuration files, which can be used by passing the
-/// name of the file on the command-line with the syntax `@my_file`.
-/// Each line of the configuration file will be interpreted as one
-/// argument to the shell, so keys and values must either be
-/// separated by line breaks or by an `=` as in `--foo=bar`.
+/// name of the file on the command-line with the syntax `@config.toml`.
+/// The configuration file must contain valid TOML table mapping argument
+/// names to their values.
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 struct Args {
@@ -79,19 +78,6 @@ fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
-    let mut processed_args = Vec::new();
-    for arg in std::env::args() {
-        match arg.strip_prefix('@') {
-            None => processed_args.push(arg),
-            Some(path) => {
-                let config = read_to_string(path).context("Failed to read config file")?;
-                for line in config.lines() {
-                    processed_args.push(line.to_string());
-                }
-            }
-        }
-    }
-
     let Args {
         addr,
         store,
@@ -102,7 +88,38 @@ async fn main() -> anyhow::Result<()> {
         oidc_issuer,
         oidc_client,
         oidc_secret,
-    } = Args::parse_from(processed_args);
+    } = std::env::args()
+        .try_fold(Vec::new(), |mut args, arg| {
+            if let Some(path) = arg.strip_prefix('@') {
+                let conf = read(path).context(format!("failed to read config file at `{path}`"))?;
+                match toml::from_slice(&conf)
+                    .context(format!("failed to parse config file at `{path}` as TOML"))?
+                {
+                    toml::Value::Table(kv) => kv.into_iter().try_for_each(|(k, v)| {
+                        match v {
+                            toml::Value::String(v) => args.push(format!("--{k}={v}")),
+                            toml::Value::Integer(v) => args.push(format!("--{k}={v}")),
+                            toml::Value::Float(v) => args.push(format!("--{k}={v}")),
+                            toml::Value::Boolean(v) => {
+                                if v {
+                                    args.push(format!("--{k}"))
+                                }
+                            }
+                            _ => bail!(
+                                "unsupported value type for field `{k}` in config file at `{path}`"
+                            ),
+                        }
+                        Ok(())
+                    })?,
+                    _ => bail!("invalid config file format in file at `{path}`"),
+                }
+            } else {
+                args.push(arg);
+            }
+            Ok(args)
+        })
+        .map(Args::parse_from)
+        .context("Failed to parse arguments")?;
 
     let cert = open_buffered(cert).context("Failed to open server certificate file")?;
     let key = open_buffered(key).context("Failed to open server key file")?;
