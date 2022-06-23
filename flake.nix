@@ -71,15 +71,14 @@
       };
     in
     {
-      defaultPackage = nativeBin;
-
       packages = {
         "${cargo.toml.package.name}" = nativeBin;
         "${cargo.toml.package.name}-x86_64-unknown-linux-musl" = x86_64LinuxMuslBin;
         "${cargo.toml.package.name}-x86_64-unknown-linux-musl-oci" = buildImage x86_64LinuxMuslBin;
       };
+      packages.default = nativeBin;
 
-      devShell = pkgs.mkShell {
+      devShells.default = pkgs.mkShell {
         buildInputs = [
           pkgs.openssl
 
