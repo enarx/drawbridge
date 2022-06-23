@@ -14,79 +14,84 @@
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   inputs.rust-overlay.url = github:oxalica/rust-overlay;
 
-  outputs =
-    { self
-
-    , cargo2nix
-    , flake-utils
-    , nixpkgs
-    , ...
-    }:
-
-    flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ cargo2nix.overlays.default ];
-      };
-
-      cargo2nixBin = cargo2nix.packages.${system}.cargo2nix;
-      devRust = pkgs.rust-bin.fromRustupToolchainFile "${self}/rust-toolchain.toml";
-
-      cargo.toml = builtins.fromTOML (builtins.readFile "${self}/Cargo.toml");
-
-      mkBin = pkgs: (
-        (pkgs.rustBuilder.makePackageSet {
-          packageFun = import "${self}/Cargo.nix";
-          rustVersion = "1.61.0";
-          workspaceSrc = pkgs.nix-gitignore.gitignoreRecursiveSource [
-            "*.nix"
-            "*.yml"
-            "/.github"
-            "flake.lock"
-            "LICENSE"
-            "rust-toolchain.toml"
-          ]
-            self;
-        }).workspace."${cargo.toml.package.name}" { }
-      ).bin;
-
-      nativeBin = mkBin pkgs;
-      x86_64LinuxMuslBin = mkBin (import nixpkgs {
-        inherit system;
-        crossSystem = {
-          config = "x86_64-unknown-linux-musl";
+  outputs = {
+    self,
+    cargo2nix,
+    flake-utils,
+    nixpkgs,
+    ...
+  }:
+    flake-utils.lib.eachDefaultSystem (
+      system: let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [cargo2nix.overlays.default];
         };
-        overlays = [ cargo2nix.overlays.default ];
-      });
 
-      buildImage = bin: pkgs.dockerTools.buildImage {
-        inherit (cargo.toml.package) name;
-        tag = cargo.toml.package.version;
-        contents = [
-          bin
-        ];
-        config.Cmd = [ cargo.toml.package.name ];
-        config.Env = [ "PATH=${bin}/bin" ];
-      };
-    in
-    {
-      packages = {
-        "${cargo.toml.package.name}" = nativeBin;
-        "${cargo.toml.package.name}-x86_64-unknown-linux-musl" = x86_64LinuxMuslBin;
-        "${cargo.toml.package.name}-x86_64-unknown-linux-musl-oci" = buildImage x86_64LinuxMuslBin;
-      };
-      packages.default = nativeBin;
+        cargo2nixBin = cargo2nix.packages.${system}.cargo2nix;
+        devRust = pkgs.rust-bin.fromRustupToolchainFile "${self}/rust-toolchain.toml";
 
-      devShells.default = pkgs.mkShell {
-        buildInputs = [
-          pkgs.openssl
+        cargo.toml = builtins.fromTOML (builtins.readFile "${self}/Cargo.toml");
 
-          cargo2nixBin
+        mkBin = pkgs:
+          (
+            (pkgs.rustBuilder.makePackageSet {
+              packageFun = import "${self}/Cargo.nix";
+              rustVersion = "1.61.0";
+              workspaceSrc =
+                pkgs.nix-gitignore.gitignoreRecursiveSource [
+                  "*.nix"
+                  "*.yml"
+                  "/.github"
+                  "flake.lock"
+                  "LICENSE"
+                  "rust-toolchain.toml"
+                ]
+                self;
+            })
+            .workspace
+            ."${cargo.toml.package.name}" {}
+          )
+          .bin;
 
-          devRust
-        ];
-      };
-    }
+        nativeBin = mkBin pkgs;
+        x86_64LinuxMuslBin = mkBin (import nixpkgs {
+          inherit system;
+          crossSystem = {
+            config = "x86_64-unknown-linux-musl";
+          };
+          overlays = [cargo2nix.overlays.default];
+        });
+
+        buildImage = bin:
+          pkgs.dockerTools.buildImage {
+            inherit (cargo.toml.package) name;
+            tag = cargo.toml.package.version;
+            contents = [
+              bin
+            ];
+            config.Cmd = [cargo.toml.package.name];
+            config.Env = ["PATH=${bin}/bin"];
+          };
+      in {
+        formatter = nixpkgs.legacyPackages."${system}".alejandra;
+
+        packages = {
+          "${cargo.toml.package.name}" = nativeBin;
+          "${cargo.toml.package.name}-x86_64-unknown-linux-musl" = x86_64LinuxMuslBin;
+          "${cargo.toml.package.name}-x86_64-unknown-linux-musl-oci" = buildImage x86_64LinuxMuslBin;
+        };
+        packages.default = nativeBin;
+
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.openssl
+
+            cargo2nixBin
+
+            devRust
+          ];
+        };
+      }
     );
 }
