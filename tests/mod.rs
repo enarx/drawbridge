@@ -113,7 +113,7 @@ async fn app() {
         )
         .unwrap();
         let app = App::new(
-            store.into_path(),
+            store.path(),
             tls,
             OidcConfig {
                 label: "test-label".into(),
