@@ -24,3 +24,5 @@ jobs:
     - uses: cachix/install-nix-action@v17
     - name: nix flake check
       run: nix flake check
+    - name: nix fmt
+      run: nix fmt ./flake.nix ./shell.nix
