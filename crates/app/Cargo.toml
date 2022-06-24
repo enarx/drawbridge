@@ -18,7 +18,7 @@ cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_u
 futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
 futures-rustls = { version = "0.22.1", default-features = false }
 hyper = { version = "0.14.18", default-features = false, features = ["http1", "server"] }
-log = { version = "0.4.17", default-features = false }
+log = { version = "0.4.17", default-features = false, features = ["release_max_level_debug"] }
 mime = { version = "0.3.16", default-features = false }
 openidconnect = { version = "2.3.1", default-features = false, features = ["ureq"] }
 rustls = { version = "0.20.6", default-features = false }
