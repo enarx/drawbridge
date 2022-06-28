@@ -74,7 +74,7 @@
             config.Env = ["PATH=${bin}/bin"];
           };
       in {
-        formatter = nixpkgs.legacyPackages."${system}".alejandra;
+        formatter = pkgs.alejandra;
 
         packages = {
           "${cargo.toml.package.name}" = nativeBin;
