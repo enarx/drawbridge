@@ -16,7 +16,7 @@ use futures_rustls::TlsAcceptor;
 use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::ureq::http_client;
 use openidconnect::url::Url;
-use openidconnect::{ClientId, ClientSecret, IssuerUrl};
+use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl};
 
 /// OpenID Connect client configuration.
 pub struct OidcConfig {
@@ -57,7 +57,8 @@ impl<S: AsRef<Path>> Builder<S> {
             oidc_md,
             ClientId::new(self.oidc.client_id),
             self.oidc.client_secret.map(ClientSecret::new),
-        );
+        )
+        .set_auth_type(AuthType::RequestBody);
 
         Ok(App {
             make_service: Mutex::new(
