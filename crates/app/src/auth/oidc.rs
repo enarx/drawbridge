@@ -101,13 +101,15 @@ impl<B: Send> FromRequest<B> for Claims {
         })?;
 
         trace!(target: "app:auth::oidc", "request user info");
-        info_req.request(http_client).map(Self).map_err(|e| {
+        let claims = info_req.request(http_client).map_err(|e| {
             debug!(target: "app::auth::oidc", "failed to request user info: {e}");
             (
                 StatusCode::UNAUTHORIZED,
                 format!("OpenID Connect credential validation failed: {e}"),
             )
                 .into_response()
-        })
+        })?;
+        trace!(target: "app:auth::oidc", "received user claims: {:?}", claims);
+        Ok(Self(claims))
     }
 }
