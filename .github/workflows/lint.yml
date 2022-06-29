@@ -26,3 +26,5 @@ jobs:
       run: nix flake check
     - name: nix fmt
       run: nix fmt ./flake.nix ./shell.nix
+    - name: cargo2nix
+      run: nix develop -c cargo2nix -s | diff - Cargo.nix || exit 1
