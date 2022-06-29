@@ -26,11 +26,6 @@ use log::{debug, error};
 #[clap(author, version, about)]
 struct Args {
     /// Address to bind to.
-    ///
-    /// If no value is specified for this argument either on
-    /// the command line or in a configuration file,
-    /// the value will default to the unspecified IPv4 address
-    /// 0.0.0.0 and port 8080.
     #[clap(long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))]
     addr: SocketAddr,
 
