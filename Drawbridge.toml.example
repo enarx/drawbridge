@@ -1,0 +1,15 @@
+# Any TOML file can be used to provide arguments to the Drawbridge CLI as follows:
+#     drawbridge @Drawbridge.toml
+# or equivalently, during development:
+#     cargo run -- @Drawbridge.toml
+ca = "testdata/ca.crt"
+cert = "testdata/server.crt"
+key = "testdata/server.key"
+# Drawbridge will persist files to the following path.
+# If you'd prefer to use temporary files that will be cleaned up automatically,
+# for the sake of testing and development, then use the `mktemp` command:
+#     cargo run -- @Drawbridge.toml --store $(mktemp -d)
+#store = "PATH-TO-STORE"
+oidc-client = "9SVWiB3sQQdzKqpZmMNvsb9rzd8Ha21F"
+oidc-label = "auth.profian.com"
+oidc-issuer = "https://auth.profian.com"
