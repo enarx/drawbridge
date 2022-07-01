@@ -801,7 +801,6 @@ in
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/type");
     features = builtins.concatLists [
-      [ "anyhow" ]
       [ "axum" ]
       [ "default" ]
       [ "headers" ]
