@@ -17,7 +17,8 @@ jobs:
       with:
         command: clippy
         args: --workspace
-  nix:
+
+  flake:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2.4.0
@@ -30,5 +31,24 @@ jobs:
       run: nix flake check
     - name: nix fmt
       run: nix fmt ./flake.nix ./shell.nix
+
+  cargo2nix:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.4.0
+    - uses: cachix/install-nix-action@v17
+    - uses: cachix/cachix-action@v10
+      with:
+        name: enarx
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: cargo2nix
-      run: nix develop -c cargo2nix -s | diff - Cargo.nix || exit 1
+      run: nix develop -c cargo2nix -s | diff Cargo.nix - > cargo2nix.patch || exit 1
+    - if: ${{ failure() }}
+      run: |
+        patch Cargo.nix cargo2nix.patch
+        git diff | tee cargo2nix.patch
+    - uses: actions/upload-artifact@v3
+      if: ${{ failure() }}
+      with:
+        name: cargo2nix.patch
+        path: cargo2nix.patch
