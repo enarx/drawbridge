@@ -10,7 +10,7 @@ drawbridge-byte = { path = "../byte" }
 drawbridge-jose = { path = "../jose" }
 
 # External dependencies
-anyhow = { version = "1.0.57", default-features = false, features = ["std"], optional = true }
+anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
 base64 = { version = "0.13.0", default-features = false, features = ["std"] }
 futures = { version = "0.3.21", default-features = false, features = ["std"] }
 mime = { version = "0.3.16", default-features = false }
@@ -30,4 +30,4 @@ tempfile = { version = "3.3.0", default-features = false }
 
 [features]
 default = []
-server = ["anyhow", "axum", "futures/async-await", "headers", "http"]
+server = ["axum", "futures/async-await", "headers", "http"]
