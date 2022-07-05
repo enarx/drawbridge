@@ -15,13 +15,23 @@ pub struct Context {
     pub name: Name,
 }
 
+impl TryFrom<(&str, &str)> for Context {
+    type Error = anyhow::Error;
+
+    fn try_from((user, repo): (&str, &str)) -> Result<Self, Self::Error> {
+        let owner = user.parse().context("failed to parse user context")?;
+        let name = repo.parse().context("failed to parse repository name")?;
+        Ok(Self { owner, name })
+    }
+}
+
 impl FromStr for Context {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (owner, name) = s
-            .split_once('/')
-            .ok_or_else(|| anyhow!("`/` character not found"))?;
+            .rsplit_once(&['/', ':'])
+            .ok_or_else(|| anyhow!("`/` or ':' separator not found"))?;
         let owner = owner.parse().context("failed to parse user context")?;
         let name = name.parse().context("failed to parse repository name")?;
         Ok(Self { owner, name })
