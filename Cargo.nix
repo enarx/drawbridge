@@ -9,8 +9,8 @@ args@{
     "drawbridge-jose/default"
     "drawbridge-type/default"
     "drawbridge-hash/default"
+    "drawbridge-server/default"
     "drawbridge/default"
-    "drawbridge-app/default"
   ],
   rustPackages,
   buildRustPackages,
@@ -48,8 +48,8 @@ in
     drawbridge-jose = rustPackages.unknown.drawbridge-jose."0.1.0";
     drawbridge-type = rustPackages.unknown.drawbridge-type."0.1.0";
     drawbridge-hash = rustPackages.unknown.drawbridge-hash."0.1.0";
+    drawbridge-server = rustPackages.unknown.drawbridge-server."0.1.0";
     drawbridge = rustPackages.unknown.drawbridge."0.1.0";
-    drawbridge-app = rustPackages.unknown.drawbridge-app."0.1.0";
   };
   "registry+https://github.com/rust-lang/crates.io-index".adler."1.0.2" = overridableMkRustCrate (profileName: rec {
     name = "adler";
@@ -539,18 +539,18 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "9f1fe12880bae935d142c8702d500c63a4e8634b6c3c57ad72bf978fc7b6249a"; };
     features = builtins.concatLists [
-      [ "clap_derive" ]
-      [ "derive" ]
-      [ "once_cell" ]
-      [ "std" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "clap_derive")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "derive")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "once_cell")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "std")
     ];
     dependencies = {
-      bitflags = rustPackages."registry+https://github.com/rust-lang/crates.io-index".bitflags."1.3.2" { inherit profileName; };
-      clap_derive = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".clap_derive."3.2.6" { profileName = "__noProfile"; };
-      clap_lex = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap_lex."0.2.3" { inherit profileName; };
-      indexmap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".indexmap."1.9.1" { inherit profileName; };
-      once_cell = rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.12.0" { inherit profileName; };
-      textwrap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".textwrap."0.15.0" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "bitflags" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".bitflags."1.3.2" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "clap_derive" else null } = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".clap_derive."3.2.6" { profileName = "__noProfile"; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "clap_lex" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap_lex."0.2.3" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "indexmap" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".indexmap."1.9.1" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "once_cell" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.12.0" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "textwrap" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".textwrap."0.15.0" { inherit profileName; };
     };
   });
   
@@ -560,14 +560,14 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "ed6db9e867166a43a53f7199b5e4d1f522a1e5bd626654be263c999ce59df39a"; };
     features = builtins.concatLists [
-      [ "default" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "default")
     ];
     dependencies = {
-      heck = rustPackages."registry+https://github.com/rust-lang/crates.io-index".heck."0.4.0" { inherit profileName; };
-      proc_macro_error = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro-error."1.0.4" { inherit profileName; };
-      proc_macro2 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
-      quote = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
-      syn = rustPackages."registry+https://github.com/rust-lang/crates.io-index".syn."1.0.98" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "heck" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".heck."0.4.0" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "proc_macro_error" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro-error."1.0.4" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "proc_macro2" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "quote" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "syn" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".syn."1.0.98" { inherit profileName; };
     };
   });
   
@@ -577,7 +577,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "87eba3c8c7f42ef17f6c659fc7416d0f4758cd3e58861ee63c5fa4a4dde649e4"; };
     dependencies = {
-      os_str_bytes = rustPackages."registry+https://github.com/rust-lang/crates.io-index".os_str_bytes."6.1.0" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "os_str_bytes" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".os_str_bytes."6.1.0" { inherit profileName; };
     };
   });
   
@@ -679,54 +679,50 @@ in
     version = "0.1.0";
     registry = "unknown";
     src = fetchCrateLocal workspaceSrc;
+    features = builtins.concatLists [
+      (lib.optional (rootFeatures' ? "drawbridge/anyhow" || rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default") "anyhow")
+      (lib.optional (rootFeatures' ? "drawbridge/async-std" || rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default") "async-std")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default") "bin")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "clap")
+      (lib.optional (rootFeatures' ? "drawbridge/client") "client")
+      (lib.optional (rootFeatures' ? "drawbridge/default") "default")
+      (lib.optional (rootFeatures' ? "drawbridge/client" || rootFeatures' ? "drawbridge/drawbridge-client") "drawbridge-client")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/drawbridge-server" || rootFeatures' ? "drawbridge/server") "drawbridge-server")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/env_logger") "env_logger")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/futures") "futures")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/log") "log")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/server") "server")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/toml") "toml")
+    ];
     dependencies = {
-      anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.58" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/anyhow" || rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" then "anyhow" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.58" { inherit profileName; };
       async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
-      clap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.6" { inherit profileName; };
-      drawbridge_app = rustPackages."unknown".drawbridge-app."0.1.0" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "clap" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.6" { inherit profileName; };
+      drawbridge_byte = rustPackages."unknown".drawbridge-byte."0.1.0" { inherit profileName; };
+      drawbridge_client = rustPackages."unknown".drawbridge-client."0.1.0" { inherit profileName; };
+      drawbridge_hash = rustPackages."unknown".drawbridge-hash."0.1.0" { inherit profileName; };
+      drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.1.0" { inherit profileName; };
+      drawbridge_server = rustPackages."unknown".drawbridge-server."0.1.0" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.1.0" { inherit profileName; };
       env_logger = rustPackages."registry+https://github.com/rust-lang/crates.io-index".env_logger."0.9.0" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
-      log = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
-      toml = rustPackages."registry+https://github.com/rust-lang/crates.io-index".toml."0.5.9" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/log" then "log" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/toml" then "toml" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".toml."0.5.9" { inherit profileName; };
     };
     devDependencies = {
       async_h1 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-h1."2.3.3" { inherit profileName; };
       async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
       drawbridge_client = rustPackages."unknown".drawbridge-client."0.1.0" { inherit profileName; };
+      drawbridge_server = rustPackages."unknown".drawbridge-server."0.1.0" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.1.0" { inherit profileName; };
+      env_logger = rustPackages."registry+https://github.com/rust-lang/crates.io-index".env_logger."0.9.0" { inherit profileName; };
+      futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
       http_types = rustPackages."registry+https://github.com/rust-lang/crates.io-index".http-types."2.12.0" { inherit profileName; };
       openidconnect = rustPackages."registry+https://github.com/rust-lang/crates.io-index".openidconnect."2.3.1" { inherit profileName; };
       rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls."0.20.6" { inherit profileName; };
       rustls_pemfile = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls-pemfile."1.0.0" { inherit profileName; };
       serde_json = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.81" { inherit profileName; };
       tempfile = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tempfile."3.3.0" { inherit profileName; };
-    };
-  });
-  
-  "unknown".drawbridge-app."0.1.0" = overridableMkRustCrate (profileName: rec {
-    name = "drawbridge-app";
-    version = "0.1.0";
-    registry = "unknown";
-    src = fetchCrateLocal (workspaceSrc + "/crates/app");
-    dependencies = {
-      anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.58" { inherit profileName; };
-      async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
-      axum = rustPackages."registry+https://github.com/rust-lang/crates.io-index".axum."0.5.9" { inherit profileName; };
-      camino = rustPackages."registry+https://github.com/rust-lang/crates.io-index".camino."1.0.9" { inherit profileName; };
-      cap_async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".cap-async-std."0.24.4" { inherit profileName; };
-      drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.1.0" { inherit profileName; };
-      drawbridge_type = rustPackages."unknown".drawbridge-type."0.1.0" { inherit profileName; };
-      futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
-      futures_rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures-rustls."0.22.1" { inherit profileName; };
-      hyper = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper."0.14.19" { inherit profileName; };
-      log = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
-      mime = rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime."0.3.16" { inherit profileName; };
-      openidconnect = rustPackages."registry+https://github.com/rust-lang/crates.io-index".openidconnect."2.3.1" { inherit profileName; };
-      rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls."0.20.6" { inherit profileName; };
-      rustls_pemfile = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls-pemfile."1.0.0" { inherit profileName; };
-      serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.137" { inherit profileName; };
-      serde_json = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.81" { inherit profileName; };
-      tokio_util = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tokio-util."0.7.3" { inherit profileName; };
-      tower = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tower."0.4.13" { inherit profileName; };
     };
   });
   
@@ -792,6 +788,34 @@ in
       serde_json = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.81" { inherit profileName; };
       url = rustPackages."registry+https://github.com/rust-lang/crates.io-index".url."2.2.2" { inherit profileName; };
       zeroize = rustPackages."registry+https://github.com/rust-lang/crates.io-index".zeroize."1.5.5" { inherit profileName; };
+    };
+  });
+  
+  "unknown".drawbridge-server."0.1.0" = overridableMkRustCrate (profileName: rec {
+    name = "drawbridge-server";
+    version = "0.1.0";
+    registry = "unknown";
+    src = fetchCrateLocal (workspaceSrc + "/crates/server");
+    dependencies = {
+      anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.58" { inherit profileName; };
+      async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
+      axum = rustPackages."registry+https://github.com/rust-lang/crates.io-index".axum."0.5.9" { inherit profileName; };
+      camino = rustPackages."registry+https://github.com/rust-lang/crates.io-index".camino."1.0.9" { inherit profileName; };
+      cap_async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".cap-async-std."0.24.4" { inherit profileName; };
+      drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.1.0" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.1.0" { inherit profileName; };
+      futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
+      futures_rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures-rustls."0.22.1" { inherit profileName; };
+      hyper = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper."0.14.19" { inherit profileName; };
+      log = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
+      mime = rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime."0.3.16" { inherit profileName; };
+      openidconnect = rustPackages."registry+https://github.com/rust-lang/crates.io-index".openidconnect."2.3.1" { inherit profileName; };
+      rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls."0.20.6" { inherit profileName; };
+      rustls_pemfile = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls-pemfile."1.0.0" { inherit profileName; };
+      serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.137" { inherit profileName; };
+      serde_json = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.81" { inherit profileName; };
+      tokio_util = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tokio-util."0.7.3" { inherit profileName; };
+      tower = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tower."0.4.13" { inherit profileName; };
     };
   });
   
@@ -1188,7 +1212,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "db0d4cf898abf0081f964436dc980e96670a0f36863e4b83aaacdb65c9d7ccc3"; };
     features = builtins.concatLists [
-      [ "raw" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "raw")
     ];
   });
   
@@ -1225,7 +1249,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"; };
     features = builtins.concatLists [
-      [ "default" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "default")
     ];
   });
   
@@ -1362,13 +1386,13 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"; };
     features = builtins.concatLists [
-      [ "std" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "std")
     ];
     dependencies = {
-      hashbrown = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hashbrown."0.12.1" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "hashbrown" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hashbrown."0.12.1" { inherit profileName; };
     };
     buildDependencies = {
-      autocfg = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".autocfg."1.1.0" { profileName = "__noProfile"; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "autocfg" else null } = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".autocfg."1.1.0" { profileName = "__noProfile"; };
     };
   });
   
@@ -1750,7 +1774,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "21326818e99cfe6ce1e524c2a805c189a99b5ae555a35d19f9a284b427d86afa"; };
     features = builtins.concatLists [
-      [ "raw_os_str" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "raw_os_str")
     ];
   });
   
@@ -1839,18 +1863,18 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"; };
     features = builtins.concatLists [
-      [ "default" ]
-      [ "syn" ]
-      [ "syn-error" ]
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "default")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "syn")
+      (lib.optional (rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default") "syn-error")
     ];
     dependencies = {
-      proc_macro_error_attr = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro-error-attr."1.0.4" { profileName = "__noProfile"; };
-      proc_macro2 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
-      quote = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
-      syn = rustPackages."registry+https://github.com/rust-lang/crates.io-index".syn."1.0.98" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "proc_macro_error_attr" else null } = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro-error-attr."1.0.4" { profileName = "__noProfile"; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "proc_macro2" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "quote" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "syn" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".syn."1.0.98" { inherit profileName; };
     };
     buildDependencies = {
-      version_check = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".version_check."0.9.4" { profileName = "__noProfile"; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "version_check" else null } = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".version_check."0.9.4" { profileName = "__noProfile"; };
     };
   });
   
@@ -1860,11 +1884,11 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"; };
     dependencies = {
-      proc_macro2 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
-      quote = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "proc_macro2" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".proc-macro2."1.0.40" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "quote" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".quote."1.0.20" { inherit profileName; };
     };
     buildDependencies = {
-      version_check = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".version_check."0.9.4" { profileName = "__noProfile"; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/clap" || rootFeatures' ? "drawbridge/default" then "version_check" else null } = buildRustPackages."registry+https://github.com/rust-lang/crates.io-index".version_check."0.9.4" { profileName = "__noProfile"; };
     };
   });
   
@@ -2504,7 +2528,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"; };
     dependencies = {
-      serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.137" { inherit profileName; };
+      ${ if rootFeatures' ? "drawbridge/bin" || rootFeatures' ? "drawbridge/default" || rootFeatures' ? "drawbridge/toml" then "serde" else null } = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.137" { inherit profileName; };
     };
   });
   

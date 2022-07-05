@@ -6,8 +6,8 @@ use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 
-use drawbridge_app::url::Url;
-use drawbridge_app::{App, OidcConfig, TlsConfig};
+use drawbridge_server::url::Url;
+use drawbridge_server::{App, OidcConfig, TlsConfig};
 
 use anyhow::{bail, Context as _};
 use async_std::net::TcpListener;

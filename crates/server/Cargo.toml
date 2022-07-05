@@ -1,5 +1,5 @@
 [package]
-name = "drawbridge-app"
+name = "drawbridge-server"
 version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"

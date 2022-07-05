@@ -490,8 +490,12 @@ dependencies = [
  "async-h1",
  "async-std",
  "clap",
- "drawbridge-app",
+ "drawbridge-byte",
  "drawbridge-client",
+ "drawbridge-hash",
+ "drawbridge-jose",
+ "drawbridge-server",
+ "drawbridge-type",
  "env_logger",
  "futures",
  "http-types",
@@ -502,31 +506,6 @@ dependencies = [
  "serde_json",
  "tempfile",
  "toml",
-]
-
-[[package]]
-name = "drawbridge-app"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-std",
- "axum",
- "camino",
- "cap-async-std",
- "drawbridge-jose",
- "drawbridge-type",
- "futures",
- "futures-rustls",
- "hyper",
- "log",
- "mime",
- "openidconnect",
- "rustls",
- "rustls-pemfile",
- "serde",
- "serde_json",
- "tokio-util",
- "tower",
 ]
 
 [[package]]
@@ -575,6 +554,31 @@ dependencies = [
  "serde_json",
  "url",
  "zeroize",
+]
+
+[[package]]
+name = "drawbridge-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "axum",
+ "camino",
+ "cap-async-std",
+ "drawbridge-jose",
+ "drawbridge-type",
+ "futures",
+ "futures-rustls",
+ "hyper",
+ "log",
+ "mime",
+ "openidconnect",
+ "rustls",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "tokio-util",
+ "tower",
 ]
 
 [[package]]
