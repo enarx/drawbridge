@@ -50,7 +50,9 @@ impl Client {
     }
 
     fn url(&self, path: &str) -> Result<Url> {
-        self.root.join(path).context("failed to construct URL")
+        format!("{}{path}", self.root)
+            .parse()
+            .context("failed to construct URL")
     }
 
     pub fn user(&self, UserContext { name }: &UserContext) -> User<'_> {
@@ -113,6 +115,11 @@ impl ClientBuilder {
     }
 
     pub fn build(self) -> Result<Client> {
+        let root = self
+            .url
+            .join(&format!("api/v{}", env!("CARGO_PKG_VERSION")))
+            .context("failed to contruct URL")?;
+
         let tls = rustls::ClientConfig::builder()
             .with_cipher_suites(&[
                 TLS13_AES_256_GCM_SHA384,
@@ -144,7 +151,7 @@ impl ClientBuilder {
 
         Ok(Client {
             inner: ureq::AgentBuilder::new().tls_config(Arc::new(tls)).build(),
-            root: self.url,
+            root,
             token: self.token,
         })
     }
