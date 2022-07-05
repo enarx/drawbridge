@@ -10,12 +10,18 @@ members = [
     "crates/client",
     "crates/hash",
     "crates/jose",
+    "crates/server",
     "crates/type",
 ]
 
 [dependencies]
 # Internal dependencies
-drawbridge-app = { path = "./crates/app" }
+drawbridge-byte = { path = "./crates/byte" }
+drawbridge-client = { path = "./crates/client", optional = true }
+drawbridge-hash = { path = "./crates/hash" }
+drawbridge-jose = { path = "./crates/jose" }
+drawbridge-server = { path = "./crates/server" }
+drawbridge-type = { path = "./crates/type", features = ["server"] }
 
 # External dependencies
 anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
@@ -39,3 +45,6 @@ rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }
 serde_json = { version = "1.0.79", default-features = false, features = ["std"] }
 tempfile = { version = "3.3.0", default-features = false }
+
+[features]
+client = ["drawbridge-client"]

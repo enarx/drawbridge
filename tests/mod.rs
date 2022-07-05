@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use drawbridge_app::{App, OidcConfig, TlsConfig};
 use drawbridge_client::mime::APPLICATION_OCTET_STREAM;
 use drawbridge_client::types::{RepositoryConfig, TreePath, UserRecord};
 use drawbridge_client::Client;
+use drawbridge_server::{App, OidcConfig, TlsConfig};
 
 use async_std::fs::{create_dir, write};
 use async_std::net::{Ipv4Addr, TcpListener};
