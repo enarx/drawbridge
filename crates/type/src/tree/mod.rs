@@ -17,6 +17,7 @@ use super::digest::Algorithms;
 use super::Meta;
 
 use std::collections::BTreeMap;
+use std::ffi::OsStr;
 use std::io::Seek;
 use std::ops::Bound::{Excluded, Unbounded};
 use std::ops::Deref;
@@ -100,7 +101,11 @@ impl Tree<std::fs::File> {
                             meta: Meta {
                                 hash,
                                 size,
-                                mime: APPLICATION_OCTET_STREAM,
+                                mime: match e.path().extension().and_then(OsStr::to_str) {
+                                    Some("wasm") => "application/wasm".parse().unwrap(),
+                                    Some("toml") => "application/toml".parse().unwrap(),
+                                    _ => APPLICATION_OCTET_STREAM,
+                                },
                             },
                             custom: Default::default(),
                             content: Content::File(file),
