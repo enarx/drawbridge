@@ -3,10 +3,15 @@ name = "drawbridge-jose"
 version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"
+license = "AGPL-3.0"
+homepage = "https://github.com/profianinc/drawbridge"
+repository = "https://github.com/profianinc/drawbridge"
+description = "JOSE implementation"
+keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "../byte", features = ["serde"] }
+drawbridge-byte = { path = "../byte", version = "0.1.0", features = ["serde"] }
 
 # External dependencies
 base64 = { version = "0.13.0", default-features = false, features = ["std"] }
