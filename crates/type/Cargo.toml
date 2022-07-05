@@ -3,11 +3,16 @@ name = "drawbridge-type"
 version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"
+license = "AGPL-3.0"
+homepage = "https://github.com/profianinc/drawbridge"
+repository = "https://github.com/profianinc/drawbridge"
+description = "Drawbridge type definitions."
+keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "../byte" }
-drawbridge-jose = { path = "../jose" }
+drawbridge-byte = { path = "../byte", version = "0.1.0" }
+drawbridge-jose = { path = "../jose", version = "0.1.0" }
 
 # External dependencies
 anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
