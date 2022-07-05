@@ -11,7 +11,7 @@ use futures::AsyncRead;
 
 /// A verifying reader
 ///
-/// This type is exactly the same as [`Reader`](crate::Reader) except that it
+/// This type is exactly the same as [`Reader`](super::Reader) except that it
 /// additionally verifies the expected hashes. When the end-of-file condition
 /// is reached, if the actual hashes do not match the expected hashes, an error
 /// is produced.
