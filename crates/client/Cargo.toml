@@ -3,11 +3,16 @@ name = "drawbridge-client"
 version = "0.1.0"
 authors = ["Profian Inc"]
 edition = "2021"
+license = "AGPL-3.0"
+homepage = "https://github.com/profianinc/drawbridge"
+repository = "https://github.com/profianinc/drawbridge"
+description = "Client library for interacting with the Drawbridge."
+keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-jose = { path = "../jose" }
-drawbridge-type = { path = "../type" }
+drawbridge-jose = { path = "../jose", version = "0.1.0" }
+drawbridge-type = { path = "../type", version = "0.1.0" }
 
 # External dependencies
 anyhow = { version = "1.0", default-features = false, features = ["std"] }
