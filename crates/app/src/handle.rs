@@ -15,7 +15,18 @@ use tower::Service;
 /// Parses the URI of `req` and routes it to respective component.
 pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     trace!(target: "app::handle", "begin HTTP request handling {:?}", req);
-    let path = req.uri().path().strip_prefix('/').expect("invalid URI");
+    let path = req.uri().path().trim_start_matches('/');
+    let path = path
+        .strip_prefix("api")
+        .ok_or((StatusCode::NOT_FOUND, format!("Route `/{path}` not found")))?
+        .trim_start_matches('/')
+        // TODO: Parse SemVer, support v0, v0.1 etc.
+        .strip_prefix("v0.1.0")
+        .ok_or((
+            StatusCode::NOT_IMPLEMENTED,
+            "Unsupported API version".into(),
+        ))?
+        .trim_start_matches('/');
     let (head, tail) = path
         .split_once("/_")
         .map(|(left, right)| (left.to_string(), format!("_{right}")))
