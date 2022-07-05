@@ -15,17 +15,33 @@ pub struct Context {
     pub name: Name,
 }
 
+impl TryFrom<(&str, &str, &str)> for Context {
+    type Error = anyhow::Error;
+
+    fn try_from((user, repo, tag): (&str, &str, &str)) -> Result<Self, Self::Error> {
+        let repository = (user, repo)
+            .try_into()
+            .context("failed to parse repository context")?;
+        let name = tag
+            .parse()
+            .context("failed to parse tag semantic version")?;
+        Ok(Self { repository, name })
+    }
+}
+
 impl FromStr for Context {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (repository, name) = s
-            .split_once(':')
-            .ok_or_else(|| anyhow!("`:` character not found"))?;
+            .rsplit_once(&['/', ':'])
+            .ok_or_else(|| anyhow!("'/' or `:` separator not found"))?;
         let repository = repository
             .parse()
-            .context("failed to parse repository name")?;
-        let name = name.parse().context("failed to parse semantic version")?;
+            .context("failed to parse repository context")?;
+        let name = name
+            .parse()
+            .context("failed to parse tag semantic version")?;
         Ok(Self { repository, name })
     }
 }
