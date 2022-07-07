@@ -60,7 +60,7 @@ struct Args {
     #[clap(long)]
     oidc_client: String,
 
-    /// OpenID Connect secret.
+    /// Path to a file containing OpenID Connect secret.
     #[clap(long)]
     oidc_secret: Option<String>,
 }
@@ -115,6 +115,15 @@ async fn main() -> anyhow::Result<()> {
         })
         .map(Args::parse_from)
         .context("Failed to parse arguments")?;
+    
+    let oidc_secret = oidc_secret
+        .map(|ref path| {
+            read(path).with_context(|| format!("Failed to read OpenID Connect secret at `{path}`"))
+        })
+        .transpose()?
+        .map(String::from_utf8)
+        .transpose()
+        .context("OpenID Connect secret is not valid UTF-8")?;
 
     let cert = open_buffered(cert).context("Failed to open server certificate file")?;
     let key = open_buffered(key).context("Failed to open server key file")?;
