@@ -717,7 +717,9 @@ in
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/byte");
     features = builtins.concatLists [
+      (lib.optional (rootFeatures' ? "drawbridge-byte/alloc") "alloc")
       [ "serde" ]
+      (lib.optional (rootFeatures' ? "drawbridge-byte/std") "std")
     ];
     dependencies = {
       base64 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.0" { inherit profileName; };
@@ -2162,7 +2164,7 @@ in
     registry = "registry+https://github.com/rust-lang/crates.io-index";
     src = fetchCratesIo { inherit name version; sha256 = "1578c6245786b9d168c5447eeacfb96856573ca56c9d68fdcf394be134882a47"; };
     features = builtins.concatLists [
-      [ "alloc" ]
+      (lib.optional (rootFeatures' ? "drawbridge-byte/alloc") "alloc")
       [ "default" ]
       [ "derive" ]
       [ "serde_derive" ]

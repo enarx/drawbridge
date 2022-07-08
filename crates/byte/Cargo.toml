@@ -12,4 +12,8 @@ categories = [ "no-std" ]
 
 [dependencies]
 base64 = { version = "0.13.0", default-features = false, features = ["alloc"] }
-serde = { version = "1.0.136", default-features = false, features = ["alloc"], optional = true }
+serde = { version = "1.0.136", default-features = false, optional = true }
+
+[features]
+alloc = ["serde?/alloc"]
+std = ["serde?/std"]
