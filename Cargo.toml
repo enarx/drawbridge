@@ -21,12 +21,12 @@ members = [
 
 [dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "./crates/byte", version = "0.1.0" }
+drawbridge-byte = { path = "./crates/byte", version = "0.2.0" }
 drawbridge-client = { path = "./crates/client", version = "0.1.0", optional = true }
 drawbridge-hash = { path = "./crates/hash", version = "0.1.0" }
-drawbridge-jose = { path = "./crates/jose", version = "0.1.0" }
-drawbridge-server = { path = "./crates/server", version = "0.1.0" }
-drawbridge-type = { path = "./crates/type", version = "0.1.0", features = ["server"] }
+drawbridge-jose = { path = "./crates/jose", version = "0.2.0" }
+drawbridge-server = { path = "./crates/server", version = "0.2.0" }
+drawbridge-type = { path = "./crates/type", version = "0.2.0", features = ["server"] }
 
 # External dependencies
 anyhow = { version = "1.0.57", default-features = false, features = ["std"] }
