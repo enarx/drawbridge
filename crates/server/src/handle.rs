@@ -9,30 +9,53 @@ use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Method, Request, StatusCode};
 use axum::response::IntoResponse;
+use lazy_static::lazy_static;
 use log::trace;
 use tower::Service;
 
+lazy_static! {
+    static ref API_VERSION: semver::Version = env!("CARGO_PKG_VERSION").parse().expect(&format!(
+        "failed to parse CARGO_PKG_VERSION `{}`",
+        env!("CARGO_PKG_VERSION")
+    ));
+}
+
 /// Parses the URI of `req` and routes it to respective component.
 pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
+    #[inline]
+    fn not_found(path: &str) -> (StatusCode, String) {
+        (StatusCode::NOT_FOUND, format!("Route `/{path}` not found"))
+    }
+
     trace!(target: "app::handle", "begin HTTP request handling {:?}", req);
     let path = req.uri().path().trim_start_matches('/');
-    let path = path
+    let (ver, path) = path
         .strip_prefix("api")
-        .ok_or((StatusCode::NOT_FOUND, format!("Route `/{path}` not found")))?
+        .ok_or_else(|| not_found(path))?
         .trim_start_matches('/')
-        // TODO: Parse SemVer, support v0, v0.1 etc.
-        .strip_prefix("v0.1.0")
-        .ok_or((
+        .strip_prefix('v')
+        .ok_or_else(|| not_found(path))?
+        .split_once('/')
+        .ok_or_else(|| not_found(path))?;
+    let ver = ver.parse::<semver::Version>().map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("Failed to parse SemVer version from {path}: {e}"),
+        )
+    })?;
+    if ver > *API_VERSION {
+        return Err((
             StatusCode::NOT_IMPLEMENTED,
-            "Unsupported API version".into(),
-        ))?
-        .trim_start_matches('/');
+            format!("Unsupported API version `{ver}`"),
+        ));
+    }
     let (head, tail) = path
+        .trim_start_matches('/')
         .split_once("/_")
         .map(|(left, right)| (left.to_string(), format!("_{right}")))
         .unwrap_or((path.to_string(), "".into()));
     if head.is_empty() {
-        return Err((StatusCode::NOT_FOUND, format!("Route `/{path}` not found")));
+        return Err(not_found(path));
     }
 
     let extensions = req.extensions_mut();
