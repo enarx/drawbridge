@@ -1,6 +1,6 @@
 [package]
 name = "drawbridge"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Profian Inc"]
 edition = "2021"
 license = "AGPL-3.0-or-later"
@@ -21,7 +21,7 @@ members = [
 [dependencies]
 # Internal dependencies
 drawbridge-byte = { path = "./crates/byte", version = "0.2.0" }
-drawbridge-client = { path = "./crates/client", version = "0.1.0", optional = true }
+drawbridge-client = { path = "./crates/client", version = "0.2.0", optional = true }
 drawbridge-jose = { path = "./crates/jose", version = "0.2.0" }
 drawbridge-server = { path = "./crates/server", version = "0.2.0" }
 drawbridge-type = { path = "./crates/type", version = "0.2.0", features = ["server"] }
