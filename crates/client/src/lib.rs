@@ -16,12 +16,14 @@ pub use tag::*;
 pub use tree::*;
 pub use user::*;
 
+pub use drawbridge_jose as jose;
 pub use drawbridge_type as types;
 
 pub use anyhow::{Context, Result};
 pub use mime;
 pub use url::Url;
 
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use drawbridge_type::{RepositoryContext, TagContext, TreeContext, UserContext};
@@ -33,20 +35,63 @@ use rustls::kx_group::{SECP256R1, SECP384R1, X25519};
 use rustls::version::TLS13;
 use rustls::{Certificate, OwnedTrustAnchor, PrivateKey, RootCertStore};
 
+mod private {
+    pub trait Scope: Copy + Clone {}
+}
+
+pub trait Scope: private::Scope {}
+
+impl<T> Scope for T where T: private::Scope {}
+
+pub mod scope {
+    use super::private::Scope;
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct Root;
+    impl Scope for Root {}
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct User;
+    impl Scope for User {}
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct Repository;
+    impl Scope for Repository {}
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct Tag;
+    impl Scope for Tag {}
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct Node;
+    impl Scope for Node {}
+
+    #[repr(transparent)]
+    #[derive(Debug, Clone, Copy)]
+    pub struct Unknown;
+    impl Scope for Unknown {}
+}
+
 #[derive(Clone, Debug)]
-pub struct Client {
+pub struct Client<S = scope::Root> {
     inner: ureq::Agent,
     root: Url,
     token: Option<String>,
+    scope: PhantomData<S>,
 }
 
-impl Client {
-    pub fn builder(url: Url) -> ClientBuilder {
+impl<S: Scope> Client<S> {
+    pub fn builder(url: Url) -> ClientBuilder<S> {
         ClientBuilder::new(url)
     }
 
-    pub fn new(url: Url) -> Result<Self> {
-        Self::builder(url).build()
+    pub fn new_scoped(url: Url) -> Result<Self> {
+        Self::builder(url).build_scoped()
     }
 
     fn url(&self, path: &str) -> Result<Url> {
@@ -54,42 +99,53 @@ impl Client {
             .parse()
             .context("failed to construct URL")
     }
+}
 
-    pub fn user(&self, UserContext { name }: &UserContext) -> User<'_> {
+impl Client<scope::Root> {
+    pub fn new(url: Url) -> Result<Self> {
+        Self::builder(url).build()
+    }
+
+    pub fn user(&self, UserContext { name }: &UserContext) -> User<'_, scope::Root> {
         User::new(Entity::new(self), name)
     }
 
     pub fn repository<'a>(
         &'a self,
         RepositoryContext { owner, name }: &'a RepositoryContext,
-    ) -> Repository<'_> {
+    ) -> Repository<'_, scope::Root> {
         self.user(owner).repository(name)
     }
 
-    pub fn tag<'a>(&'a self, TagContext { repository, name }: &'a TagContext) -> Tag<'_> {
+    pub fn tag<'a>(
+        &'a self,
+        TagContext { repository, name }: &'a TagContext,
+    ) -> Tag<'_, scope::Root> {
         self.repository(repository).tag(name)
     }
 
-    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_> {
+    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_, scope::Root> {
         self.tag(tag).path(path)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct ClientBuilder {
+pub struct ClientBuilder<S: Scope = scope::Root> {
     url: Url,
     credentials: Option<(Vec<Certificate>, PrivateKey)>,
     roots: Option<RootCertStore>,
     token: Option<String>,
+    scope: PhantomData<S>,
 }
 
-impl ClientBuilder {
+impl<S: Scope> ClientBuilder<S> {
     pub fn new(url: Url) -> Self {
         Self {
             url,
             credentials: None,
             roots: None,
             token: None,
+            scope: PhantomData,
         }
     }
 
@@ -114,12 +170,7 @@ impl ClientBuilder {
         }
     }
 
-    pub fn build(self) -> Result<Client> {
-        let root = self
-            .url
-            .join(&format!("api/v{}", env!("CARGO_PKG_VERSION")))
-            .context("failed to contruct URL")?;
-
+    pub fn build_scoped(self) -> Result<Client<S>> {
         let tls = rustls::ClientConfig::builder()
             .with_cipher_suites(&[
                 TLS13_AES_256_GCM_SHA384,
@@ -151,8 +202,19 @@ impl ClientBuilder {
 
         Ok(Client {
             inner: ureq::AgentBuilder::new().tls_config(Arc::new(tls)).build(),
-            root,
+            root: self.url,
             token: self.token,
+            scope: self.scope,
         })
+    }
+}
+
+impl ClientBuilder<scope::Root> {
+    pub fn build(self) -> Result<Client<scope::Root>> {
+        let url = self
+            .url
+            .join(&format!("api/v{}", env!("CARGO_PKG_VERSION")))
+            .context("failed to construct URL")?;
+        Self { url, ..self }.build_scoped()
     }
 }

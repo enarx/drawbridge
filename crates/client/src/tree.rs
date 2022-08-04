@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{Entity, Result};
+use super::{scope, Entity, Result, Scope};
 
 use std::io::Read;
 use std::ops::Deref;
@@ -11,18 +11,18 @@ use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 use mime::Mime;
 use ureq::serde::Serialize;
 
-pub struct Node<'a>(Entity<'a>);
+pub struct Node<'a, S: Scope>(Entity<'a, S, scope::Node>);
 
-impl<'a> Deref for Node<'a> {
-    type Target = Entity<'a>;
+impl<'a, S: Scope> Deref for Node<'a, S> {
+    type Target = Entity<'a, S, scope::Node>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a> Node<'a> {
-    pub fn new(entity: Entity<'a>, path: &TreePath) -> Self {
+impl<'a, S: Scope> Node<'a, S> {
+    pub fn new(entity: Entity<'a, S, scope::Node>, path: &TreePath) -> Self {
         if path.is_empty() {
             Self(entity)
         } else {
