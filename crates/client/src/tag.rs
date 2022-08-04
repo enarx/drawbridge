@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{Entity, Node, Result};
+use super::{scope, Entity, Node, Result, Scope};
 
 use std::collections::BTreeMap;
 use std::ops::Deref;
@@ -14,18 +14,18 @@ use drawbridge_type::{TagEntry, TagName, Tree, TreeEntry, TreePath};
 
 use ureq::serde::Serialize;
 
-pub struct Tag<'a>(Entity<'a>);
+pub struct Tag<'a, S: Scope>(Entity<'a, S, scope::Tag>);
 
-impl<'a> Deref for Tag<'a> {
-    type Target = Entity<'a>;
+impl<'a, S: Scope> Deref for Tag<'a, S> {
+    type Target = Entity<'a, S, scope::Tag>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a> Tag<'a> {
-    pub fn new(entity: Entity<'a>, name: &TagName) -> Self {
+impl<'a, S: Scope> Tag<'a, S> {
+    pub fn new(entity: Entity<'a, S, scope::Repository>, name: &TagName) -> Self {
         Tag(entity.child(&name.to_string()))
     }
 
@@ -70,10 +70,12 @@ impl<'a> Tag<'a> {
     }
 
     pub fn get(&self) -> Result<TagEntry> {
-        self.0.get_json()
+        // TODO: Validate MIME type
+        // TODO: Use a reasonable byte limit
+        self.0.get_json(u64::MAX).map(|(_, v)| v)
     }
 
-    pub fn path(&self, path: &TreePath) -> Node<'a> {
+    pub fn path(&self, path: &TreePath) -> Node<'a, S> {
         Node::new(self.child("tree"), path)
     }
 }

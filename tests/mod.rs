@@ -9,6 +9,8 @@ use drawbridge_server::{App, OidcConfig, TlsConfig};
 use async_std::fs::{create_dir, write};
 use async_std::net::{Ipv4Addr, TcpListener};
 use async_std::task::{spawn, spawn_blocking};
+use drawbridge_type::digest::Algorithms;
+use drawbridge_type::Meta;
 use futures::channel::oneshot::channel;
 use futures::{join, try_join, StreamExt};
 use http_types::convert::{json, Serialize};
@@ -381,6 +383,15 @@ async fn app() {
         );
 
         let file_name = "test-file.txt".parse().unwrap();
+        let file_meta = Algorithms::default()
+            .read_sync("text".as_bytes())
+            .map(|(size, hash)| Meta {
+                hash,
+                size,
+                mime: APPLICATION_OCTET_STREAM,
+            })
+            .unwrap();
+        let file_expected = (file_meta, "text".into());
 
         let anon_prv_file = anon_prv_tag.path(&file_name);
         let cert_prv_file = cert_prv_tag.path(&file_name);
@@ -390,27 +401,27 @@ async fn app() {
         let cert_pub_file = cert_pub_tag.path(&file_name);
         let oidc_pub_file = oidc_pub_tag.path(&file_name);
 
-        assert!(anon_prv_file.get_string().is_err());
+        assert!(anon_prv_file.get_string(5).is_err());
         assert_eq!(
-            cert_prv_file.get_string().expect("failed to get file"),
-            (APPLICATION_OCTET_STREAM, "text".into())
+            cert_prv_file.get_string(5).expect("failed to get file"),
+            file_expected,
         );
         assert_eq!(
-            oidc_prv_file.get_string().expect("failed to get file"),
-            (APPLICATION_OCTET_STREAM, "text".into())
+            oidc_prv_file.get_string(5).expect("failed to get file"),
+            file_expected,
         );
 
         assert_eq!(
-            anon_pub_file.get_string().expect("failed to get file"),
-            (APPLICATION_OCTET_STREAM, "text".into())
+            anon_pub_file.get_string(5).expect("failed to get file"),
+            file_expected,
         );
         assert_eq!(
-            cert_pub_file.get_string().expect("failed to get file"),
-            (APPLICATION_OCTET_STREAM, "text".into())
+            cert_pub_file.get_string(5).expect("failed to get file"),
+            file_expected,
         );
         assert_eq!(
-            oidc_pub_file.get_string().expect("failed to get file"),
-            (APPLICATION_OCTET_STREAM, "text".into())
+            oidc_pub_file.get_string(5).expect("failed to get file"),
+            file_expected,
         );
     });
     assert!(matches!(cl.await.await, ()));

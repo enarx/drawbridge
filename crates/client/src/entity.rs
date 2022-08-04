@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::{Client, Result};
+use super::{scope, Client, Result, Scope};
 
 use std::io::{copy, Read, Write};
+use std::marker::PhantomData;
 use std::str::FromStr;
 
 use drawbridge_type::digest::{Algorithms, ContentDigest};
 use drawbridge_type::Meta;
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use http::StatusCode;
 use mime::Mime;
@@ -28,9 +29,10 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct Entity<'a> {
-    client: &'a Client,
+pub struct Entity<'a, C: Scope, E: Scope> {
+    client: &'a Client<C>,
     path: String,
+    phantom: PhantomData<E>,
 }
 
 fn parse_ureq_error(e: ureq::Error) -> anyhow::Error {
@@ -46,19 +48,34 @@ fn parse_ureq_error(e: ureq::Error) -> anyhow::Error {
     }
 }
 
-impl<'a> Entity<'a> {
-    pub fn new(client: &'a Client) -> Self {
+impl<'a, C: Scope> Entity<'a, C, C> {
+    pub fn new(client: &'a Client<C>) -> Self {
         Self {
             client,
             path: Default::default(),
+            phantom: PhantomData,
         }
     }
+}
 
+impl<'a> Entity<'a, scope::Unknown, scope::Unknown> {
+    /// Changes the scope of the entity.
+    pub fn scope<O: Scope>(self) -> Entity<'a, scope::Unknown, O> {
+        Entity {
+            client: self.client,
+            path: self.path,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, C: Scope, E: Scope> Entity<'a, C, E> {
     /// Returns a child [Entity] rooted at `path`.
-    pub fn child(&self, path: &str) -> Self {
-        Self {
+    pub fn child<O: Scope>(&self, path: &str) -> Entity<'a, C, O> {
+        Entity {
             client: self.client,
             path: format!("{}/{}", self.path, path),
+            phantom: PhantomData,
         }
     }
 
@@ -81,12 +98,11 @@ impl<'a> Entity<'a> {
         let (n, hash) = Algorithms::default()
             .read_sync(data)
             .context("failed to compute content digest")?;
-        if n != data.len() as u64 {
-            bail!(
-                "invalid amount of bytes read, expected: {}, got {n}",
-                data.len(),
-            )
-        }
+        ensure!(
+            n == data.len() as u64,
+            "invalid amount of bytes read, expected {}, read {n}",
+            data.len(),
+        );
         let res = self
             .create_request(&hash, mime)?
             .send_bytes(data)
@@ -120,7 +136,7 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn get(&self) -> Result<(u64, Mime, impl Read)> {
+    pub fn get(&self, limit: u64) -> Result<(Meta, impl Read)> {
         let url = self.client.url(&self.path)?;
         let mut req = self.client.inner.get(url.as_str());
         if let Some(ref token) = self.client.token {
@@ -134,60 +150,64 @@ impl<'a> Entity<'a> {
         let hash: ContentDigest = parse_header(&res, "Content-Digest")?;
         let mime = parse_header(&res, CONTENT_TYPE.as_str())?;
         let size = parse_header(&res, CONTENT_LENGTH.as_str())?;
+        ensure!(
+            size <= limit,
+            "response size of `{size}` exceeds the limit of `{limit}`"
+        );
         match StatusCode::from_u16(res.status()) {
-            Ok(StatusCode::OK) => Ok((size, mime, hash.verifier(res.into_reader().take(size)))),
+            Ok(StatusCode::OK) => Ok((
+                Meta {
+                    hash: hash.clone(),
+                    size,
+                    mime,
+                },
+                hash.verifier(res.into_reader().take(size)),
+            )),
             _ => bail!("unexpected status code: {}", res.status()),
         }
     }
 
-    pub fn get_to(&self, dst: &mut impl Write) -> Result<(u64, Mime)> {
-        let (size, mime, mut rdr) = self.get()?;
+    pub fn get_to(&self, limit: u64, dst: &mut impl Write) -> Result<Meta> {
+        let (meta @ Meta { size, .. }, mut rdr) = self.get(limit)?;
         let n = copy(&mut rdr, dst)?;
-        if n != size {
-            bail!(
-                "invalid amount of bytes read, expected {}, read {}",
-                size,
-                n,
-            )
-        }
-        Ok((size, mime))
+        ensure!(
+            n == size,
+            "invalid amount of bytes read, expected {size}, read {n}"
+        );
+        Ok(meta)
     }
 
-    pub fn get_json<T>(&self) -> Result<T>
+    pub fn get_json<T>(&self, limit: u64) -> Result<(Meta, T)>
     where
         for<'de> T: Deserialize<'de>,
     {
-        let (_, _, rdr) = self.get()?;
-        serde_json::from_reader(rdr).context("failed to decode JSON")
+        let (meta, rdr) = self.get(limit)?;
+        let v = serde_json::from_reader(rdr).context("failed to decode JSON")?;
+        Ok((meta, v))
     }
 
-    pub fn get_bytes(&self) -> Result<(Mime, Vec<u8>)> {
-        let (size, mime, mut rdr) = self.get()?;
+    pub fn get_bytes(&self, limit: u64) -> Result<(Meta, Vec<u8>)> {
+        let (meta @ Meta { size, .. }, rdr) = self.get(limit)?;
+        let mut rdr = rdr.take(limit);
         let mut buf =
             Vec::with_capacity(size.try_into().context("failed to convert u64 to usize")?);
         let n = copy(&mut rdr, &mut buf).context("I/O failure")?;
-        if n != size {
-            bail!(
-                "invalid amount of bytes read, expected {}, read {}",
-                size,
-                n,
-            )
-        };
-        Ok((mime, buf))
+        ensure!(
+            n == size,
+            "invalid amount of bytes read, expected {size}, read {n}"
+        );
+        Ok((meta, buf))
     }
 
-    pub fn get_string(&self) -> Result<(Mime, String)> {
-        let (size, mime, mut rdr) = self.get()?;
+    pub fn get_string(&self, limit: u64) -> Result<(Meta, String)> {
+        let (meta @ Meta { size, .. }, mut rdr) = self.get(limit)?;
         let size = size.try_into().context("failed to convert u64 to usize")?;
         let mut s = String::with_capacity(size);
         let n = rdr.read_to_string(&mut s).context("I/O failure")?;
-        if n != size {
-            bail!(
-                "invalid amount of bytes read, expected {}, read {}",
-                size,
-                n,
-            )
-        };
-        Ok((mime, s))
+        ensure!(
+            n == size,
+            "invalid amount of bytes read, expected {size}, read {n}"
+        );
+        Ok((meta, s))
     }
 }
