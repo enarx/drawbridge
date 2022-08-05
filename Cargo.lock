@@ -485,7 +485,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "async-h1",
@@ -518,7 +518,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-client"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "drawbridge-jose",
@@ -547,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-server"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "async-std",
