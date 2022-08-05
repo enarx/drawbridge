@@ -35,6 +35,9 @@ use rustls::kx_group::{SECP256R1, SECP384R1, X25519};
 use rustls::version::TLS13;
 use rustls::{Certificate, OwnedTrustAnchor, PrivateKey, RootCertStore};
 
+/// API version used by this crate
+pub const API_VERSION: &str = "0.1.0";
+
 mod private {
     pub trait Scope: Copy + Clone {}
 }
@@ -213,7 +216,7 @@ impl ClientBuilder<scope::Root> {
     pub fn build(self) -> Result<Client<scope::Root>> {
         let url = self
             .url
-            .join(&format!("api/v{}", env!("CARGO_PKG_VERSION")))
+            .join(&format!("api/v{API_VERSION}"))
             .context("failed to construct URL")?;
         Self { url, ..self }.build_scoped()
     }
