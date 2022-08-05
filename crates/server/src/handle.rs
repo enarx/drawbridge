@@ -43,7 +43,10 @@ pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
             format!("Failed to parse SemVer version from {path}: {e}"),
         )
     })?;
-    if ver > *API_VERSION {
+    if ver > *API_VERSION
+        && (ver.major > API_VERSION.major
+            || API_VERSION.major == 0 && ver.minor > API_VERSION.minor)
+    {
         return Err((
             StatusCode::NOT_IMPLEMENTED,
             format!("Unsupported API version `{ver}`"),
