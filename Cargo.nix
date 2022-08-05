@@ -43,11 +43,11 @@ in
   cargo2nixVersion = "0.11.0";
   workspace = {
     drawbridge-byte = rustPackages.unknown.drawbridge-byte."0.2.0";
-    drawbridge-client = rustPackages.unknown.drawbridge-client."0.2.1";
+    drawbridge-client = rustPackages.unknown.drawbridge-client."0.2.2";
     drawbridge-jose = rustPackages.unknown.drawbridge-jose."0.2.0";
     drawbridge-type = rustPackages.unknown.drawbridge-type."0.2.0";
-    drawbridge-server = rustPackages.unknown.drawbridge-server."0.2.1";
-    drawbridge = rustPackages.unknown.drawbridge."0.2.1";
+    drawbridge-server = rustPackages.unknown.drawbridge-server."0.2.2";
+    drawbridge = rustPackages.unknown.drawbridge."0.2.2";
   };
   "registry+https://github.com/rust-lang/crates.io-index".adler."1.0.2" = overridableMkRustCrate (profileName: rec {
     name = "adler";
@@ -672,9 +672,9 @@ in
     };
   });
   
-  "unknown".drawbridge."0.2.1" = overridableMkRustCrate (profileName: rec {
+  "unknown".drawbridge."0.2.2" = overridableMkRustCrate (profileName: rec {
     name = "drawbridge";
-    version = "0.2.1";
+    version = "0.2.2";
     registry = "unknown";
     src = fetchCrateLocal workspaceSrc;
     features = builtins.concatLists [
@@ -686,9 +686,9 @@ in
       async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
       clap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.16" { inherit profileName; };
       drawbridge_byte = rustPackages."unknown".drawbridge-byte."0.2.0" { inherit profileName; };
-      drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.1" { inherit profileName; };
+      drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.2" { inherit profileName; };
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
-      drawbridge_server = rustPackages."unknown".drawbridge-server."0.2.1" { inherit profileName; };
+      drawbridge_server = rustPackages."unknown".drawbridge-server."0.2.2" { inherit profileName; };
       drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.0" { inherit profileName; };
       env_logger = rustPackages."registry+https://github.com/rust-lang/crates.io-index".env_logger."0.9.0" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
@@ -698,7 +698,7 @@ in
     devDependencies = {
       async_h1 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-h1."2.3.3" { inherit profileName; };
       async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
-      drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.1" { inherit profileName; };
+      drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.2" { inherit profileName; };
       http_types = rustPackages."registry+https://github.com/rust-lang/crates.io-index".http-types."2.12.0" { inherit profileName; };
       openidconnect = rustPackages."registry+https://github.com/rust-lang/crates.io-index".openidconnect."2.3.2" { inherit profileName; };
       rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls."0.20.6" { inherit profileName; };
@@ -724,9 +724,9 @@ in
     };
   });
   
-  "unknown".drawbridge-client."0.2.1" = overridableMkRustCrate (profileName: rec {
+  "unknown".drawbridge-client."0.2.2" = overridableMkRustCrate (profileName: rec {
     name = "drawbridge-client";
-    version = "0.2.1";
+    version = "0.2.2";
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/client");
     dependencies = {
@@ -759,9 +759,9 @@ in
     };
   });
   
-  "unknown".drawbridge-server."0.2.1" = overridableMkRustCrate (profileName: rec {
+  "unknown".drawbridge-server."0.2.2" = overridableMkRustCrate (profileName: rec {
     name = "drawbridge-server";
-    version = "0.2.1";
+    version = "0.2.2";
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/server");
     dependencies = {
