@@ -6,9 +6,6 @@ use crate::digest::ContentDigest;
 use mime::Mime;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-#[cfg(feature = "http")]
-use http as _;
-
 #[cfg(feature = "axum")]
 use axum::{
     extract::rejection::{TypedHeaderRejection, TypedHeaderRejectionReason},

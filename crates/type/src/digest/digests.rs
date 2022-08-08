@@ -11,7 +11,7 @@ use std::str::FromStr;
 use drawbridge_byte::Bytes;
 use serde::{Deserialize, Serialize};
 
-#[cfg(all(feature = "headers", feature = "http"))]
+#[cfg(feature = "headers")]
 use headers::{Error as HeadErr, Header, HeaderName, HeaderValue};
 
 /// A set of hashes for the same contents
@@ -145,10 +145,10 @@ where
     }
 }
 
-#[cfg(all(feature = "headers", feature = "http"))]
+#[cfg(feature = "headers")]
 static CONTENT_DIGEST: HeaderName = HeaderName::from_static("content-digest");
 
-#[cfg(all(feature = "headers", feature = "http"))]
+#[cfg(feature = "headers")]
 impl<H> Header for ContentDigest<H>
 where
     H: Default + AsRef<[u8]> + From<Vec<u8>>,
