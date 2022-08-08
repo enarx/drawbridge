@@ -9,16 +9,19 @@ use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Method, Request, StatusCode};
 use axum::response::IntoResponse;
-use lazy_static::lazy_static;
 use log::trace;
+use once_cell::sync::Lazy;
 use tower::Service;
 
-lazy_static! {
-    static ref API_VERSION: semver::Version = env!("CARGO_PKG_VERSION").parse().expect(&format!(
-        "failed to parse CARGO_PKG_VERSION `{}`",
-        env!("CARGO_PKG_VERSION")
-    ));
-}
+/// Server API version
+pub(crate) static API_VERSION: Lazy<semver::Version> = Lazy::new(|| {
+    env!("CARGO_PKG_VERSION").parse().unwrap_or_else(|_| {
+        panic!(
+            "failed to parse CARGO_PKG_VERSION `{}`",
+            env!("CARGO_PKG_VERSION")
+        )
+    })
+});
 
 /// Parses the URI of `req` and routes it to respective component.
 pub(crate) async fn handle(mut req: Request<Body>) -> impl IntoResponse {
