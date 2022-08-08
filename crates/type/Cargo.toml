@@ -27,7 +27,6 @@ walkdir = { version = "2.3.2", default-features = false }
 
 axum = { version = "0.5.4", default-features = false, features = ["headers", "json"], optional = true }
 headers = { version = "0.3.7", default-features = false, optional = true }
-http = { version = "0.2.6", default-features = false, optional = true }
 
 [dev-dependencies]
 async-std = { version = "1.11.0", default-features = false, features = ["attributes", "default"] }
@@ -35,4 +34,4 @@ tempfile = { version = "3.3.0", default-features = false }
 
 [features]
 default = []
-server = ["axum", "futures/async-await", "headers", "http"]
+server = ["axum", "futures/async-await", "headers"]

@@ -583,7 +583,6 @@ dependencies = [
  "drawbridge-jose",
  "futures",
  "headers",
- "http",
  "mime",
  "semver",
  "serde",

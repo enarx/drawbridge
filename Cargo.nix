@@ -797,7 +797,6 @@ in
       [ "axum" ]
       [ "default" ]
       [ "headers" ]
-      [ "http" ]
       [ "server" ]
     ];
     dependencies = {
@@ -808,7 +807,6 @@ in
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
       headers = rustPackages."registry+https://github.com/rust-lang/crates.io-index".headers."0.3.7" { inherit profileName; };
-      http = rustPackages."registry+https://github.com/rust-lang/crates.io-index".http."0.2.8" { inherit profileName; };
       mime = rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime."0.3.16" { inherit profileName; };
       semver = rustPackages."registry+https://github.com/rust-lang/crates.io-index".semver."1.0.13" { inherit profileName; };
       serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.142" { inherit profileName; };
