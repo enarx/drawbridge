@@ -193,13 +193,16 @@ mod tests {
 
         let test_dir_json = serde_json::to_vec(&Directory::from({
             let mut m = BTreeMap::new();
-            m.insert(
-                "test-file-bar".parse().unwrap(),
-                Entry {
-                    meta: bar_meta.clone(),
-                    custom: Default::default(),
-                    content: (),
-                },
+            assert_eq!(
+                m.insert(
+                    "test-file-bar".parse().unwrap(),
+                    Entry {
+                        meta: bar_meta.clone(),
+                        custom: Default::default(),
+                        content: (),
+                    },
+                ),
+                None
             );
             m
         }))
@@ -215,13 +218,16 @@ mod tests {
 
         let root_json = serde_json::to_vec(&Directory::from({
             let mut m = BTreeMap::new();
-            m.insert(
-                "test-dir".parse().unwrap(),
-                Entry {
-                    meta: test_dir_meta.clone(),
-                    custom: Default::default(),
-                    content: (),
-                },
+            assert_eq!(
+                m.insert(
+                    "test-dir".parse().unwrap(),
+                    Entry {
+                        meta: test_dir_meta.clone(),
+                        custom: Default::default(),
+                        content: (),
+                    },
+                ),
+                None
             );
             m
         }))
@@ -262,7 +268,7 @@ mod tests {
         assert!(matches!(entry.content, Content::File(_)));
         if let Content::File(mut file) = entry.content {
             let mut buf = vec![];
-            file.read_to_end(&mut buf).unwrap();
+            assert_eq!(file.read_to_end(&mut buf).unwrap(), "bar".len());
             assert_eq!(buf, "bar".as_bytes());
         } else {
             panic!("invalid content type")
@@ -275,7 +281,7 @@ mod tests {
         assert!(matches!(entry.content, Content::File(_)));
         if let Content::File(mut file) = entry.content {
             let mut buf = vec![];
-            file.read_to_end(&mut buf).unwrap();
+            assert_eq!(file.read_to_end(&mut buf).unwrap(), "foo".len());
             assert_eq!(buf, "foo".as_bytes());
         } else {
             panic!("invalid content type")

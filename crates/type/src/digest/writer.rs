@@ -13,6 +13,7 @@ use sha2::digest::DynDigest;
 /// A hashing writer
 ///
 /// This type wraps another writer and hashes the bytes as they are written.
+#[allow(missing_debug_implementations)] // DynDigest does not implement Debug
 pub struct Writer<T> {
     writer: T,
     digests: Vec<(Algorithm, Box<dyn DynDigest>)>,
@@ -41,7 +42,7 @@ impl<T> Writer<T> {
         let mut set = ContentDigest::default();
 
         for digest in &self.digests {
-            set.insert(digest.0, digest.1.clone().finalize().into());
+            _ = set.insert(digest.0, digest.1.clone().finalize().into());
         }
 
         set
@@ -93,7 +94,7 @@ mod tests {
         let set = HASH.parse::<ContentDigest>().unwrap();
 
         let mut writer = set.clone().writer(sink());
-        copy(&mut &b"foo"[..], &mut writer).await.unwrap();
+        assert_eq!(copy(&mut &b"foo"[..], &mut writer).await.unwrap(), 3);
         assert_eq!(writer.digests(), set);
     }
 
@@ -103,7 +104,7 @@ mod tests {
         let set = HASH.parse::<ContentDigest>().unwrap();
 
         let mut writer = set.clone().writer(sink());
-        copy(&mut &b"bar"[..], &mut writer).await.unwrap();
+        assert_eq!(copy(&mut &b"bar"[..], &mut writer).await.unwrap(), 3);
         assert_ne!(writer.digests(), set);
     }
 }

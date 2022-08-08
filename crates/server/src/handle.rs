@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 /// Parses the URI of `req` and routes it to respective component.
-pub async fn handle(mut req: Request<Body>) -> impl IntoResponse {
+pub(crate) async fn handle(mut req: Request<Body>) -> impl IntoResponse {
     #[inline]
     fn not_found(path: &str) -> (StatusCode, String) {
         (StatusCode::NOT_FOUND, format!("Route `/{path}` not found"))

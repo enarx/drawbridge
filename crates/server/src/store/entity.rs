@@ -226,7 +226,7 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
                 .skip_while(|pc| match dest.peek() {
                     Some(dc) if pc == dc => {
                         // Components are equal, advance the `dest` iterator
-                        dest.next().unwrap();
+                        _ = dest.next().unwrap();
                         true
                     }
                     _ => false,
@@ -343,6 +343,7 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
     }
 
     /// Returns the contents of the entity as JSON.
+    #[allow(single_use_lifetimes)]
     pub async fn get_content_json<T>(&self) -> Result<T, GetError<anyhow::Error>>
     where
         for<'de> T: Deserialize<'de>,
@@ -364,7 +365,8 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
         dst: &mut (impl Unpin + AsyncWrite),
     ) -> Result<Meta, GetToWriterError<anyhow::Error>> {
         let (meta, rdr) = self.get().await.map_err(GetToWriterError::Get)?;
-        copy(rdr, dst).await.map_err(GetToWriterError::IO)?;
+        _ = copy(rdr, dst).await.map_err(GetToWriterError::IO)?;
+        // TODO: Validate size
         Ok(meta)
     }
 }

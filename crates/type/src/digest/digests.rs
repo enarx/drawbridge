@@ -157,6 +157,7 @@ where
         &CONTENT_DIGEST
     }
 
+    #[allow(single_use_lifetimes)]
     fn decode<'i, I>(values: &mut I) -> Result<Self, HeadErr>
     where
         Self: Sized,
@@ -171,7 +172,7 @@ where
                 .map_err(|_| HeadErr::invalid())?;
 
             for (algo, hash) in digests {
-                all.insert(algo, hash);
+                let _ = all.insert(algo, hash);
             }
         }
 

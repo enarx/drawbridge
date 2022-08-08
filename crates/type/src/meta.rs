@@ -6,6 +6,9 @@ use crate::digest::ContentDigest;
 use mime::Mime;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
+#[cfg(feature = "http")]
+use http as _;
+
 #[cfg(feature = "axum")]
 use axum::{
     extract::rejection::{TypedHeaderRejection, TypedHeaderRejectionReason},
@@ -28,6 +31,7 @@ pub struct Meta {
     pub mime: Mime,
 }
 
+#[allow(single_use_lifetimes)]
 fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Mime, D::Error> {
     String::deserialize(deserializer)?
         .parse()

@@ -59,7 +59,7 @@ impl<'de> Deserialize<'de> for Algorithm {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         struct StrVisitor;
 
-        impl<'de> Visitor<'de> for StrVisitor {
+        impl Visitor<'_> for StrVisitor {
             type Value = Algorithm;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

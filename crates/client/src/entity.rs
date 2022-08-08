@@ -178,6 +178,7 @@ impl<'a, C: Scope, E: Scope> Entity<'a, C, E> {
         Ok(meta)
     }
 
+    #[allow(single_use_lifetimes)]
     pub fn get_json<T>(&self, limit: u64) -> Result<(Meta, T)>
     where
         for<'de> T: Deserialize<'de>,

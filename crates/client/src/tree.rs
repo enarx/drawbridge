@@ -11,6 +11,7 @@ use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 use mime::Mime;
 use ureq::serde::Serialize;
 
+#[derive(Clone, Debug)]
 pub struct Node<'a, S: Scope>(Entity<'a, S, scope::Node>);
 
 impl<'a, S: Scope> Deref for Node<'a, S> {

@@ -19,6 +19,8 @@ use rustls_pemfile::Item::{ECKey, PKCS8Key, RSAKey, X509Certificate};
 pub struct TrustedCertificate;
 
 #[repr(transparent)]
+#[allow(missing_debug_implementations)]
+#[derive(Clone)]
 pub struct Config(ServerConfig);
 
 impl Deref for Config {
