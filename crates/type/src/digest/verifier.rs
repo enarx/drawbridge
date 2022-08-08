@@ -15,6 +15,7 @@ use futures::AsyncRead;
 /// additionally verifies the expected hashes. When the end-of-file condition
 /// is reached, if the actual hashes do not match the expected hashes, an error
 /// is produced.
+#[allow(missing_debug_implementations)] // Reader does not implement Debug
 pub struct Verifier<T, H>
 where
     H: AsRef<[u8]> + From<Vec<u8>>,

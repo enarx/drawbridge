@@ -14,6 +14,7 @@ use drawbridge_type::{TagEntry, TagName, Tree, TreeEntry, TreePath};
 
 use ureq::serde::Serialize;
 
+#[derive(Clone, Debug)]
 pub struct Tag<'a, S: Scope>(Entity<'a, S, scope::Tag>);
 
 impl<'a, S: Scope> Deref for Tag<'a, S> {

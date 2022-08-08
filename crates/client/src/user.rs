@@ -9,6 +9,7 @@ use drawbridge_type::{RepositoryName, UserName, UserRecord};
 
 use mime::APPLICATION_JSON;
 
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct User<'a, S: Scope>(Entity<'a, S, scope::User>);
 

@@ -9,6 +9,7 @@ use drawbridge_type::{RepositoryConfig, RepositoryName, TagName};
 
 use mime::APPLICATION_JSON;
 
+#[derive(Clone, Debug)]
 pub struct Repository<'a, S: Scope>(Entity<'a, S, scope::Repository>);
 
 impl<'a, S: Scope> Deref for Repository<'a, S> {

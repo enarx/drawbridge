@@ -13,6 +13,7 @@ use sha2::digest::DynDigest;
 /// A hashing reader
 ///
 /// This type wraps another reader and hashes the bytes as they are read.
+#[allow(missing_debug_implementations)] // DynDigest does not implement Debug
 pub struct Reader<T> {
     reader: T,
     digests: Vec<(Algorithm, Box<dyn DynDigest>)>,
@@ -35,7 +36,7 @@ impl<T> Reader<T> {
         let mut set = ContentDigest::default();
 
         for digest in &self.digests {
-            set.insert(digest.0, digest.1.clone().finalize().into());
+            let _ = set.insert(digest.0, digest.1.clone().finalize().into());
         }
 
         set
@@ -75,7 +76,7 @@ mod tests {
         let hash: ContentDigest = HASH.parse().unwrap();
 
         let mut reader = hash.reader(&b"foo"[..]);
-        copy(&mut reader, &mut sink()).await.unwrap();
+        assert_eq!(copy(&mut reader, &mut sink()).await.unwrap(), 3);
         assert_eq!(reader.digests(), hash);
     }
 
@@ -85,7 +86,7 @@ mod tests {
         let hash: ContentDigest = HASH.parse().unwrap();
 
         let mut reader = hash.reader(&b"bar"[..]);
-        copy(&mut reader, &mut sink()).await.unwrap();
+        assert_eq!(copy(&mut reader, &mut sink()).await.unwrap(), 3);
         assert_ne!(reader.digests(), hash);
     }
 }

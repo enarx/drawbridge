@@ -749,7 +749,6 @@ in
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/jose");
     dependencies = {
-      base64 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".base64."0.13.0" { inherit profileName; };
       drawbridge_byte = rustPackages."unknown".drawbridge-byte."0.2.0" { inherit profileName; };
       mediatype = rustPackages."registry+https://github.com/rust-lang/crates.io-index".mediatype."0.19.5" { inherit profileName; };
       serde = rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.142" { inherit profileName; };

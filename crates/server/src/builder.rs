@@ -19,6 +19,7 @@ use openidconnect::url::Url;
 use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl};
 
 /// OpenID Connect client configuration.
+#[derive(Debug)]
 pub struct OidcConfig {
     pub label: String,
     pub issuer: Url,
@@ -33,6 +34,15 @@ pub struct Builder<S> {
     oidc: OidcConfig,
 }
 
+impl<S: std::fmt::Debug> std::fmt::Debug for Builder<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Builder")
+            .field("store", &self.store)
+            .field("oidc", &self.oidc)
+            .finish()
+    }
+}
+
 impl<S: AsRef<Path>> Builder<S> {
     /// Constructs a new [Builder].
     pub fn new(store: S, tls: TlsConfig, oidc: OidcConfig) -> Self {
@@ -41,9 +51,10 @@ impl<S: AsRef<Path>> Builder<S> {
 
     /// Builds the application and returns Drawbridge instance as a [tower::MakeService].
     pub async fn build(self) -> anyhow::Result<App> {
-        let store_path = self.store.as_ref();
+        let Self { store, tls, oidc } = self;
+        let store_path = store.as_ref();
         let store = File::open(store_path)
-            .and_then(|f| Store::new(Dir::from_std_file(f), self.oidc.label))
+            .and_then(|f| Store::new(Dir::from_std_file(f), oidc.label))
             .await
             .context(anyhow!(
                 "failed to open store at `{}`",
@@ -51,12 +62,12 @@ impl<S: AsRef<Path>> Builder<S> {
             ))?;
 
         let oidc_md =
-            CoreProviderMetadata::discover(&IssuerUrl::from_url(self.oidc.issuer), http_client)
+            CoreProviderMetadata::discover(&IssuerUrl::from_url(oidc.issuer), http_client)
                 .context("failed to discover provider metadata")?;
         let oidc = CoreClient::from_provider_metadata(
             oidc_md,
-            ClientId::new(self.oidc.client_id),
-            self.oidc.client_secret.map(ClientSecret::new),
+            ClientId::new(oidc.client_id),
+            oidc.client_secret.map(ClientSecret::new),
         )
         .set_auth_type(AuthType::RequestBody);
 
@@ -68,7 +79,7 @@ impl<S: AsRef<Path>> Builder<S> {
                     .layer(Extension(oidc))
                     .into_make_service(),
             ),
-            tls: TlsAcceptor::from(Arc::new(self.tls.into())),
+            tls: TlsAcceptor::from(Arc::new(tls.into())),
         })
     }
 }

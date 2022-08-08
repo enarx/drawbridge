@@ -6,13 +6,33 @@
 //! conversions to and from Base64 representations in string contexts.
 
 #![no_std]
-#![forbid(unsafe_code)]
-#![warn(
+#![forbid(unsafe_code, clippy::expect_used, clippy::panic)]
+#![deny(
     clippy::all,
+    absolute_paths_not_starting_with_crate,
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    noop_method_call,
+    rust_2018_compatibility,
     rust_2018_idioms,
+    rust_2021_compatibility,
+    single_use_lifetimes,
+    trivial_bounds,
+    trivial_casts,
+    trivial_numeric_casts,
+    unreachable_code,
+    unreachable_patterns,
+    unreachable_pub,
+    unstable_features,
+    unused,
+    unused_crate_dependencies,
+    unused_import_braces,
     unused_lifetimes,
     unused_qualifications,
-    missing_docs
+    unused_results,
+    variant_size_differences
 )]
 
 extern crate alloc;

@@ -1,8 +1,32 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-#![warn(rust_2018_idioms, unused_lifetimes, unused_qualifications, clippy::all)]
 #![forbid(unsafe_code)]
+#![deny(
+    clippy::all,
+    absolute_paths_not_starting_with_crate,
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    noop_method_call,
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    rust_2021_compatibility,
+    single_use_lifetimes,
+    trivial_bounds,
+    trivial_casts,
+    trivial_numeric_casts,
+    unreachable_code,
+    unreachable_patterns,
+    unreachable_pub,
+    unstable_features,
+    unused,
+    unused_crate_dependencies,
+    unused_import_braces,
+    unused_lifetimes,
+    unused_results,
+    variant_size_differences
+)]
 
 mod builder;
 mod handle;
@@ -34,6 +58,7 @@ use log::trace;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tower::MakeService;
 
+#[allow(missing_debug_implementations)] // TlsAcceptor does not implement Debug
 pub struct App {
     make_service: Mutex<IntoMakeService<Router>>,
     tls: TlsAcceptor,

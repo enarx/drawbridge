@@ -16,10 +16,10 @@ pub struct Algorithms(BTreeSet<Algorithm>);
 impl Default for Algorithms {
     fn default() -> Self {
         let mut set = BTreeSet::new();
-        set.insert(Algorithm::Sha224);
-        set.insert(Algorithm::Sha256);
-        set.insert(Algorithm::Sha384);
-        set.insert(Algorithm::Sha512);
+        assert!(set.insert(Algorithm::Sha224));
+        assert!(set.insert(Algorithm::Sha256));
+        assert!(set.insert(Algorithm::Sha384));
+        assert!(set.insert(Algorithm::Sha512));
         Self(set)
     }
 }
