@@ -37,7 +37,6 @@ pub mod client {
 pub mod jose {
     pub use drawbridge_jose::*;
 }
-#[cfg(feature = "server")]
 pub mod server {
     pub use drawbridge_server::*;
 }
