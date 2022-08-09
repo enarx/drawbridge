@@ -143,6 +143,7 @@ impl<'a, C: Scope, E: Scope> Entity<'a, C, E> {
             req = req.set("Authorization", &format!("Bearer {token}"))
         }
         let res = req
+            .set("Accept-Encoding", "")
             .call()
             .map_err(parse_ureq_error)
             .context("GET request failed")?;
