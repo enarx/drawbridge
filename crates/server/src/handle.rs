@@ -214,7 +214,7 @@ async fn multiple_slashes_found() {
 
     // Temporary print to ensure test is working as intended.
     // println!("{}", res.into_response().status());
-    assert_eq!(res.into_response().status(), 200);
+    assert_eq!(res.into_response().status(), 404);
 
     let request = Request::builder()
         .uri("http://httpbin.org///ip")
@@ -225,6 +225,6 @@ async fn multiple_slashes_found() {
 
     // Temporary print to ensure test is working as intended.
     // println!("{}", res.into_response().status());
-    assert_eq!(res.into_response().status(), 200);
+    assert_eq!(res.into_response().status(), 404);
     return ();
 }
