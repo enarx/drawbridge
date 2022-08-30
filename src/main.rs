@@ -35,9 +35,10 @@ use std::path::{Path, PathBuf};
 use drawbridge_server::url::Url;
 use drawbridge_server::{App, OidcConfig, TlsConfig};
 
-use anyhow::{bail, Context as _};
+use anyhow::Context as _;
 use async_std::net::TcpListener;
 use clap::Parser;
+use confargs::{args, prefix_char_filter, Toml};
 use futures::StreamExt;
 use log::{debug, error};
 
@@ -109,38 +110,9 @@ async fn main() -> anyhow::Result<()> {
         oidc_issuer,
         oidc_client,
         oidc_secret,
-    } = std::env::args()
-        .try_fold(Vec::new(), |mut args, arg| {
-            if let Some(path) = arg.strip_prefix('@') {
-                let conf = read(path).context(format!("failed to read config file at `{path}`"))?;
-                match toml::from_slice(&conf)
-                    .context(format!("failed to parse config file at `{path}` as TOML"))?
-                {
-                    toml::Value::Table(kv) => kv.into_iter().try_for_each(|(k, v)| {
-                        match v {
-                            toml::Value::String(v) => args.push(format!("--{k}={v}")),
-                            toml::Value::Integer(v) => args.push(format!("--{k}={v}")),
-                            toml::Value::Float(v) => args.push(format!("--{k}={v}")),
-                            toml::Value::Boolean(v) => {
-                                if v {
-                                    args.push(format!("--{k}"))
-                                }
-                            }
-                            _ => bail!(
-                                "unsupported value type for field `{k}` in config file at `{path}`"
-                            ),
-                        }
-                        Ok(())
-                    })?,
-                    _ => bail!("invalid config file format in file at `{path}`"),
-                }
-            } else {
-                args.push(arg);
-            }
-            Ok(args)
-        })
-        .map(Args::parse_from)
-        .context("Failed to parse arguments")?;
+    } = args::<Toml>(prefix_char_filter::<'@'>)
+        .context("Failed to parse config")
+        .map(Args::parse_from)?;
 
     let oidc_secret = oidc_secret
         .map(|ref path| {
