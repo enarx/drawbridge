@@ -589,6 +589,17 @@ in
     };
   });
   
+  "registry+https://github.com/rust-lang/crates.io-index".confargs."0.1.3" = overridableMkRustCrate (profileName: rec {
+    name = "confargs";
+    version = "0.1.3";
+    registry = "registry+https://github.com/rust-lang/crates.io-index";
+    src = fetchCratesIo { inherit name version; sha256 = "0ea7623826f70dd39cb095e90ce5690153d03091a5a4c2f38273e80af766587a"; };
+    dependencies = {
+      anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.59" { inherit profileName; };
+      toml = rustPackages."registry+https://github.com/rust-lang/crates.io-index".toml."0.5.9" { inherit profileName; };
+    };
+  });
+  
   "registry+https://github.com/rust-lang/crates.io-index".cpufeatures."0.2.2" = overridableMkRustCrate (profileName: rec {
     name = "cpufeatures";
     version = "0.2.2";
@@ -685,6 +696,7 @@ in
       anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.59" { inherit profileName; };
       async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-std."1.12.0" { inherit profileName; };
       clap = rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."3.2.16" { inherit profileName; };
+      confargs = rustPackages."registry+https://github.com/rust-lang/crates.io-index".confargs."0.1.3" { inherit profileName; };
       drawbridge_byte = rustPackages."unknown".drawbridge-byte."0.2.0" { inherit profileName; };
       drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.3" { inherit profileName; };
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
@@ -693,7 +705,6 @@ in
       env_logger = rustPackages."registry+https://github.com/rust-lang/crates.io-index".env_logger."0.9.0" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.21" { inherit profileName; };
       log = rustPackages."registry+https://github.com/rust-lang/crates.io-index".log."0.4.17" { inherit profileName; };
-      toml = rustPackages."registry+https://github.com/rust-lang/crates.io-index".toml."0.5.9" { inherit profileName; };
     };
     devDependencies = {
       async_h1 = rustPackages."registry+https://github.com/rust-lang/crates.io-index".async-h1."2.3.3" { inherit profileName; };
