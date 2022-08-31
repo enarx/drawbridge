@@ -50,7 +50,7 @@ impl<E> IntoResponse for CreateError<E> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GetError<E> {
     NotFound,
     Internal(E),
