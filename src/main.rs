@@ -23,6 +23,7 @@
     unused,
     unused_import_braces,
     unused_lifetimes,
+    unused_qualifications,
     unused_results,
     variant_size_differences
 )]
