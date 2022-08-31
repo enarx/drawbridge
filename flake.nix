@@ -43,7 +43,7 @@
         mkBin = args: pkgs:
           ((pkgs.rustBuilder.makePackageSet ({
                 packageFun = import "${self}/Cargo.nix";
-                rustVersion = "1.62.1";
+                rustVersion = "1.63.0";
                 workspaceSrc =
                   pkgs.nix-gitignore.gitignoreRecursiveSource [
                     "*.nix"
