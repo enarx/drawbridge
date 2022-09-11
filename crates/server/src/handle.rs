@@ -9,9 +9,9 @@ use axum::body::Body;
 use axum::handler::Handler;
 use axum::http::{Method, Request, StatusCode};
 use axum::response::IntoResponse;
-use log::trace;
 use once_cell::sync::Lazy;
 use tower::Service;
+use tracing::trace;
 
 /// Server API version
 pub(crate) static API_VERSION: Lazy<semver::Version> = Lazy::new(|| {

@@ -11,8 +11,8 @@ use axum::body::Body;
 use axum::http::Request;
 use axum::response::IntoResponse;
 use axum::Extension;
-use log::{debug, trace};
 use mime::APPLICATION_JSON;
+use tracing::{debug, trace};
 
 pub async fn query(
     Extension(ref store): Extension<Arc<Store>>,

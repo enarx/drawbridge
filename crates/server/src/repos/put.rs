@@ -9,7 +9,7 @@ use async_std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 pub async fn put(
     Extension(ref store): Extension<Arc<Store>>,

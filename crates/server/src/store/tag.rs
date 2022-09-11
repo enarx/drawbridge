@@ -9,7 +9,7 @@ use drawbridge_type::{Meta, TreeDirectory, TreeEntry, TreePath};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use futures::{try_join, AsyncRead};
-use log::debug;
+use tracing::debug;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug)]

@@ -13,7 +13,7 @@ use axum::extract::RequestParts;
 use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 pub async fn put(
     Extension(store): Extension<Arc<Store>>,

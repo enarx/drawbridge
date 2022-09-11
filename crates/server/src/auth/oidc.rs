@@ -14,10 +14,10 @@ use axum::headers::Authorization;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, TypedHeader};
-use log::{debug, error, trace, warn};
 use openidconnect::core::{CoreClient, CoreUserInfoClaims};
 use openidconnect::ureq::http_client;
 use openidconnect::AccessToken;
+use tracing::{debug, error, trace, warn};
 
 #[repr(transparent)]
 #[derive(Clone, Debug)]
