@@ -8,7 +8,7 @@ use drawbridge_type::UserContext;
 use async_std::sync::Arc;
 use axum::response::IntoResponse;
 use axum::Extension;
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 pub async fn get(
     Extension(ref store): Extension<Arc<Store>>,

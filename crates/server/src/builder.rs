@@ -17,6 +17,14 @@ use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::ureq::http_client;
 use openidconnect::url::Url;
 use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl};
+use tower_http::{
+    trace::{
+        DefaultMakeSpan, DefaultOnBodyChunk, DefaultOnEos, DefaultOnFailure, DefaultOnRequest,
+        DefaultOnResponse, TraceLayer,
+    },
+    LatencyUnit,
+};
+use tracing::Level;
 
 /// OpenID Connect client configuration.
 #[derive(Debug)]
@@ -77,6 +85,31 @@ impl<S: AsRef<Path>> Builder<S> {
                     .fallback(handle.into_service())
                     .layer(Extension(Arc::new(store)))
                     .layer(Extension(oidc))
+                    .layer(
+                        TraceLayer::new_for_http()
+                            .make_span_with(
+                                DefaultMakeSpan::new()
+                                    .level(Level::INFO)
+                                    .include_headers(true),
+                            )
+                            .on_request(DefaultOnRequest::new().level(Level::INFO))
+                            .on_response(
+                                DefaultOnResponse::new()
+                                    .level(Level::INFO)
+                                    .latency_unit(LatencyUnit::Micros),
+                            )
+                            .on_body_chunk(DefaultOnBodyChunk::new())
+                            .on_eos(
+                                DefaultOnEos::new()
+                                    .level(Level::INFO)
+                                    .latency_unit(LatencyUnit::Micros),
+                            )
+                            .on_failure(
+                                DefaultOnFailure::new()
+                                    .level(Level::INFO)
+                                    .latency_unit(LatencyUnit::Micros),
+                            ),
+                    )
                     .into_make_service(),
             ),
             tls: TlsAcceptor::from(Arc::new(tls.into())),

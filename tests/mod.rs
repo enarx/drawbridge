@@ -29,7 +29,7 @@ use tempfile::tempdir;
 
 #[async_std::test]
 async fn app() {
-    env_logger::builder().is_test(true).init();
+    tracing_subscriber::fmt::init();
 
     let oidc_lis = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
         .await

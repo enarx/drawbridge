@@ -16,8 +16,8 @@ use futures::future::TryFutureExt;
 use futures::io::copy;
 use futures::try_join;
 use futures::{AsyncRead, AsyncWrite};
-use log::{debug, trace};
 use serde::{Deserialize, Serialize};
+use tracing::{debug, trace};
 
 const STORAGE_FAILURE_RESPONSE: (StatusCode, &str) =
     (StatusCode::INTERNAL_SERVER_ERROR, "Storage backend failure");

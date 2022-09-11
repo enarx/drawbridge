@@ -41,7 +41,7 @@ use async_std::net::TcpListener;
 use clap::Parser;
 use confargs::{args, prefix_char_filter, Toml};
 use futures::StreamExt;
-use log::{debug, error};
+use tracing::{debug, error};
 
 /// Server for hosting WebAssembly modules for use in Enarx keeps.
 ///
@@ -99,7 +99,14 @@ fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    if std::env::var("RUST_LOG_JSON").is_ok() {
+        tracing_subscriber::fmt::fmt()
+            .json()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .init();
+    } else {
+        tracing_subscriber::fmt::init();
+    }
 
     let Args {
         addr,

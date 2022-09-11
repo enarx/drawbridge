@@ -12,7 +12,7 @@ use axum::http::{Request, StatusCode};
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
 use futures::{io, TryStreamExt};
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 pub async fn put(
     Extension(ref store): Extension<Arc<Store>>,

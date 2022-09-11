@@ -54,9 +54,9 @@ use futures::lock::Mutex;
 use futures::{AsyncRead, AsyncWrite};
 use futures_rustls::TlsAcceptor;
 use hyper::server::conn::Http;
-use log::trace;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tower::MakeService;
+use tracing::trace;
 
 #[allow(missing_debug_implementations)] // TlsAcceptor does not implement Debug
 pub struct App {
