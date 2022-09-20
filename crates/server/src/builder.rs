@@ -7,6 +7,7 @@ use anyhow::{anyhow, Context};
 use async_std::fs::File;
 use async_std::sync::Arc;
 use axum::handler::Handler;
+use axum::routing::any;
 use axum::{Extension, Router};
 use cap_async_std::fs_utf8::Dir;
 use cap_async_std::path::Path;
@@ -101,6 +102,7 @@ impl<S: AsRef<Path>> Builder<S> {
             make_service: Mutex::new(
                 Router::new()
                     .fallback(handle.into_service())
+                    .route("/health", any(|| async {}))
                     .layer(Extension(Arc::new(store)))
                     .layer(Extension(oidc))
                     .layer(
