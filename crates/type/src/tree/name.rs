@@ -8,13 +8,31 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use anyhow::anyhow;
-use serde::{Deserialize, Serialize};
+use anyhow::bail;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialOrd, PartialEq, Serialize)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq, Serialize)]
+#[repr(transparent)]
+#[serde(transparent)]
 pub struct Name(String);
 
 impl Name {
+    #[inline]
+    fn validate(s: impl AsRef<str>) -> anyhow::Result<()> {
+        let s = s.as_ref();
+        if s.is_empty() {
+            bail!("empty entry name")
+        } else if s
+            .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.' | ':'))
+            .is_some()
+        {
+            bail!("invalid characters in entry name")
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn join(self, name: Name) -> Path {
         vec![self, name].into_iter().collect()
     }
@@ -37,6 +55,16 @@ impl Deref for Name {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Name {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let name = String::deserialize(deserializer)?;
+        name.try_into().map_err(D::Error::custom)
     }
 }
 
@@ -63,14 +91,16 @@ impl FromStr for Name {
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty()
-            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.' | ':'))
-                .is_some()
-        {
-            Err(anyhow!("invalid characters in entry name"))
-        } else {
-            Ok(Self(s.into()))
-        }
+        Self::validate(s).map(|()| Self(s.into()))
+    }
+}
+
+impl TryFrom<String> for Name {
+    type Error = anyhow::Error;
+
+    #[inline]
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::validate(&s).map(|()| Self(s))
     }
 }
 

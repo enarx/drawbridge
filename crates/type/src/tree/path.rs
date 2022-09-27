@@ -11,6 +11,8 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[repr(transparent)]
+#[serde(transparent)]
 pub struct Path(Vec<Name>);
 
 impl Path {

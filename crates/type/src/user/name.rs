@@ -2,37 +2,75 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 use std::fmt::Display;
+use std::ops::Deref;
 use std::str::FromStr;
 
-use anyhow::anyhow;
-use serde::{Deserialize, Serialize};
+use anyhow::bail;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
 
 /// A user name
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 #[repr(transparent)]
+#[serde(transparent)]
 pub struct Name(String);
 
-impl FromStr for Name {
-    type Err = anyhow::Error;
-
+impl Name {
     #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn validate(s: impl AsRef<str>) -> anyhow::Result<()> {
+        let s = s.as_ref();
         if s.is_empty() {
-            Err(anyhow!("empty user name"))
-        } else if s
-            .find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z'))
+            bail!("empty user name")
+        }
+        if s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z'))
             .is_some()
         {
-            Err(anyhow!("invalid characters in user name"))
+            bail!("invalid characters in user name")
         } else {
-            Ok(Self(s.into()))
+            Ok(())
         }
+    }
+}
+
+impl Deref for Name {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Name {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let name = String::deserialize(deserializer)?;
+        name.try_into().map_err(D::Error::custom)
     }
 }
 
 impl Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for Name {
+    type Err = anyhow::Error;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::validate(s).map(|()| Self(s.into()))
+    }
+}
+
+impl TryFrom<String> for Name {
+    type Error = anyhow::Error;
+
+    #[inline]
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::validate(&s).map(|()| Self(s))
     }
 }
 

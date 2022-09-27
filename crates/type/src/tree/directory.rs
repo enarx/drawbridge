@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// A directory is simply a sorted name to `E` map.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(transparent)]
+#[repr(transparent)]
 pub struct Directory<E = Entry>(BTreeMap<Name, E>);
 
 impl<E> Directory<E> {

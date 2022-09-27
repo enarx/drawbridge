@@ -8,6 +8,8 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[repr(transparent)]
+#[serde(transparent)]
 pub struct Name(semver::Version);
 
 impl FromStr for Name {
