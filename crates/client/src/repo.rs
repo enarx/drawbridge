@@ -22,7 +22,7 @@ impl<'a, S: Scope> Deref for Repository<'a, S> {
 
 impl<'a, S: Scope> Repository<'a, S> {
     pub fn new(entity: Entity<'a, S, scope::User>, name: &RepositoryName) -> Repository<'a, S> {
-        Repository(entity.child(&name.to_string()))
+        Repository(entity.child(name.as_ref()))
     }
 
     pub fn create(&self, conf: &RepositoryConfig) -> Result<bool> {
