@@ -5,6 +5,7 @@ use super::Path;
 
 use std::fmt::Display;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::anyhow;
@@ -19,20 +20,23 @@ impl Name {
     }
 }
 
-impl FromStr for Name {
-    type Err = anyhow::Error;
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
 
-    #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty()
-            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.'))
-            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.' | ':'))
-                .is_some()
-        {
-            Err(anyhow!("invalid characters in entry name"))
-        } else {
-            Ok(Self(s.into()))
-        }
+impl AsRef<String> for Name {
+    fn as_ref(&self) -> &String {
+        &self.0
+    }
+}
+
+impl Deref for Name {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -42,17 +46,31 @@ impl Display for Name {
     }
 }
 
-impl AsRef<str> for Name {
-    fn as_ref(&self) -> &str {
-        self
+impl From<Name> for PathBuf {
+    fn from(name: Name) -> Self {
+        Self::from(name.0)
     }
 }
 
-impl Deref for Name {
-    type Target = String;
+impl From<Name> for String {
+    fn from(name: Name) -> Self {
+        name.0
+    }
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl FromStr for Name {
+    type Err = anyhow::Error;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty()
+            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.' | ':'))
+                .is_some()
+        {
+            Err(anyhow!("invalid characters in entry name"))
+        } else {
+            Ok(Self(s.into()))
+        }
     }
 }
 

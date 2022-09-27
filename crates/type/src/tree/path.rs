@@ -5,20 +5,13 @@ use super::Name;
 
 use std::fmt::Display;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Path(Vec<Name>);
-
-impl Deref for Path {
-    type Target = Vec<Name>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl Path {
     pub const ROOT: Self = Self(vec![]);
@@ -42,9 +35,41 @@ impl Path {
     }
 }
 
+impl AsRef<Vec<Name>> for Path {
+    fn as_ref(&self) -> &Vec<Name> {
+        &self.0
+    }
+}
+
+impl AsRef<[Name]> for Path {
+    fn as_ref(&self) -> &[Name] {
+        &self.0
+    }
+}
+
+impl Deref for Path {
+    type Target = Vec<Name>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for Path {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.intersperse("/"))
+    }
+}
+
 impl From<Name> for Path {
     fn from(name: Name) -> Self {
         Self(vec![name])
+    }
+}
+
+impl From<Path> for PathBuf {
+    fn from(path: Path) -> Self {
+        path.into_iter().map(PathBuf::from).collect()
     }
 }
 
@@ -66,9 +91,12 @@ impl FromStr for Path {
     }
 }
 
-impl Display for Path {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.intersperse("/"))
+impl IntoIterator for Path {
+    type Item = Name;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
