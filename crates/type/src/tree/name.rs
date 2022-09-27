@@ -26,6 +26,7 @@ impl FromStr for Name {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty()
             || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.'))
+            || s.find(|c| !matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '-' | '_' | '.' | ':'))
                 .is_some()
         {
             Err(anyhow!("invalid characters in entry name"))
