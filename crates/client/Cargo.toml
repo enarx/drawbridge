@@ -1,6 +1,6 @@
 [package]
 name = "drawbridge-client"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Profian Inc"]
 edition = "2021"
 license = "AGPL-3.0-or-later"
@@ -12,7 +12,7 @@ keywords = ["drawbridge"]
 [dependencies]
 # Internal dependencies
 drawbridge-jose = { path = "../jose", version = "0.2.0" }
-drawbridge-type = { path = "../type", version = "0.2.0" }
+drawbridge-type = { path = "../type", version = "0.2.2" }
 
 # External dependencies
 anyhow = { version = "1.0", default-features = false, features = ["std"] }
