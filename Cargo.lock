@@ -543,7 +543,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-client"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "drawbridge-jose",
