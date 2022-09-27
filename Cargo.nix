@@ -45,7 +45,7 @@ in
     drawbridge-byte = rustPackages.unknown.drawbridge-byte."0.2.0";
     drawbridge-client = rustPackages.unknown.drawbridge-client."0.2.3";
     drawbridge-jose = rustPackages.unknown.drawbridge-jose."0.2.0";
-    drawbridge-type = rustPackages.unknown.drawbridge-type."0.2.1";
+    drawbridge-type = rustPackages.unknown.drawbridge-type."0.2.2";
     drawbridge-server = rustPackages.unknown.drawbridge-server."0.2.2";
     drawbridge = rustPackages.unknown.drawbridge."0.2.3";
   };
@@ -723,7 +723,7 @@ in
       drawbridge_client = rustPackages."unknown".drawbridge-client."0.2.3" { inherit profileName; };
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
       drawbridge_server = rustPackages."unknown".drawbridge-server."0.2.2" { inherit profileName; };
-      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.1" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.2" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.24" { inherit profileName; };
       tracing = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing."0.1.36" { inherit profileName; };
       tracing_subscriber = rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing-subscriber."0.3.15" { inherit profileName; };
@@ -765,7 +765,7 @@ in
     dependencies = {
       anyhow = rustPackages."registry+https://github.com/rust-lang/crates.io-index".anyhow."1.0.64" { inherit profileName; };
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
-      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.1" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.2" { inherit profileName; };
       http = rustPackages."registry+https://github.com/rust-lang/crates.io-index".http."0.2.8" { inherit profileName; };
       mime = rustPackages."registry+https://github.com/rust-lang/crates.io-index".mime."0.3.16" { inherit profileName; };
       rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".rustls."0.20.6" { inherit profileName; };
@@ -803,7 +803,7 @@ in
       camino = rustPackages."registry+https://github.com/rust-lang/crates.io-index".camino."1.1.1" { inherit profileName; };
       cap_async_std = rustPackages."registry+https://github.com/rust-lang/crates.io-index".cap-async-std."0.24.4" { inherit profileName; };
       drawbridge_jose = rustPackages."unknown".drawbridge-jose."0.2.0" { inherit profileName; };
-      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.1" { inherit profileName; };
+      drawbridge_type = rustPackages."unknown".drawbridge-type."0.2.2" { inherit profileName; };
       futures = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures."0.3.24" { inherit profileName; };
       futures_rustls = rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures-rustls."0.22.2" { inherit profileName; };
       hyper = rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper."0.14.20" { inherit profileName; };
@@ -823,9 +823,9 @@ in
     };
   });
   
-  "unknown".drawbridge-type."0.2.1" = overridableMkRustCrate (profileName: rec {
+  "unknown".drawbridge-type."0.2.2" = overridableMkRustCrate (profileName: rec {
     name = "drawbridge-type";
-    version = "0.2.1";
+    version = "0.2.2";
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/crates/type");
     features = builtins.concatLists [
