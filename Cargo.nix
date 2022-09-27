@@ -47,7 +47,7 @@ in
     drawbridge-jose = rustPackages.unknown.drawbridge-jose."0.2.0";
     drawbridge-type = rustPackages.unknown.drawbridge-type."0.2.1";
     drawbridge-server = rustPackages.unknown.drawbridge-server."0.2.2";
-    drawbridge = rustPackages.unknown.drawbridge."0.2.2";
+    drawbridge = rustPackages.unknown.drawbridge."0.2.3";
   };
   "registry+https://github.com/rust-lang/crates.io-index".adler."1.0.2" = overridableMkRustCrate (profileName: rec {
     name = "adler";
@@ -681,9 +681,9 @@ in
     };
   });
   
-  "unknown".drawbridge."0.2.2" = overridableMkRustCrate (profileName: rec {
+  "unknown".drawbridge."0.2.3" = overridableMkRustCrate (profileName: rec {
     name = "drawbridge";
-    version = "0.2.2";
+    version = "0.2.3";
     registry = "unknown";
     src = fetchCrateLocal workspaceSrc;
     features = builtins.concatLists [
