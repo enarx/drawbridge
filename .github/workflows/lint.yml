@@ -18,37 +18,26 @@ jobs:
         command: clippy
         args: --workspace
 
-  flake:
+  nix-fmt:
+    name: nix fmt
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.4.0
-    - uses: cachix/install-nix-action@v17
-    - uses: cachix/cachix-action@v10
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v18
+    - uses: cachix/cachix-action@v11
       with:
         name: enarx
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - name: nix flake check
-      run: nix flake check
-    - name: nix fmt
-      run: nix fmt ./flake.nix ./shell.nix
+    - run: nix fmt
 
-  cargo2nix:
+  nix-flake-check:
+    name: nix flake check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.4.0
-    - uses: cachix/install-nix-action@v17
-    - uses: cachix/cachix-action@v10
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v18
+    - uses: cachix/cachix-action@v11
       with:
         name: enarx
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - name: cargo2nix
-      run: nix develop -c cargo2nix -s | diff Cargo.nix - > cargo2nix.patch || exit 1
-    - if: ${{ failure() }}
-      run: |
-        patch Cargo.nix cargo2nix.patch
-        git diff | tee cargo2nix.patch
-    - uses: actions/upload-artifact@v3
-      if: ${{ failure() }}
-      with:
-        name: cargo2nix.patch
-        path: cargo2nix.patch
+    - run: nix flake check -L --show-trace --keep-going
