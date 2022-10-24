@@ -16,7 +16,7 @@ drawbridge-jose = { path = "../jose", version = "0.2.0" }
 
 # External dependencies
 anyhow = { version = "1.0.66", default-features = false, features = ["std"] }
-base64 = { version = "0.13.0", default-features = false, features = ["std"] }
+base64 = { version = "0.13.1", default-features = false, features = ["std"] }
 futures = { version = "0.3.21", default-features = false, features = ["std"] }
 mime = { version = "0.3.16", default-features = false }
 semver = { version = "1.0.9", default-features = false, features = ["serde", "std"] }

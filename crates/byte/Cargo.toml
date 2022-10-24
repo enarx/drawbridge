@@ -11,7 +11,7 @@ keywords = ["drawbridge", "base64"]
 categories = [ "no-std" ]
 
 [dependencies]
-base64 = { version = "0.13.0", default-features = false, features = ["alloc"] }
+base64 = { version = "0.13.1", default-features = false, features = ["alloc"] }
 serde = { version = "1.0.147", default-features = false, optional = true }
 
 [features]
