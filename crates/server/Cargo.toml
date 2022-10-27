@@ -26,7 +26,7 @@ hyper = { version = "0.14.18", default-features = false, features = ["http1", "s
 tracing = { version = "0.1.37", default-features = false, features = ["release_max_level_debug"] }
 mime = { version = "0.3.16", default-features = false }
 once_cell = { version = "1.13.0", default-features = false }
-openidconnect = { version = "2.3.1", default-features = false, features = ["ureq"] }
+openidconnect = { version = "2.4.0", default-features = false, features = ["ureq"] }
 rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }
 semver = { version = "1.0.12", default-features = false }
