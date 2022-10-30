@@ -52,11 +52,6 @@ use std::sync::Arc;
 
 use drawbridge_type::{RepositoryContext, TagContext, TreeContext, UserContext};
 
-use rustls::cipher_suite::{
-    TLS13_AES_128_GCM_SHA256, TLS13_AES_256_GCM_SHA384, TLS13_CHACHA20_POLY1305_SHA256,
-};
-use rustls::kx_group::{SECP256R1, SECP384R1, X25519};
-use rustls::version::TLS13;
 use rustls::{Certificate, OwnedTrustAnchor, PrivateKey, RootCertStore};
 
 /// API version used by this crate
@@ -199,13 +194,7 @@ impl<S: Scope> ClientBuilder<S> {
 
     pub fn build_scoped(self) -> Result<Client<S>> {
         let tls = rustls::ClientConfig::builder()
-            .with_cipher_suites(&[
-                TLS13_AES_256_GCM_SHA384,
-                TLS13_AES_128_GCM_SHA256,
-                TLS13_CHACHA20_POLY1305_SHA256,
-            ])
-            .with_kx_groups(&[&X25519, &SECP384R1, &SECP256R1])
-            .with_protocol_versions(&[&TLS13])?
+            .with_safe_defaults()
             .with_root_certificates(if let Some(roots) = self.roots {
                 roots
             } else {
