@@ -5,12 +5,7 @@ use std::io::BufRead;
 use std::ops::Deref;
 
 use anyhow::{anyhow, bail, Context};
-use rustls::cipher_suite::{
-    TLS13_AES_128_GCM_SHA256, TLS13_AES_256_GCM_SHA384, TLS13_CHACHA20_POLY1305_SHA256,
-};
-use rustls::kx_group::{SECP256R1, SECP384R1, X25519};
 use rustls::server::AllowAnyAnonymousOrAuthenticatedClient;
-use rustls::version::TLS13;
 use rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig};
 use rustls_pemfile::Item::{ECKey, PKCS8Key, RSAKey, X509Certificate};
 
@@ -82,15 +77,8 @@ impl Config {
             AllowAnyAnonymousOrAuthenticatedClient::new(roots)
         };
 
-        // TODO: Load policy from config.
         ServerConfig::builder()
-            .with_cipher_suites(&[
-                TLS13_AES_256_GCM_SHA384,
-                TLS13_AES_128_GCM_SHA256,
-                TLS13_CHACHA20_POLY1305_SHA256,
-            ])
-            .with_kx_groups(&[&X25519, &SECP384R1, &SECP256R1])
-            .with_protocol_versions(&[&TLS13])?
+            .with_safe_defaults()
             .with_client_cert_verifier(client_verifier)
             .with_single_cert(certs, key)
             .context("invalid server certificate key")
