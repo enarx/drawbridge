@@ -6,7 +6,7 @@ use std::os::unix::fs::DirBuilderExt;
 
 use drawbridge_type::Meta;
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -85,12 +85,6 @@ impl<E> IntoResponse for GetToWriterError<E> {
         }
         .into_response()
     }
-}
-
-#[derive(Debug)]
-pub(super) enum SymlinkError<E> {
-    AlreadyExists,
-    Internal(E),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -212,80 +206,6 @@ impl<'a, P: AsRef<Utf8Path>> Entity<'a, P> {
                 debug!(target: "app::store::Entity::create_dir", "failed to create directory: `{:?}`", e);
                 e
             })
-    }
-
-    pub(super) async fn symlink(
-        &self,
-        path: impl AsRef<Utf8Path>,
-    ) -> Result<(), SymlinkError<anyhow::Error>> {
-        let path = path.as_ref();
-        let dest = {
-            let mut dest = self.prefix.as_ref().components().peekable();
-            let parents = path
-                .components()
-                .skip_while(|pc| match dest.peek() {
-                    Some(dc) if pc == dc => {
-                        // Components are equal, advance the `dest` iterator
-                        _ = dest.next().unwrap();
-                        true
-                    }
-                    _ => false,
-                })
-                .count();
-
-            let dest = dest.collect::<Utf8PathBuf>();
-            let mut buf = (0..parents - 1).fold(
-                Utf8PathBuf::with_capacity(parents * "../".len() + dest.as_str().len()),
-                |mut buf, _| {
-                    buf.push("../");
-                    buf
-                },
-            );
-            buf.push(dest);
-            buf
-        };
-
-        trace!(target: "app::store::entity", "create symlink to `{dest}` at `{path}`");
-        self.root
-            .symlink(dest, path)
-            .await
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::AlreadyExists => SymlinkError::AlreadyExists,
-                _ => SymlinkError::Internal(anyhow::Error::new(e).context("failed to create symlink")),
-            })
-            .map_err(|e| {
-                debug!(target: "app::store::Entity::symlink", "failed to create symlink: `{:?}`", e);
-                e
-            })
-    }
-
-    pub(super) async fn read_link(
-        &self,
-        path: impl AsRef<Utf8Path>,
-    ) -> Result<(String, Entity<'a, Utf8PathBuf>), GetError<anyhow::Error>> {
-        let path = self.path(path);
-        let dest = self
-            .root
-            .read_link(&path)
-            .await
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::NotFound => GetError::NotFound,
-                _ => GetError::Internal(anyhow::Error::new(e).context("failed to read link")),
-            })?;
-        let path = self
-            .root
-            .canonicalize(path.join(dest))
-            .await
-            .map_err(|e| match e.kind() {
-                io::ErrorKind::NotFound => GetError::NotFound,
-                _ => {
-                    GetError::Internal(anyhow::Error::new(e).context("failed to canonicalize link"))
-                }
-            })?;
-        let name = path.file_name().ok_or_else(|| {
-            GetError::Internal(anyhow!("failed to read name of dereferenced file"))
-        })?;
-        Ok((name.into(), Entity::new(self.root).child(path)))
     }
 
     pub(super) async fn read_dir(
