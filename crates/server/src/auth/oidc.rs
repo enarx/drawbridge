@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{GetError, Store, User};
+use crate::store::GetError;
 
-use drawbridge_type::UserContext;
+use super::super::{Store, User};
+
+use drawbridge_type::{UserContext, UserRecord};
 
 use std::ops::Deref;
 
@@ -32,40 +34,36 @@ impl Deref for Claims {
 }
 
 impl Claims {
-    /// Gets the user that the client is claiming to be.
-    pub async fn get_user<'a>(
-        &self,
-        store: &'a Store,
-    ) -> Result<(UserContext, User<'a>), impl IntoResponse> {
-        let subj = self.0.subject();
-        store.user_by_subject(subj).await.map_err(|e|{
-            match e {
-                GetError::NotFound => (StatusCode::UNAUTHORIZED, format!("User with OpenID Connect subject `{}` not found", subj.as_str())).into_response(),
-                _ => {
-            warn!(target: "app::auth::oidc", "failed to get user by OpenID Connect subject `{}`: {:?}", subj.as_str(), e);
-e.into_response()
-                },
-            }
-        })
-    }
-
     /// Assert that the client is the user identified by `cx`.
     pub async fn assert_user<'a>(
         &self,
         store: &'a Store,
         cx: &UserContext,
     ) -> Result<User<'a>, impl IntoResponse> {
-        let (ref oidc_cx, user) = self
-            .get_user(store)
-            .await
-            .map_err(IntoResponse::into_response)?;
-        if oidc_cx != cx {
+        let subj = self.0.subject().as_str();
+        let oidc_record = UserRecord {
+            subject: subj.to_string(),
+        };
+
+        let user = store.user(cx);
+        let owner_record: UserRecord = user.get_content_json().await.map_err(|e|{
+            match e {
+                GetError::NotFound => (StatusCode::UNAUTHORIZED, format!("User `{cx}` not found")).into_response(),
+                _ => {
+            warn!(target: "app::auth::oidc", ?oidc_record, error = ?e, "failed to get user by OpenID Connect subject");
+e.into_response()
+                },
+            }})?;
+
+        if oidc_record != owner_record {
+            warn!(target: "app::auth::oidc", ?oidc_record, user = ?cx, ?owner_record, "User access not authorized");
             return Err((
                 StatusCode::UNAUTHORIZED,
-                format!( "You are logged in as `{oidc_cx}`, please relogin as `{cx}` to access the resource"),
+                format!("You are logged in as `{subj}`, and not authorized for user `{cx}`"),
             )
                 .into_response());
         }
+
         Ok(user)
     }
 }

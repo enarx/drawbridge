@@ -81,7 +81,7 @@ impl<S: AsRef<Path>> Builder<S> {
         let Self { store, tls, oidc } = self;
         let store_path = store.as_ref();
         let store = File::open(store_path)
-            .and_then(|f| Store::new(Dir::from_std_file(f), oidc.label))
+            .and_then(|f| Store::new(Dir::from_std_file(f)))
             .await
             .context(anyhow!(
                 "failed to open store at `{}`",

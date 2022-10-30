@@ -198,16 +198,13 @@ async fn app() {
                 subject: format!("{}other", user_record.subject),
             })
             .is_err());
-        assert_eq!(
-            oidc_user
-                .create(&user_record)
-                .expect("failed to create user"),
-            true
-        );
+        assert!(oidc_user
+            .create(&user_record)
+            .expect("failed to create user"));
         assert!(oidc_cl
             .user(&format!("{user_name}other").parse().unwrap())
             .create(&user_record)
-            .is_err());
+            .expect("failed to create other user"));
 
         assert!(anon_user.get().is_err());
         assert!(cert_user.get().is_err());
