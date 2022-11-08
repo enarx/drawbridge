@@ -276,7 +276,7 @@ async fn app() {
 
         let user_name = "testuser".parse().unwrap();
         let user_record = UserRecord {
-            subject: SUBJECT.into(),
+            subjects: vec![SUBJECT.into()],
         };
 
         let anon_user = anon_cl.user(&user_name);
@@ -299,7 +299,7 @@ async fn app() {
         }
         assert!(oidc_user
             .create(&UserRecord {
-                subject: format!("{}other", user_record.subject),
+                subjects: vec![format!("{}other", user_record.subjects[0])],
             })
             .is_err());
         assert!(oidc_user

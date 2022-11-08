@@ -199,26 +199,25 @@ impl Claims {
         scope_context: ScopeContext,
         scope_level: ScopeLevel,
     ) -> Result<User<'a>, impl IntoResponse> {
-        let subj = self.subject();
-        let oidc_record = UserRecord {
-            subject: subj.to_string(),
-        };
+        let oidc_subject = self.subject();
 
         let user = store.user(cx);
         let owner_record: UserRecord = user.get_content_json().await.map_err(|e|{
             match e {
                 GetError::NotFound => (StatusCode::UNAUTHORIZED, format!("User `{cx}` not found")).into_response(),
                 _ => {
-            warn!(target: "app::auth::oidc", ?oidc_record, error = ?e, "failed to get user by OpenID Connect subject");
+            warn!(target: "app::auth::oidc", oidc_subject, error = ?e, "failed to get user by OpenID Connect subject");
 e.into_response()
                 },
             }})?;
 
-        if oidc_record != owner_record {
-            warn!(target: "app::auth::oidc", ?oidc_record, user = ?cx, ?owner_record, "User access not authorized");
+        if !owner_record.contains_subject(oidc_subject) {
+            warn!(target: "app::auth::oidc", oidc_subject, user = ?cx, ?owner_record, "User access not authorized");
             return Err((
                 StatusCode::UNAUTHORIZED,
-                format!("You are logged in as `{subj}`, and not authorized for user `{cx}`"),
+                format!(
+                    "You are logged in as `{oidc_subject}`, and not authorized for user `{cx}`"
+                ),
             )
                 .into_response());
         }

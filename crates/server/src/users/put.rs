@@ -24,8 +24,12 @@ pub async fn put(
         .assert_scope(ScopeContext::User, ScopeLevel::Write)
         .map_err(IntoResponse::into_response)?;
 
-    if record.subject != claims.subject() {
-        return Err((StatusCode::UNAUTHORIZED, "OpenID Connect subject mismatch").into_response());
+    if !record.contains_subject(claims.subject()) {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "OpenID Connect subject not listed",
+        )
+            .into_response());
     }
 
     store
