@@ -38,6 +38,7 @@ async fn app() {
 
     const TOKEN: &str = "test-token";
     const SUBJECT: &str = "test|subject";
+    const NICKNAME: &str = "testuser";
 
     let (oidc_tx, oidc_rx) = channel::<()>();
     let oidc = spawn(async move {
@@ -84,8 +85,14 @@ async fn app() {
                                     .header("Authorization")
                                     .expect("Authorization header missing");
                                 assert_eq!(auth.as_str().split_once(' '), Some(("Bearer", TOKEN)),);
+                                let mut claim_nicknames = openidconnect::LocalizedClaim::new();
+                                claim_nicknames.insert(
+                                    None,
+                                    openidconnect::EndUserNickname::new(NICKNAME.into()),
+                                );
                                 json_response(&CoreUserInfoClaims::new(
-                                    StandardClaims::new(SubjectIdentifier::new(SUBJECT.into())),
+                                    StandardClaims::new(SubjectIdentifier::new(SUBJECT.into()))
+                                        .set_nickname(Some(claim_nicknames)),
                                     EmptyAdditionalClaims {},
                                 ))
                             }
@@ -198,13 +205,16 @@ async fn app() {
                 subject: format!("{}other", user_record.subject),
             })
             .is_err());
-        assert!(oidc_user
-            .create(&user_record)
-            .expect("failed to create user"));
+        assert_eq!(
+            oidc_user
+                .create(&user_record)
+                .expect("failed to create user"),
+            true
+        );
         assert!(oidc_cl
             .user(&format!("{user_name}other").parse().unwrap())
             .create(&user_record)
-            .expect("failed to create other user"));
+            .is_err());
 
         assert!(anon_user.get().is_err());
         assert!(cert_user.get().is_err());

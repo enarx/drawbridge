@@ -20,6 +20,21 @@ pub async fn put(
 ) -> impl IntoResponse {
     trace!(target: "app::users::put", "called for `{cx}`");
 
+    if let Some(nickname) = claims.nickname().and_then(|n| n.get(None)) {
+        if nickname.as_str() != *cx.name {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                "Username and OpenID Connect nickname mismatch",
+            )
+                .into_response());
+        }
+    } else {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            "OpenID Connect nickname not present",
+        )
+            .into_response());
+    }
     if record.subject != claims.subject().as_str() {
         return Err((StatusCode::UNAUTHORIZED, "OpenID Connect subject mismatch").into_response());
     }
