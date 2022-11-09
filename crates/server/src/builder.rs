@@ -14,10 +14,7 @@ use cap_async_std::path::Path;
 use futures::lock::Mutex;
 use futures::TryFutureExt;
 use futures_rustls::TlsAcceptor;
-use openidconnect::core::{CoreClient, CoreProviderMetadata};
-use openidconnect::ureq::http_client;
 use openidconnect::url::Url;
-use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl};
 use tower_http::{
     trace::{
         DefaultOnBodyChunk, DefaultOnEos, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse,
@@ -30,10 +27,8 @@ use tracing::Level;
 /// OpenID Connect client configuration.
 #[derive(Debug)]
 pub struct OidcConfig {
-    pub label: String,
+    pub audience: String,
     pub issuer: Url,
-    pub client_id: String,
-    pub client_secret: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -88,15 +83,8 @@ impl<S: AsRef<Path>> Builder<S> {
                 store_path.to_string_lossy()
             ))?;
 
-        let oidc_md =
-            CoreProviderMetadata::discover(&IssuerUrl::from_url(oidc.issuer), http_client)
-                .context("failed to discover provider metadata")?;
-        let oidc = CoreClient::from_provider_metadata(
-            oidc_md,
-            ClientId::new(oidc.client_id),
-            oidc.client_secret.map(ClientSecret::new),
-        )
-        .set_auth_type(AuthType::RequestBody);
+        let oidc_verifier =
+            crate::auth::OidcVerifier::new(oidc).context("failed to create OIDC verifier")?;
 
         Ok(App {
             make_service: Mutex::new(
@@ -104,7 +92,7 @@ impl<S: AsRef<Path>> Builder<S> {
                     .fallback(handle.into_service())
                     .route("/health", any(|| async {}))
                     .layer(Extension(Arc::new(store)))
-                    .layer(Extension(oidc))
+                    .layer(Extension(Arc::new(oidc_verifier)))
                     .layer(
                         TraceLayer::new_for_http()
                             .make_span_with(SpanMaker::default())

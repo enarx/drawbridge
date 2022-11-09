@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::{OidcClaims, ScopeContext, ScopeLevel, Store};
 
 use drawbridge_type::{Meta, UserContext, UserRecord};
 
@@ -20,7 +20,11 @@ pub async fn put(
 ) -> impl IntoResponse {
     trace!(target: "app::users::put", "called for `{cx}`");
 
-    if record.subject != claims.subject().as_str() {
+    claims
+        .assert_scope(ScopeContext::User, ScopeLevel::Write)
+        .map_err(IntoResponse::into_response)?;
+
+    if record.subject != claims.subject() {
         return Err((StatusCode::UNAUTHORIZED, "OpenID Connect subject mismatch").into_response());
     }
 

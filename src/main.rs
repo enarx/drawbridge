@@ -28,7 +28,7 @@
     variant_size_differences
 )]
 
-use std::fs::{read, File};
+use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
@@ -76,21 +76,13 @@ struct Args {
     #[clap(long)]
     ca: PathBuf,
 
-    /// OpenID Connect provider label.
-    #[clap(long)]
-    oidc_label: String,
-
     /// OpenID Connect issuer URL.
     #[clap(long)]
     oidc_issuer: Url,
 
-    /// OpenID Connect client ID.
+    /// OpenID Connect audience.
     #[clap(long)]
-    oidc_client: String,
-
-    /// Path to a file containing OpenID Connect secret.
-    #[clap(long)]
-    oidc_secret: Option<String>,
+    oidc_audience: String,
 }
 
 fn open_buffered(p: impl AsRef<Path>) -> io::Result<impl BufRead> {
@@ -114,22 +106,11 @@ async fn main() -> anyhow::Result<()> {
         cert,
         key,
         ca,
-        oidc_label,
+        oidc_audience,
         oidc_issuer,
-        oidc_client,
-        oidc_secret,
     } = args::<Toml>(prefix_char_filter::<'@'>)
         .context("Failed to parse config")
         .map(Args::parse_from)?;
-
-    let oidc_secret = oidc_secret
-        .map(|ref path| {
-            read(path).with_context(|| format!("Failed to read OpenID Connect secret at `{path}`"))
-        })
-        .transpose()?
-        .map(String::from_utf8)
-        .transpose()
-        .context("OpenID Connect secret is not valid UTF-8")?;
 
     let cert = open_buffered(cert).context("Failed to open server certificate file")?;
     let key = open_buffered(key).context("Failed to open server key file")?;
@@ -140,10 +121,8 @@ async fn main() -> anyhow::Result<()> {
         store,
         tls,
         OidcConfig {
-            label: oidc_label,
+            audience: oidc_audience,
             issuer: oidc_issuer,
-            client_id: oidc_client,
-            client_secret: oidc_secret,
         },
     )
     .await

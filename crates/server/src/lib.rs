@@ -38,7 +38,7 @@ pub mod tags;
 pub mod trees;
 pub mod users;
 
-pub use auth::{OidcClaims, TlsConfig, TrustedCertificate};
+pub use auth::{OidcClaims, ScopeContext, ScopeLevel, TlsConfig, TrustedCertificate};
 pub use builder::*;
 pub(crate) use handle::*;
 pub(crate) use store::*;

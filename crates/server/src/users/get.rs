@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::{OidcClaims, ScopeContext, ScopeLevel, Store};
 
 use drawbridge_type::UserContext;
 
@@ -18,7 +18,7 @@ pub async fn get(
     trace!(target: "app::users::get", "called for `{cx}`");
 
     let user = claims
-        .assert_user(store, cx)
+        .assert_user(store, cx, ScopeContext::User, ScopeLevel::Read)
         .await
         .map_err(IntoResponse::into_response)?;
 

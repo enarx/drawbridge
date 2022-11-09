@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::{OidcClaims, ScopeContext, ScopeLevel, Store};
 
 use drawbridge_type::{Meta, RepositoryConfig, RepositoryContext};
 
@@ -21,7 +21,12 @@ pub async fn put(
     trace!(target: "app::trees::put", "called for `{cx}`");
 
     claims
-        .assert_user(store, &cx.owner)
+        .assert_user(
+            store,
+            &cx.owner,
+            ScopeContext::Repository,
+            ScopeLevel::Write,
+        )
         .await
         .map_err(IntoResponse::into_response)?
         .create_repository(&cx.name, meta, &config)

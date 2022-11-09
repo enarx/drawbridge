@@ -5,6 +5,8 @@ mod oidc;
 mod tls;
 
 pub use oidc::Claims as OidcClaims;
+pub use oidc::Verifier as OidcVerifier;
+pub use oidc::{ScopeContext, ScopeLevel};
 pub use tls::{Config as TlsConfig, TrustedCertificate};
 
 use super::{Repository, Store, User};
@@ -32,7 +34,7 @@ pub async fn assert_repository_read<'a>(
         RequestParts::new(req)
             .extract::<OidcClaims>()
             .await?
-            .assert_user(store, &cx.owner)
+            .assert_user(store, &cx.owner, ScopeContext::Repository, ScopeLevel::Read)
             .await
             .map_err(IntoResponse::into_response)
             .map(|user| (repo, Some(user)))

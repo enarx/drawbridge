@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::{OidcClaims, ScopeContext, ScopeLevel, Store};
 
 use drawbridge_jose::jws::Jws;
 use drawbridge_jose::MediaTyped;
@@ -33,7 +33,12 @@ pub async fn put(
     }
 
     let user = claims
-        .assert_user(&store, &cx.repository.owner)
+        .assert_user(
+            &store,
+            &cx.repository.owner,
+            ScopeContext::Tag,
+            ScopeLevel::Write,
+        )
         .await
         .map_err(IntoResponse::into_response)?;
 
