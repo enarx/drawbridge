@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use super::super::{OidcClaims, Store};
+use super::super::{OidcClaims, ScopeContext, ScopeLevel, Store};
 
 use drawbridge_type::RepositoryContext;
 
@@ -18,7 +18,7 @@ pub async fn head(
     trace!(target: "app::trees::head", "called for `{cx}`");
 
     claims
-        .assert_user(store, &cx.owner)
+        .assert_user(store, &cx.owner, ScopeContext::Repository, ScopeLevel::Read)
         .await
         .map_err(IntoResponse::into_response)?
         .repository(&cx.name)

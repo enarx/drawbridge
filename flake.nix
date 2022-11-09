@@ -28,6 +28,7 @@
           extendDerivations {
             buildInputs = [
               pkgs.openssl
+              pkgs.pkg-config
             ];
           }
           devShells;

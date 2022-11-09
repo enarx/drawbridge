@@ -43,9 +43,13 @@ drawbridge-client = { path = "./crates/client" }
 async-h1 = { version = "2.3.3", default-features = false }
 async-std = { version = "1.11.0", default-features = false, features = ["attributes", "default"] }
 http-types = { version = "2.12.0", default-features = false }
+jsonwebtoken = { version = "8", default-features = false }
 openidconnect = { version = "2.4.0", default-features = false }
+rsa = "0.7"
+rand = "0.8"
 rustls = { version = "0.20.6", default-features = false }
 rustls-pemfile = { version = "1.0.0", default-features = false }
+serde = "1"
 serde_json = { version = "1.0.87", default-features = false, features = ["std"] }
 tempfile = { version = "3.3.0", default-features = false }
 
