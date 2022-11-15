@@ -157,6 +157,7 @@ pub struct ClientBuilder<S: Scope = scope::Root> {
     credentials: Option<(Vec<Certificate>, PrivateKey)>,
     roots: Option<RootCertStore>,
     token: Option<String>,
+    user_agent: Option<String>,
     scope: PhantomData<S>,
 }
 
@@ -167,7 +168,15 @@ impl<S: Scope> ClientBuilder<S> {
             credentials: None,
             roots: None,
             token: None,
+            user_agent: None,
             scope: PhantomData,
+        }
+    }
+
+    pub fn user_agent(self, user_agent: impl Into<String>) -> Self {
+        Self {
+            user_agent: Some(user_agent.into()),
+            ..self
         }
     }
 
@@ -216,8 +225,15 @@ impl<S: Scope> ClientBuilder<S> {
             tls.with_no_client_auth()
         };
 
+        let user_agent = self.user_agent.unwrap_or_else(|| {
+            format!("{}/{}", env!("CARGO_CRATE_NAME"), env!("CARGO_PKG_VERSION"))
+        });
+
         Ok(Client {
-            inner: ureq::AgentBuilder::new().tls_config(Arc::new(tls)).build(),
+            inner: ureq::AgentBuilder::new()
+                .tls_config(Arc::new(tls))
+                .user_agent(&user_agent)
+                .build(),
             root: self.url,
             token: self.token,
             scope: self.scope,
