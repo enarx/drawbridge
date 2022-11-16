@@ -51,37 +51,37 @@ use tracing::{debug, error};
 /// The configuration file must contain valid TOML table mapping argument
 /// names to their values.
 #[derive(Parser, Debug)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Args {
     /// Address to bind to.
-    #[clap(long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))]
+    #[arg(long, default_value_t = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 8080))]
     addr: SocketAddr,
 
     /// Path to the Drawbridge store.
-    #[clap(long)]
+    #[arg(long)]
     store: PathBuf,
 
     /// Path to PEM-encoded server certificate.
-    #[clap(long)]
+    #[arg(long)]
     cert: PathBuf,
 
     /// Path to PEM-encoded server certificate key.
-    #[clap(long)]
+    #[arg(long)]
     key: PathBuf,
 
     /// Path to PEM-encoded trusted CA certificate.
     ///
     /// Clients that present a valid certificate signed by this CA
     /// are granted read-only access to all repositories in the store.
-    #[clap(long)]
+    #[arg(long)]
     ca: PathBuf,
 
     /// OpenID Connect issuer URL.
-    #[clap(long)]
+    #[arg(long)]
     oidc_issuer: Url,
 
     /// OpenID Connect audience.
-    #[clap(long)]
+    #[arg(long)]
     oidc_audience: String,
 }
 
