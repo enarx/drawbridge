@@ -11,26 +11,25 @@ keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "../byte", version = "0.2.0" }
-drawbridge-jose = { path = "../jose", version = "0.2.0" }
+drawbridge-byte = { workspace = true }
+drawbridge-jose = { workspace = true }
 
 # External dependencies
-anyhow = { version = "1.0.66", default-features = false, features = ["std"] }
-base64 = { version = "0.13.1", default-features = false, features = ["std"] }
-futures = { version = "0.3.21", default-features = false, features = ["std"] }
-mime = { version = "0.3.16", default-features = false }
-semver = { version = "1.0.9", default-features = false, features = ["serde", "std"] }
-serde = { version = "1.0.147", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0.87", default-features = false, features = ["std"] }
-sha2 = { version = "0.10.2", default-features = false, features = ["std"] }
-walkdir = { version = "2.3.2", default-features = false }
-
-axum = { version = "0.5.17", default-features = false, features = ["headers", "json"], optional = true }
-headers = { version = "0.3.7", default-features = false, optional = true }
+anyhow = { workspace = true, features = ["std"] }
+axum = { workspace = true, features = ["headers", "json"], optional = true }
+base64 = { workspace = true, features = ["std"] }
+futures = { workspace = true, features = ["std"] }
+headers = { workspace = true, optional = true }
+mime = { workspace = true }
+semver = { workspace = true, features = ["serde", "std"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["std"] }
+sha2 = { workspace = true, features = ["std"] }
+walkdir = { workspace = true }
 
 [dev-dependencies]
-async-std = { version = "1.11.0", default-features = false, features = ["attributes", "default"] }
-tempfile = { version = "3.3.0", default-features = false }
+async-std = { workspace = true, features = ["attributes", "default"] }
+tempfile = { workspace = true }
 
 [features]
 default = []
