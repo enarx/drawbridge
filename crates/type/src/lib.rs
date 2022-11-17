@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-#![forbid(clippy::expect_used, clippy::panic)]
+#![cfg_attr(not(test), forbid(clippy::expect_used, clippy::panic))]
 #![deny(
     clippy::all,
     absolute_paths_not_starting_with_crate,
