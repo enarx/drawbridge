@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime},
-};
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 use drawbridge_client::mime::APPLICATION_OCTET_STREAM;
 use drawbridge_client::types::{RepositoryConfig, TreePath, UserRecord};

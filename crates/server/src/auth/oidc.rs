@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: 2022 Profian Inc. <opensource@profian.com>
 // SPDX-License-Identifier: AGPL-3.0-only
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-
-use crate::{store::GetError, OidcConfig, Store, User};
+use super::super::{GetError, OidcConfig, Store, User};
 
 use drawbridge_type::{UserContext, UserRecord};
+
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Context};
 use axum::extract::rejection::{TypedHeaderRejection, TypedHeaderRejectionReason};
@@ -18,11 +16,8 @@ use axum::headers::Authorization;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::{async_trait, TypedHeader};
-use jsonwebtoken::{
-    decode, decode_header,
-    jwk::{AlgorithmParameters, JwkSet},
-    Algorithm, DecodingKey, Validation,
-};
+use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use openidconnect::core::CoreProviderMetadata;
 use openidconnect::ureq::http_client;
 use openidconnect::IssuerUrl;
