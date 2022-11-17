@@ -59,7 +59,7 @@ async fn app() {
     let mut rng = rand::thread_rng();
     let oidc_key_raw = rsa::RsaPrivateKey::new(&mut rng, 2048).expect("failed to generate a key");
     let oidc_key_der = oidc_key_raw.to_pkcs1_der().expect("failed to encode key");
-    let oidc_key = EncodingKey::from_rsa_der(&oidc_key_der.as_bytes());
+    let oidc_key = EncodingKey::from_rsa_der(oidc_key_der.as_bytes());
     let oidc_key_pub = oidc_key_raw.to_public_key();
     let oidc_key_jwk = drawbridge_jose::jwk::Jwk {
         key: drawbridge_jose::jwk::Key::Rsa {
@@ -344,21 +344,15 @@ async fn app() {
 
         assert!(anon_prv_repo.create(&prv_repo_conf).is_err());
         assert!(cert_prv_repo.create(&prv_repo_conf).is_err());
-        assert_eq!(
-            oidc_prv_repo
-                .create(&prv_repo_conf)
-                .expect("failed to create repository"),
-            true
-        );
+        assert!(oidc_prv_repo
+            .create(&prv_repo_conf)
+            .expect("failed to create repository"));
 
         assert!(anon_pub_repo.create(&pub_repo_conf).is_err());
         assert!(cert_pub_repo.create(&pub_repo_conf).is_err());
-        assert_eq!(
-            oidc_pub_repo
-                .create(&pub_repo_conf)
-                .expect("failed to create repository"),
-            true
-        );
+        assert!(oidc_pub_repo
+            .create(&pub_repo_conf)
+            .expect("failed to create repository"));
 
         assert!(anon_prv_repo.get().is_err());
         assert!(cert_prv_repo.get().is_err());
