@@ -4,9 +4,7 @@
 mod oidc;
 mod tls;
 
-pub use oidc::Claims as OidcClaims;
-pub use oidc::Verifier as OidcVerifier;
-pub use oidc::{ScopeContext, ScopeLevel};
+pub use oidc::{Claims as OidcClaims, ScopeContext, ScopeLevel, Verifier as OidcVerifier};
 pub use tls::{Config as TlsConfig, TrustedCertificate};
 
 use super::{Repository, Store, User};
