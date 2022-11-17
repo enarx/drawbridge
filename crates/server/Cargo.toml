@@ -11,29 +11,29 @@ keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-jose = { path = "../jose", version = "0.2.0" }
-drawbridge-type = { path = "../type", version = "0.2.0", features = ["server"] }
+drawbridge-jose = { workspace = true }
+drawbridge-type = { workspace = true, features = ["server"] }
 
 # External dependencies
-anyhow = { version = "1.0.66", default-features = false, features = ["std"] }
-async-std = { version = "1.11.0", default-features = false }
-axum = { version = "0.5.17", default-features = false, features = ["json"] }
-camino = { version = "1.0.9", default-features = false }
-cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
-futures = { version = "0.3.21", default-features = false, features = ["async-await"] }
-futures-rustls = { version = "0.22.1", default-features = false }
-hyper = { version = "0.14.23", default-features = false, features = ["http1", "server"] }
-jsonwebtoken = { version = "8", default-features = false }
-tracing = { version = "0.1.37", default-features = false, features = ["release_max_level_debug"] }
-mime = { version = "0.3.16", default-features = false }
-once_cell = { version = "1.16.0", default-features = false }
-openidconnect = { version = "2.4.0", default-features = false, features = ["ureq"] }
-rustls = { version = "0.20.6", default-features = false }
-rustls-pemfile = { version = "1.0.0", default-features = false }
-semver = { version = "1.0.12", default-features = false }
-serde = { version = "1.0.147", default-features = false }
-serde_json = { version = "1.0.87", default-features = false, features = ["std"] }
-tokio-util = { version = "0.7.3", default-features = false, features = ["compat"] }
-tower = { version = "0.4.12", default-features = false }
-tower-http = { version = "^0.3.0", features = ["trace"] }
-uuid = { version = "1.2.2", default-features = false, features = ["v4"] }
+anyhow = { workspace = true, features = ["std"] }
+async-std = { workspace = true }
+axum = { workspace = true, features = ["json"] }
+camino = { workspace = true }
+cap-async-std = { workspace = true, features = ["fs_utf8"] }
+futures = { workspace = true, features = ["async-await"] }
+futures-rustls = { workspace = true }
+hyper = { workspace = true, features = ["http1", "server"] }
+jsonwebtoken = { workspace = true }
+mime = { workspace = true }
+once_cell = { workspace = true }
+openidconnect = { workspace = true, features = ["ureq"] }
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+semver = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["std"] }
+tokio-util = { workspace = true, features = ["compat"] }
+tower = { workspace = true }
+tower-http = { workspace = true, features = ["trace"] }
+tracing = { workspace = true }
+uuid = { workspace = true }

@@ -11,15 +11,15 @@ keywords = ["drawbridge"]
 
 [dependencies]
 # Internal dependencies
-drawbridge-jose = { path = "../jose", version = "0.2.0" }
-drawbridge-type = { path = "../type", version = "0.2.2" }
+drawbridge-jose = { workspace = true }
+drawbridge-type = { workspace = true }
 
 # External dependencies
-anyhow = { version = "1.0", default-features = false, features = ["std"] }
-http = { version = "0.2.6", default-features = false }
-mime = { version = "0.3.16", default-features = false }
-rustls = { version = "0.20.6", default-features = false }
-serde_json = { version = "1.0.87", default-features = false, features = ["std"] }
-ureq = { version = "2.4.0", default-features = false, features = ["json", "tls"] }
-url = { version = "2.2.2", default-features = false, features = ["serde"] }
-webpki-roots = { version = "0.22.3", default-features = false }
+anyhow = { workspace = true, features = ["std"] }
+http = { workspace = true }
+mime = { workspace = true }
+rustls = { workspace = true }
+serde_json = { workspace = true, features = ["std"] }
+ureq = { workspace = true, features = ["json", "tls"] }
+url = { workspace = true, features = ["serde"] }
+webpki-roots = { workspace = true }
