@@ -131,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("Failed to bind to {}", addr))?
         .incoming()
-        .for_each_concurrent(Some(1), |stream| async {
+        .for_each_concurrent(None, |stream| async {
             if let Err(e) = async {
                 let stream = stream.context("failed to initialize connection")?;
                 debug!(
