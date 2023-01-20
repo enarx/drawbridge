@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-h1",
@@ -646,7 +646,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-byte"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "base64 0.13.1",
  "serde",
@@ -654,7 +654,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-client"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "drawbridge-jose",
@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-jose"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "drawbridge-byte",
  "mediatype",
@@ -682,7 +682,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-server"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -712,7 +712,7 @@ dependencies = [
 
 [[package]]
 name = "drawbridge-type"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-std",
