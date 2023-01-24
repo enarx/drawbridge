@@ -4,6 +4,7 @@
 use super::{scope, Entity, Node, Result, Scope};
 
 use std::collections::BTreeMap;
+use std::io::Seek;
 use std::ops::Deref;
 use std::path::Path;
 
@@ -12,6 +13,7 @@ use drawbridge_jose::MediaTyped;
 use drawbridge_type::TreeContent::{Directory, File};
 use drawbridge_type::{TagEntry, TagName, Tree, TreeEntry, TreePath};
 
+use anyhow::Context;
 use ureq::serde::Serialize;
 
 #[derive(Clone, Debug)]
@@ -49,23 +51,17 @@ impl<'a, S: Scope> Tag<'a, S> {
         let tag_created = self.create(&TagEntry::Unsigned(tree.root()))?;
         let tree_created = tree
             .into_iter()
-            .map(
-                |(
-                    path,
-                    TreeEntry {
-                        ref meta,
-                        ref content,
-                        ..
-                    },
-                )| {
-                    let node = Node::new(self.child("tree"), &path);
-                    let created = match content {
-                        File(file) => node.create_from(meta, file)?,
-                        Directory(buf) => node.create_from(meta, buf.as_slice())?,
-                    };
-                    Ok((path, created))
-                },
-            )
+            .map(|(path, TreeEntry { meta, content, .. })| {
+                let node = Node::new(self.child("tree"), &path);
+                let created = match content {
+                    File(mut file) => {
+                        file.rewind().context("failed to rewind file")?;
+                        node.create_from(&meta, file)?
+                    }
+                    Directory(buf) => node.create_from(&meta, buf.as_slice())?,
+                };
+                Ok((path, created))
+            })
             .collect::<Result<_>>()?;
         Ok((tag_created, tree_created))
     }
