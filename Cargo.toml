@@ -1,6 +1,6 @@
 [package]
 name = "drawbridge"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Profian Inc"]
 edition = "2021"
 license = "AGPL-3.0-or-later"
@@ -21,10 +21,10 @@ members = [
 [workspace.dependencies]
 # Internal dependencies
 drawbridge-byte = { path = "./crates/byte", version = "0.4.0" }
-drawbridge-client = { path = "./crates/client", version = "0.4.0" }
+drawbridge-client = { path = "./crates/client", version = "0.4.1" }
 drawbridge-jose = { path = "./crates/jose", version = "0.4.0" }
 drawbridge-server = { path = "./crates/server", version = "0.4.0" }
-drawbridge-type = { path = "./crates/type", version = "0.4.0" }
+drawbridge-type = { path = "./crates/type", version = "0.4.1" }
 
 # External dependencies
 anyhow = { version = "1.0.68", default-features = false }
