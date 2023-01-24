@@ -18,7 +18,6 @@ use super::Meta;
 
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
-use std::io::Seek;
 use std::ops::Bound::{Excluded, Unbounded};
 use std::ops::Deref;
 
@@ -96,7 +95,6 @@ impl Tree<std::fs::File> {
                     t if t.is_file() => {
                         let mut file = std::fs::File::open(e.path())?;
                         let (size, hash) = Algorithms::default().read_sync(&mut file)?;
-                        file.rewind()?;
                         Entry {
                             meta: Meta {
                                 hash,
@@ -161,7 +159,7 @@ mod tests {
     use super::*;
 
     use std::fs::{create_dir, write};
-    use std::io::Read;
+    use std::io::{Read, Seek};
 
     use tempfile::tempdir;
 
@@ -267,6 +265,7 @@ mod tests {
         assert!(entry.custom.is_empty());
         assert!(matches!(entry.content, Content::File(_)));
         if let Content::File(mut file) = entry.content {
+            file.rewind().unwrap();
             let mut buf = vec![];
             assert_eq!(file.read_to_end(&mut buf).unwrap(), "bar".len());
             assert_eq!(buf, "bar".as_bytes());
@@ -280,6 +279,7 @@ mod tests {
         assert!(entry.custom.is_empty());
         assert!(matches!(entry.content, Content::File(_)));
         if let Content::File(mut file) = entry.content {
+            file.rewind().unwrap();
             let mut buf = vec![];
             assert_eq!(file.read_to_end(&mut buf).unwrap(), "foo".len());
             assert_eq!(buf, "foo".as_bytes());
