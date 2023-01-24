@@ -16,12 +16,14 @@ pub use path::*;
 use super::digest::Algorithms;
 use super::Meta;
 
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::ops::Bound::{Excluded, Unbounded};
 use std::ops::Deref;
 
-use mime::APPLICATION_OCTET_STREAM;
+use mime::{Mime, APPLICATION_OCTET_STREAM};
+use serde::Serialize;
 use walkdir::WalkDir;
 
 #[derive(Debug, Clone)]
@@ -60,6 +62,65 @@ impl<F> Tree<F> {
     }
 }
 
+impl<F: std::io::Read> Tree<F> {
+    /// Returns a file [Entry].
+    pub fn file_entry_sync(mut content: F, mime: Mime) -> std::io::Result<Entry<Content<F>>> {
+        let (size, hash) = Algorithms::default().read_sync(&mut content)?;
+        Ok(Entry {
+            meta: Meta { hash, size, mime },
+            custom: Default::default(),
+            content: Content::File(content),
+        })
+    }
+}
+
+impl<F> Tree<F> {
+    /// Returns a directory [Entry].
+    pub fn dir_entry_sync<FI, E: Borrow<Entry<Content<FI>>> + Serialize>(
+        dir: impl Borrow<Directory<E>>,
+    ) -> std::io::Result<Entry<Content<F>>> {
+        let buf = serde_json::to_vec(dir.borrow()).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("failed to encode directory to JSON: {e}",),
+            )
+        })?;
+        let (size, hash) = Algorithms::default().read_sync(&buf[..])?;
+        Ok(Entry {
+            meta: Meta {
+                hash,
+                size,
+                mime: Directory::<()>::TYPE.parse().unwrap(),
+            },
+            custom: Default::default(),
+            content: Content::Directory(buf),
+        })
+    }
+}
+
+impl<F> TryFrom<Directory<Entry<Content<F>>>> for Tree<F> {
+    type Error = std::io::Error;
+
+    fn try_from(dir: Directory<Entry<Content<F>>>) -> std::io::Result<Self> {
+        let mut tree: BTreeMap<Path, Entry<Content<F>>> = BTreeMap::new();
+        let root = Self::dir_entry_sync(&dir)?;
+        assert!(tree.insert(Path::ROOT, root).is_none());
+        for (name, entry) in dir {
+            assert!(tree.insert(name.into(), entry).is_none());
+        }
+        Ok(Self(tree))
+    }
+}
+
+impl<F> TryFrom<BTreeMap<Name, Entry<Content<F>>>> for Tree<F> {
+    type Error = std::io::Error;
+
+    fn try_from(dir: BTreeMap<Name, Entry<Content<F>>>) -> std::io::Result<Self> {
+        let dir: Directory<_> = dir.into();
+        dir.try_into()
+    }
+}
+
 impl Tree<std::fs::File> {
     fn invalid_data_error(
         error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
@@ -93,21 +154,16 @@ impl Tree<std::fs::File> {
 
                 let entry = match e.file_type() {
                     t if t.is_file() => {
-                        let mut file = std::fs::File::open(e.path())?;
-                        let (size, hash) = Algorithms::default().read_sync(&mut file)?;
-                        Entry {
-                            meta: Meta {
-                                hash,
-                                size,
-                                mime: match e.path().extension().and_then(OsStr::to_str) {
-                                    Some("wasm") => "application/wasm".parse().unwrap(),
-                                    Some("toml") => "application/toml".parse().unwrap(),
-                                    _ => APPLICATION_OCTET_STREAM,
-                                },
+                        let path = e.path();
+                        let file = std::fs::File::open(path)?;
+                        Self::file_entry_sync(
+                            file,
+                            match path.extension().and_then(OsStr::to_str) {
+                                Some("wasm") => "application/wasm".parse().unwrap(),
+                                Some("toml") => "application/toml".parse().unwrap(),
+                                _ => APPLICATION_OCTET_STREAM,
                             },
-                            custom: Default::default(),
-                            content: Content::File(file),
-                        }
+                        )?
                     }
                     t if t.is_dir() => {
                         let dir: Directory<_> = tree
@@ -121,22 +177,7 @@ impl Tree<std::fs::File> {
                                 _ => None,
                             })
                             .collect();
-                        let buf = serde_json::to_vec(&dir).map_err(|e| {
-                            std::io::Error::new(
-                                std::io::ErrorKind::Other,
-                                format!("failed to encode directory to JSON: {e}",),
-                            )
-                        })?;
-                        let (size, hash) = Algorithms::default().read_sync(&buf[..])?;
-                        Entry {
-                            meta: Meta {
-                                hash,
-                                size,
-                                mime: Directory::<()>::TYPE.parse().unwrap(),
-                            },
-                            custom: Default::default(),
-                            content: Content::Directory(buf),
-                        }
+                        Self::dir_entry_sync(dir)?
                     }
                     _ => {
                         return Err(Self::invalid_data_error(format!(
@@ -162,6 +203,43 @@ mod tests {
     use std::io::{Read, Seek};
 
     use tempfile::tempdir;
+
+    #[test]
+    fn try_from_btree_map() {
+        let bin = Tree::file_entry_sync(
+            [0xde, 0xad, 0xbe, 0xef].as_slice(),
+            APPLICATION_OCTET_STREAM,
+        )
+        .unwrap();
+
+        let conf = Tree::file_entry_sync(
+            r#"steward = "example.com"
+args = ["foo", "bar"]"#
+                .as_bytes(),
+            "application/toml".parse().unwrap(),
+        )
+        .unwrap();
+
+        let tree = Tree::try_from(BTreeMap::from([
+            ("main.wasm".parse().unwrap(), bin.clone()),
+            ("Enarx.toml".parse().unwrap(), conf.clone()),
+        ]))
+        .unwrap();
+        let root = tree.root().clone();
+
+        let mut tree = tree.into_iter();
+        let (path, entry) = tree.next().unwrap();
+        assert_eq!(path, Path::ROOT);
+        assert_eq!(entry.meta, root.meta);
+
+        let (path, entry) = tree.next().unwrap();
+        assert_eq!(path, "/Enarx.toml".parse().unwrap());
+        assert_eq!(entry.meta, conf.meta);
+
+        let (path, entry) = tree.next().unwrap();
+        assert_eq!(path, "/main.wasm".parse().unwrap());
+        assert_eq!(entry.meta, bin.meta);
+    }
 
     #[test]
     fn from_path_sync() {

@@ -20,6 +20,15 @@ impl<E> Directory<E> {
     pub const TYPE: &'static str = "application/vnd.drawbridge.directory.v1+json";
 }
 
+impl<E> IntoIterator for Directory<E> {
+    type Item = (Name, E);
+    type IntoIter = std::collections::btree_map::IntoIter<Name, E>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 impl<E> From<BTreeMap<Name, E>> for Directory<E> {
     fn from(m: BTreeMap<Name, E>) -> Self {
         Self(m)
