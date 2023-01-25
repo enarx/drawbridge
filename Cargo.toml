@@ -31,7 +31,7 @@ anyhow = { version = "1.0.68", default-features = false }
 async-h1 = { version = "2.3.3", default-features = false }
 async-std = { version = "1.11.0", default-features = false }
 axum = { version = "0.5.17", default-features = false }
-base64 = { version = "0.13.1", default-features = false }
+base64 = { version = "0.21.0", default-features = false }
 camino = { version = "1.1.2", default-features = false }
 cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
 clap = { version = "4.1.4", default-features = false, features = ["derive", "error-context", "help", "std", "usage", "wrap_help"] }
