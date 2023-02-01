@@ -39,10 +39,7 @@ impl<E> IntoResponse for CreateError<E> {
             }
             CreateError::LengthMismatch { expected, got } => (
                 StatusCode::BAD_REQUEST,
-                format!(
-                    "Content length mismatch, expected: {}, got {}",
-                    expected, got
-                ),
+                format!("Content length mismatch, expected: {expected}, got {got}"),
             )
                 .into_response(),
             CreateError::Internal(_) => STORAGE_FAILURE_RESPONSE.into_response(),

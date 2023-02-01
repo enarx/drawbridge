@@ -46,10 +46,10 @@ pub(crate) use store::*;
 pub use openidconnect::url;
 
 use anyhow::Context as _;
+use async_std::path::Path;
 use axum::extract::Extension;
 use axum::routing::IntoMakeService;
 use axum::Router;
-use cap_async_std::path::Path;
 use futures::lock::Mutex;
 use futures::{AsyncRead, AsyncWrite};
 use futures_rustls::TlsAcceptor;

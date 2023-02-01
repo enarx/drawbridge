@@ -39,14 +39,18 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+use base64::Engine;
 use core::fmt::{Debug, Display, Formatter};
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::str::FromStr;
 
+use base64::engine::general_purpose::GeneralPurpose;
+use base64::engine::general_purpose::{STANDARD, STANDARD_NO_PAD, URL_SAFE, URL_SAFE_NO_PAD};
+
 mod sealed {
     pub trait Config {
-        const CONFIG: base64::Config;
+        const CONFIG: base64::engine::general_purpose::GeneralPurpose;
     }
 }
 
@@ -57,7 +61,7 @@ use sealed::Config;
 pub struct Standard(());
 
 impl Config for Standard {
-    const CONFIG: base64::Config = base64::STANDARD;
+    const CONFIG: GeneralPurpose = STANDARD;
 }
 
 /// Standard Base64 encoding without padding
@@ -65,7 +69,7 @@ impl Config for Standard {
 pub struct StandardNoPad(());
 
 impl Config for StandardNoPad {
-    const CONFIG: base64::Config = base64::STANDARD_NO_PAD;
+    const CONFIG: GeneralPurpose = STANDARD_NO_PAD;
 }
 
 /// URL-safe Base64 encoding with padding
@@ -73,7 +77,7 @@ impl Config for StandardNoPad {
 pub struct UrlSafe(());
 
 impl Config for UrlSafe {
-    const CONFIG: base64::Config = base64::URL_SAFE;
+    const CONFIG: GeneralPurpose = URL_SAFE;
 }
 
 /// URL-safe Base64 encoding without padding
@@ -81,7 +85,7 @@ impl Config for UrlSafe {
 pub struct UrlSafeNoPad(());
 
 impl Config for UrlSafeNoPad {
-    const CONFIG: base64::Config = base64::URL_SAFE_NO_PAD;
+    const CONFIG: GeneralPurpose = URL_SAFE_NO_PAD;
 }
 
 /// A wrapper for bytes which provides base64 encoding in string contexts
@@ -141,7 +145,7 @@ impl<T, C> DerefMut for Bytes<T, C> {
 
 impl<T: AsRef<[u8]>, C: Config> Display for Bytes<T, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str(&base64::encode_config(self.0.as_ref(), C::CONFIG))
+        f.write_str(&C::CONFIG.encode(self.0.as_ref()))
     }
 }
 
@@ -149,7 +153,7 @@ impl<T: From<Vec<u8>>, C: Config> FromStr for Bytes<T, C> {
     type Err = base64::DecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        base64::decode_config(s, C::CONFIG).map(|x| Self(x.into(), PhantomData))
+        C::CONFIG.decode(s).map(|x| Self(x.into(), PhantomData))
     }
 }
 
@@ -157,7 +161,7 @@ impl<T: From<Vec<u8>>, C: Config> FromStr for Bytes<T, C> {
 impl<T: AsRef<[u8]>, C: Config> serde::Serialize for Bytes<T, C> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         if serializer.is_human_readable() {
-            base64::encode_config(self.0.as_ref(), C::CONFIG).serialize(serializer)
+            C::CONFIG.encode(self.0.as_ref()).serialize(serializer)
         } else {
             serializer.serialize_bytes(self.0.as_ref())
         }
@@ -171,8 +175,9 @@ impl<'de, T: From<Vec<u8>>, C: Config> serde::Deserialize<'de> for Bytes<T, C> {
 
         if deserializer.is_human_readable() {
             let b64 = alloc::borrow::Cow::<'de, str>::deserialize(deserializer)?;
-            let buf = base64::decode_config(b64.as_ref(), C::CONFIG)
-                .map_err(|_| D::Error::custom("invalid base64"))?;
+            let buf = C::CONFIG
+                .decode(b64.as_ref())
+                .map_err(|_| Error::custom("invalid base64"))?;
             Ok(Self(buf.into(), PhantomData))
         } else {
             Ok(Self(Vec::deserialize(deserializer)?.into(), PhantomData))
