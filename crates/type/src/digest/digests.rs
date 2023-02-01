@@ -102,7 +102,7 @@ where
         let mut comma = "";
 
         for (algo, hash) in self.iter() {
-            write!(f, "{}{}=:{}:", comma, algo, hash)?;
+            write!(f, "{comma}{algo}=:{hash}:")?;
             comma = ",";
         }
 

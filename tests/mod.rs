@@ -53,7 +53,7 @@ async fn app() {
         .await
         .expect("failed to bind to address");
     let oidc_addr = oidc_lis.local_addr().unwrap();
-    let oidc_issuer = format!("http://{}/", oidc_addr);
+    let oidc_issuer = format!("http://{oidc_addr}/");
     let oidc_audience = "testserver";
 
     let mut rng = rand::thread_rng();
@@ -260,7 +260,7 @@ async fn app() {
             .unwrap()
             .map(|item| match item {
                 RSAKey(buf) | PKCS8Key(buf) | ECKey(buf) => PrivateKey(buf),
-                _ => panic!("unsupported key type `{:?}`", item),
+                _ => panic!("unsupported key type `{item:?}`"),
             })
             .unwrap();
 
@@ -291,8 +291,7 @@ async fn app() {
             let client = blank_cl.clone().token(token).build().unwrap();
             assert!(
                 client.user(&user_name).create(&user_record).is_err(),
-                "OIDC token type {} accepted incorrectly",
-                token_type
+                "OIDC token type {token_type} accepted incorrectly"
             );
         }
         assert!(oidc_user

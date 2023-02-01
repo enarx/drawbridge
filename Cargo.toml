@@ -31,12 +31,12 @@ anyhow = { version = "1.0.68", default-features = false }
 async-h1 = { version = "2.3.3", default-features = false }
 async-std = { version = "1.11.0", default-features = false }
 axum = { version = "0.5.17", default-features = false }
-base64 = { version = "0.13.1", default-features = false }
+base64 = { version = "0.21.0", default-features = false }
 camino = { version = "1.1.2", default-features = false }
-cap-async-std = { version = "0.24.4", default-features = true, features = ["fs_utf8"] }
+cap-async-std = { version = "0.26.1", default-features = true, features = ["fs_utf8"] }
 clap = { version = "4.1.4", default-features = false, features = ["derive", "error-context", "help", "std", "usage", "wrap_help"] }
 confargs = { version = "0.1.3", default-features = false }
-futures = { version = "0.3.21", default-features = false }
+futures = { version = "0.3.26", default-features = false }
 futures-rustls = { version = "0.22.1", default-features = false }
 headers = { version = "0.3.7", default-features = false }
 http = { version = "0.2.6", default-features = false }
@@ -48,7 +48,7 @@ mime = { version = "0.3.16", default-features = false }
 once_cell = { version = "1.17.0", default-features = false }
 openidconnect = { version = "2.5.0", default-features = false }
 rand = { version = "0.8.5", default-features = false }
-rsa = { version = "0.7.2", default-features = false }
+rsa = { version = "0.8.1", default-features = false }
 rustls = { version = "0.20.8", default-features = false }
 rustls-pemfile = { version = "1.0.2", default-features = false }
 semver = { version = "1.0.16", default-features = false }

@@ -160,17 +160,14 @@ impl Claims {
         level: ScopeLevel,
     ) -> Result<(), (StatusCode, String)> {
         for level in level.sufficient_levels() {
-            let scope = format!("{}:{}", level, context);
+            let scope = format!("{level}:{context}");
             if self.0.scopes.contains(&scope) {
                 return Ok(());
             }
         }
         Err((
             StatusCode::UNAUTHORIZED,
-            format!(
-                "Token is missing a scope for level {}, context {}",
-                level, context
-            ),
+            format!("Token is missing a scope for level {level}, context {context}"),
         ))
     }
 

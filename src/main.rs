@@ -129,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
     .context("Failed to build app")?;
     TcpListener::bind(addr)
         .await
-        .with_context(|| format!("Failed to bind to {}", addr))?
+        .with_context(|| format!("Failed to bind to {addr}"))?
         .incoming()
         .for_each_concurrent(None, |stream| async {
             if let Err(e) = async {

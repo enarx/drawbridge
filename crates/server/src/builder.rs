@@ -5,12 +5,12 @@ use super::{handle, App, Store, TlsConfig};
 
 use anyhow::{anyhow, Context};
 use async_std::fs::File;
+use async_std::path::Path;
 use async_std::sync::Arc;
 use axum::handler::Handler;
 use axum::routing::any;
 use axum::{Extension, Router};
 use cap_async_std::fs_utf8::Dir;
-use cap_async_std::path::Path;
 use futures::lock::Mutex;
 use futures::TryFutureExt;
 use futures_rustls::TlsAcceptor;
