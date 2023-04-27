@@ -27,6 +27,7 @@
     unused_results,
     variant_size_differences
 )]
+#![allow(clippy::almost_swapped)] // https://github.com/profianinc/drawbridge/issues/423
 
 mod builder;
 mod handle;
