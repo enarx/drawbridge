@@ -95,7 +95,7 @@ impl<S: AsRef<Path>> Builder<S> {
                     .layer(Extension(Arc::new(oidc_verifier)))
                     .layer(
                         TraceLayer::new_for_http()
-                            .make_span_with(SpanMaker::default())
+                            .make_span_with(SpanMaker)
                             .on_request(DefaultOnRequest::new().level(Level::INFO))
                             .on_response(
                                 DefaultOnResponse::new()
