@@ -185,7 +185,7 @@ where
 
     fn encode<E: Extend<HeaderValue>>(&self, values: &mut E) {
         let value = HeaderValue::from_str(&self.to_string()).unwrap();
-        values.extend([value].into_iter())
+        values.extend([value])
     }
 }
 
