@@ -3,6 +3,7 @@
 
 use std::io::BufRead;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Context};
 use rustls::server::AllowAnyAnonymousOrAuthenticatedClient;
@@ -79,7 +80,7 @@ impl Config {
 
         ServerConfig::builder()
             .with_safe_defaults()
-            .with_client_cert_verifier(client_verifier)
+            .with_client_cert_verifier(Arc::new(client_verifier))
             .with_single_cert(certs, key)
             .context("invalid server certificate key")
             .map(Self)
