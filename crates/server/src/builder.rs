@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 use super::{handle, App, Store, TlsConfig};
+use std::ops::Deref;
 
 use anyhow::{anyhow, Context};
 use async_std::fs::File;
@@ -116,7 +117,7 @@ impl<S: AsRef<Path>> Builder<S> {
                     )
                     .into_make_service(),
             ),
-            tls: TlsAcceptor::from(Arc::new(tls.into())),
+            tls: TlsAcceptor::from(Arc::new(tls.deref().clone())),
         })
     }
 }
