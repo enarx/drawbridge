@@ -52,7 +52,7 @@ rsa = { version = "0.8.2", default-features = false }
 rustls = { version = "0.21.0", default-features = false }
 rustls-pemfile = { version = "1.0.3", default-features = false }
 semver = { version = "1.0.18", default-features = false }
-serde = { version = "1.0.187", default-features = false }
+serde = { version = "1.0.188", default-features = false }
 serde_json = { version = "1.0.105", default-features = false }
 sha2 = { version = "0.10.2", default-features = false }
 tempfile = { version = "3.8.0", default-features = false }
