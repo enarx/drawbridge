@@ -83,7 +83,7 @@ jobs:
     - run: podman manifest inspect drawbridge:manifest
     - name: metadata
       id: metadata
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: ghcr.io/profianinc/drawbridge
         tags: |
