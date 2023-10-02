@@ -61,7 +61,7 @@ tower = { version = "0.4.12", default-features = false }
 tower-http = { version = "0.3.5", default-features = false }
 tracing = { version = "0.1.37", default-features = false, features = ["release_max_level_debug"] }
 tracing-subscriber = { version = "0.3.17", default-features = false, features = ["ansi", "env-filter", "std", "tracing-log", "json"] }
-ureq = { version = "2.7.1", default-features = false }
+ureq = { version = "2.8.0", default-features = false }
 url = { version = "2.2.2", default-features = false }
 uuid = { version = "1.4.1", default-features = false, features = ["v4"] }
 walkdir = { version = "2.4.0", default-features = false }
