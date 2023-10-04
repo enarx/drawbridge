@@ -25,7 +25,8 @@ use openidconnect::core::{
 use openidconnect::{
     AuthUrl, EmptyAdditionalProviderMetadata, IssuerUrl, JsonWebKeySetUrl, ResponseTypes,
 };
-use rsa::{pkcs1::EncodeRsaPrivateKey, PublicKeyParts};
+use rsa::pkcs1::EncodeRsaPrivateKey;
+use rsa::traits::PublicKeyParts;
 use rustls::{Certificate, PrivateKey, RootCertStore};
 use rustls_pemfile::Item::*;
 use tempfile::tempdir;
