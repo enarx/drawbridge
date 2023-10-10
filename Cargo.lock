@@ -121,14 +121,15 @@ dependencies = [
 
 [[package]]
 name = "async-h1"
-version = "2.3.3"
+version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8101020758a4fc3a7c326cb42aa99e9fa77cbfb76987c128ad956406fe1f70a7"
+checksum = "5d1d1dae8cb2c4258a79d6ed088b7fb9b4763bf4e9b22d040779761e046a2971"
 dependencies = [
  "async-channel",
  "async-dup",
- "async-std",
- "futures-core",
+ "async-global-executor",
+ "async-io",
+ "futures-lite",
  "http-types",
  "httparse",
  "log",
