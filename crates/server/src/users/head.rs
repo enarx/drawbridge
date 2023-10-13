@@ -11,14 +11,14 @@ use axum::Extension;
 use tracing::{debug, trace};
 
 pub async fn head(
-    Extension(ref store): Extension<Arc<Store>>,
+    Extension(store): Extension<Arc<Store>>,
     claims: OidcClaims,
-    ref cx: UserContext,
+    cx: UserContext,
 ) -> impl IntoResponse {
     trace!(target: "app::users::head", "called for `{cx}`");
 
     claims
-        .assert_user(store, cx, ScopeContext::User, ScopeLevel::Read)
+        .assert_user(&store, &cx, ScopeContext::User, ScopeLevel::Read)
         .await
         .map_err(IntoResponse::into_response)?
         .get_meta()

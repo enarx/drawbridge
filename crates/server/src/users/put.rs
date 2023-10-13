@@ -12,9 +12,9 @@ use axum::{Extension, Json};
 use tracing::{debug, trace};
 
 pub async fn put(
-    Extension(ref store): Extension<Arc<Store>>,
+    Extension(store): Extension<Arc<Store>>,
     claims: OidcClaims,
-    ref cx: UserContext,
+    cx: UserContext,
     meta: Meta,
     Json(ref record): Json<UserRecord>,
 ) -> impl IntoResponse {
@@ -29,7 +29,7 @@ pub async fn put(
     }
 
     store
-        .create_user(cx, meta, record)
+        .create_user(&cx, meta, record)
         .await
         .map_err(|e| {
             debug!(target: "app::users::put", "failed for `{cx}`: {:?}", e);
