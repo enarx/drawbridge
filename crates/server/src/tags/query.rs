@@ -15,13 +15,13 @@ use mime::APPLICATION_JSON;
 use tracing::{debug, trace};
 
 pub async fn query(
-    Extension(ref store): Extension<Arc<Store>>,
-    ref cx: RepositoryContext,
+    Extension(store): Extension<Arc<Store>>,
+    cx: RepositoryContext,
     req: Request<Body>,
 ) -> impl IntoResponse {
     trace!(target: "app::tags::query", "called for `{cx}`");
 
-    assert_repository_read(store, cx, req)
+    assert_repository_read(&store, &cx, req)
         .await
         .map_err(IntoResponse::into_response)
         .map(|(repo, _)| repo)?
