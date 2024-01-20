@@ -19,6 +19,7 @@ anyhow = { workspace = true, features = ["std"] }
 http = { workspace = true }
 mime = { workspace = true }
 rustls = { workspace = true }
+rustls-pki-types = { workspace = true }
 serde_json = { workspace = true, features = ["std"] }
 ureq = { workspace = true, features = ["json", "tls"] }
 url = { workspace = true, features = ["serde"] }

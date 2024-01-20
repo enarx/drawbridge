@@ -3,12 +3,13 @@
 
 use std::io::BufRead;
 use std::ops::Deref;
-use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Context};
-use rustls::server::AllowAnyAnonymousOrAuthenticatedClient;
-use rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig};
-use rustls_pemfile::Item::{ECKey, PKCS8Key, RSAKey, X509Certificate};
+use anyhow::{bail, Context};
+use rustls::server::WebPkiClientVerifier;
+use rustls::{RootCertStore, ServerConfig};
+use rustls_pemfile::Item::{Pkcs1Key, Pkcs8Key, Sec1Key, X509Certificate};
+use rustls_pki_types::CertificateDer;
+use rustls_pki_types::PrivateKeyDer;
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -33,11 +34,10 @@ impl From<Config> for ServerConfig {
     }
 }
 
-fn read_certificates(mut rd: impl BufRead) -> anyhow::Result<Vec<Certificate>> {
-    rustls_pemfile::read_all(&mut rd)?
-        .into_iter()
-        .map(|item| match item {
-            X509Certificate(buf) => Ok(Certificate(buf)),
+fn read_certificates(mut rd: impl BufRead) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+    rustls_pemfile::read_all(&mut rd)
+        .map(|item| match item? {
+            X509Certificate(buf) => Ok(buf),
             _ => bail!("unsupported certificate type"),
         })
         .collect()
@@ -52,19 +52,18 @@ impl Config {
         let certs =
             read_certificates(&mut certs).context("failed to read server certificate chain")?;
         let key = {
-            let mut items = rustls_pemfile::read_all(&mut key)
-                .context("failed to read server certificate key")?;
-            let key = items
-                .pop()
-                .ok_or_else(|| anyhow!("server certificate key missing"))
-                .and_then(|item| match item {
-                    RSAKey(buf) | PKCS8Key(buf) | ECKey(buf) => Ok(PrivateKey(buf)),
-                    _ => bail!("unsupported key type"),
-                })?;
-            if !items.is_empty() {
-                bail!("more than one server certificate key specified")
+            if let Some(key) = rustls_pemfile::read_all(&mut key).next() {
+                match key? {
+                    Pkcs1Key(inner) => PrivateKeyDer::from(inner),
+                    Pkcs8Key(inner) => PrivateKeyDer::from(inner),
+                    Sec1Key(inner) => PrivateKeyDer::from(inner),
+                    _ => {
+                        bail!("Unexpected key type found");
+                    }
+                }
+            } else {
+                bail!("No key found")
             }
-            key
         };
 
         let client_verifier = {
@@ -72,15 +71,16 @@ impl Config {
             read_certificates(&mut cas)
                 .context("failed to read CA certificates")?
                 .into_iter()
-                .try_for_each(|ref cert| roots.add(cert))
+                .try_for_each(|cert| roots.add(cert))
                 .context("failed to construct root certificate store")?;
             // TODO: Allow client certificates signed by unknown CAs.
-            AllowAnyAnonymousOrAuthenticatedClient::new(roots)
+            WebPkiClientVerifier::builder(roots.into())
+                .allow_unauthenticated()
+                .build()?
         };
 
         ServerConfig::builder()
-            .with_safe_defaults()
-            .with_client_cert_verifier(Arc::new(client_verifier))
+            .with_client_cert_verifier(client_verifier)
             .with_single_cert(certs, key)
             .context("invalid server certificate key")
             .map(Self)

@@ -52,7 +52,9 @@ use std::sync::Arc;
 
 use drawbridge_type::{RepositoryContext, TagContext, TreeContext, UserContext};
 
-use rustls::{Certificate, OwnedTrustAnchor, PrivateKey, RootCertStore};
+use rustls::RootCertStore;
+use rustls_pki_types::CertificateDer;
+use rustls_pki_types::PrivateKeyDer;
 
 /// API version used by this crate
 pub const API_VERSION: &str = "0.1.0";
@@ -151,14 +153,33 @@ impl Client<scope::Root> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ClientBuilder<S: Scope = scope::Root> {
     url: Url,
-    credentials: Option<(Vec<Certificate>, PrivateKey)>,
+    credentials: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
     roots: Option<RootCertStore>,
     token: Option<String>,
     user_agent: Option<String>,
     scope: PhantomData<S>,
+}
+
+impl<S: Scope> Clone for ClientBuilder<S> {
+    fn clone(&self) -> Self {
+        let credentials = if let Some((creds, key)) = self.credentials.as_ref() {
+            Some((creds.clone(), key.clone_key()))
+        } else {
+            None
+        };
+
+        Self {
+            url: self.url.clone(),
+            credentials,
+            roots: self.roots.clone(),
+            token: self.token.clone(),
+            user_agent: self.user_agent.clone(),
+            scope: self.scope,
+        }
+    }
 }
 
 impl<S: Scope> ClientBuilder<S> {
@@ -180,7 +201,11 @@ impl<S: Scope> ClientBuilder<S> {
         }
     }
 
-    pub fn credentials(self, cert: Vec<Certificate>, key: PrivateKey) -> Self {
+    pub fn credentials(
+        self,
+        cert: Vec<CertificateDer<'static>>,
+        key: PrivateKeyDer<'static>,
+    ) -> Self {
         Self {
             credentials: Some((cert, key)),
             ..self
@@ -202,21 +227,15 @@ impl<S: Scope> ClientBuilder<S> {
     }
 
     pub fn build_scoped(self) -> Result<Client<S>> {
-        let tls = rustls::ClientConfig::builder()
-            .with_safe_defaults()
-            .with_root_certificates(if let Some(roots) = self.roots {
+        let tls = rustls::ClientConfig::builder().with_root_certificates(
+            if let Some(roots) = self.roots {
                 roots
             } else {
-                let mut root_store = RootCertStore::empty();
-                root_store.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
-                    OwnedTrustAnchor::from_subject_spki_name_constraints(
-                        ta.subject,
-                        ta.spki,
-                        ta.name_constraints,
-                    )
-                }));
-                root_store
-            });
+                RootCertStore {
+                    roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+                }
+            },
+        );
         let tls = if let Some((cert, key)) = self.credentials {
             tls.with_client_auth_cert(cert, key)?
         } else {
