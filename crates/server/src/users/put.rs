@@ -16,7 +16,7 @@ pub async fn put(
     claims: OidcClaims,
     cx: UserContext,
     meta: Meta,
-    Json(ref record): Json<UserRecord>,
+    Json(record): Json<UserRecord>,
 ) -> impl IntoResponse {
     trace!(target: "app::users::put", "called for `{cx}`");
 
@@ -29,7 +29,7 @@ pub async fn put(
     }
 
     store
-        .create_user(&cx, meta, record)
+        .create_user(&cx, meta, &record)
         .await
         .map_err(|e| {
             debug!(target: "app::users::put", "failed for `{cx}`: {:?}", e);
