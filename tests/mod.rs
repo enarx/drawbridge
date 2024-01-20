@@ -27,8 +27,10 @@ use openidconnect::{
 };
 use rsa::pkcs1::EncodeRsaPrivateKey;
 use rsa::traits::PublicKeyParts;
-use rustls::{Certificate, PrivateKey, RootCertStore};
-use rustls_pemfile::Item::*;
+use rustls::RootCertStore;
+use rustls_pemfile::Item::{Pkcs1Key, Pkcs8Key, Sec1Key};
+use rustls_pki_types::CertificateDer;
+use rustls_pki_types::PrivateKeyDer;
 use tempfile::tempdir;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -239,28 +241,31 @@ async fn app() {
                     rustls_pemfile::certs(&mut std::io::BufReader::new(
                         include_bytes!("../testdata/ca.crt").as_slice(),
                     ))
-                    .unwrap()
-                    .into_iter()
-                    .map(Certificate)
-                    .try_for_each(|ref cert| roots.add(cert))
-                    .unwrap();
+                    .for_each(|c| {
+                        if let Ok(cert) = c {
+                            roots.add(cert).expect("failed to add cert to root store");
+                        }
+                    });
                     roots
                 });
 
             let cert = rustls_pemfile::certs(&mut std::io::BufReader::new(
                 include_bytes!("../testdata/client.crt").as_slice(),
             ))
-            .unwrap()
-            .into_iter()
-            .map(Certificate)
-            .collect::<Vec<Certificate>>();
+            .filter_map(|c| match c {
+                Ok(cert) => Some(cert),
+                Err(_) => None,
+            })
+            .collect::<Vec<CertificateDer>>();
 
             let key = rustls_pemfile::read_one(&mut std::io::BufReader::new(
                 include_bytes!("../testdata/client.key").as_slice(),
             ))
             .unwrap()
             .map(|item| match item {
-                RSAKey(buf) | PKCS8Key(buf) | ECKey(buf) => PrivateKey(buf),
+                Pkcs1Key(buf) => PrivateKeyDer::from(buf),
+                Pkcs8Key(buf) => PrivateKeyDer::from(buf),
+                Sec1Key(buf) => PrivateKeyDer::from(buf),
                 _ => panic!("unsupported key type `{item:?}`"),
             })
             .unwrap();
