@@ -65,7 +65,7 @@ ureq = { version = "2.8.0", default-features = false }
 url = { version = "2.4.1", default-features = false }
 uuid = { version = "1.4.1", default-features = false, features = ["v4"] }
 walkdir = { version = "2.4.0", default-features = false }
-webpki-roots = { version = "0.25.2", default-features = false }
+webpki-roots = { version = "0.25.4", default-features = false }
 zeroize = { version = "1.6.0", default-features = false }
 
 [dependencies]
