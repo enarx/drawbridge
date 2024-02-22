@@ -47,7 +47,7 @@ jobs:
 
     - run: nix build -L --show-trace '.#drawbridge-${{ matrix.platform.target }}'
     - run: nix run --inputs-from . 'nixpkgs#coreutils' -- --coreutils-prog=ginstall -p ./result/bin/drawbridge "drawbridge-${{ matrix.platform.target }}"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: drawbridge-${{ matrix.platform.target }}
         path: drawbridge-${{ matrix.platform.target }}
@@ -55,7 +55,7 @@ jobs:
 
     - run: nix build -L --show-trace '.#drawbridge-${{ matrix.platform.target }}-oci'
     - run: nix run --inputs-from . 'nixpkgs#coreutils' -- --coreutils-prog=ginstall -p ./result "drawbridge-${{ matrix.platform.target }}-oci"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: drawbridge-${{ matrix.platform.target }}-oci
         path: drawbridge-${{ matrix.platform.target }}-oci

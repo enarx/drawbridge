@@ -22,7 +22,7 @@ jobs:
 
     - run: nix build -L --show-trace '.#doc' -o doc/index.html
     - run: cp --remove-destination $(readlink -f doc/index.html) doc/index.html
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: doc
         path: doc/index.html
