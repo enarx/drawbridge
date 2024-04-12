@@ -1,6 +1,6 @@
 [package]
 name = "drawbridge-server"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Profian Inc", "The Enarx Project Developers"]
 edition = "2021"
 license = "Apache-2.0"
