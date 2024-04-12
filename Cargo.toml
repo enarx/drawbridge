@@ -1,7 +1,7 @@
 [package]
 name = "drawbridge"
-version = "0.4.1"
-authors = ["Profian Inc"]
+version = "0.4.2"
+authors = ["Profian Inc", "The Enarx Project Developers"]
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/enarx/drawbridge"
@@ -20,11 +20,11 @@ members = [
 
 [workspace.dependencies]
 # Internal dependencies
-drawbridge-byte = { path = "./crates/byte", version = "0.4.0" }
-drawbridge-client = { path = "./crates/client", version = "0.4.1" }
-drawbridge-jose = { path = "./crates/jose", version = "0.4.0" }
-drawbridge-server = { path = "./crates/server", version = "0.4.0" }
-drawbridge-type = { path = "./crates/type", version = "0.4.1" }
+drawbridge-byte = { path = "./crates/byte", version = "0.4.2" }
+drawbridge-client = { path = "./crates/client", version = "0.4.2" }
+drawbridge-jose = { path = "./crates/jose", version = "0.4.2" }
+drawbridge-server = { path = "./crates/server", version = "0.4.2" }
+drawbridge-type = { path = "./crates/type", version = "0.4.2" }
 
 # External dependencies
 anyhow = { version = "1.0.82", default-features = false }
