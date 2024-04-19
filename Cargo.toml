@@ -49,7 +49,7 @@ once_cell = { version = "1.19.0", default-features = false }
 openidconnect = { version = "3.5.0", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rsa = { version = "0.9.6", default-features = false }
-rustls = { version = "0.22.3", default-features = false }
+rustls = { version = "0.22.4", default-features = false }
 rustls-pemfile = { version = "2.1.2", default-features = false }
 rustls-pki-types = { version = "1.4.1", default-features = false }
 semver = { version = "1.0.22", default-features = false }
