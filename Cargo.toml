@@ -56,7 +56,7 @@ semver = { version = "1.0.24", default-features = false }
 serde = { version = "1.0.217", default-features = false }
 serde_json = { version = "1.0.135", default-features = false }
 sha2 = { version = "0.10.8", default-features = false }
-tempfile = { version = "3.14.0", default-features = false }
+tempfile = { version = "3.15.0", default-features = false }
 tokio-util = { version = "0.7.12", default-features = false }
 tower = { version = "0.4.13", default-features = false }
 tower-http = { version = "0.4.4", default-features = false }
