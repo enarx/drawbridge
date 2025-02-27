@@ -61,7 +61,7 @@ tokio-util = { version = "0.7.12", default-features = false }
 tower = { version = "0.4.13", default-features = false }
 tower-http = { version = "0.4.4", default-features = false }
 tracing = { version = "0.1.41", default-features = false, features = ["release_max_level_debug"] }
-tracing-subscriber = { version = "0.3.18", default-features = false, features = ["ansi", "env-filter", "std", "tracing-log", "json"] }
+tracing-subscriber = { version = "0.3.19", default-features = false, features = ["ansi", "env-filter", "std", "tracing-log", "json"] }
 ureq = { version = "2.9.7", default-features = false }
 url = { version = "2.5.3", default-features = false }
 uuid = { version = "1.13.1", default-features = false, features = ["v4"] }
