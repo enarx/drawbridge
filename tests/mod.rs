@@ -26,6 +26,7 @@ use openidconnect::{
     AuthUrl, EmptyAdditionalProviderMetadata, IssuerUrl, JsonWebKeySetUrl, ResponseTypes,
 };
 use rsa::pkcs1::EncodeRsaPrivateKey;
+use rsa::rand_core::OsRng;
 use rsa::traits::PublicKeyParts;
 use rustls::RootCertStore;
 use rustls_pemfile::Item::{Pkcs1Key, Pkcs8Key, Sec1Key};
@@ -59,7 +60,7 @@ async fn app() {
     let oidc_issuer = format!("http://{oidc_addr}/");
     let oidc_audience = "testserver";
 
-    let mut rng = rand::thread_rng();
+    let mut rng = OsRng;
     let oidc_key_raw = rsa::RsaPrivateKey::new(&mut rng, 2048).expect("failed to generate a key");
     let oidc_key_der = oidc_key_raw.to_pkcs1_der().expect("failed to encode key");
     let oidc_key = EncodingKey::from_rsa_der(oidc_key_der.as_bytes());

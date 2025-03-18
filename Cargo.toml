@@ -47,7 +47,6 @@ mediatype = { version = "0.19.20", default-features = false }
 mime = { version = "0.3.17", default-features = false }
 once_cell = { version = "1.21.0", default-features = false }
 openidconnect = { version = "3.5.0", default-features = false }
-rand = { version = "0.8.5", default-features = false }
 rsa = { version = "0.9.8", default-features = false }
 rustls = { version = "0.23.0", default-features = false }
 rustls-pemfile = { version = "2.2.0", default-features = false }
@@ -96,7 +95,6 @@ async-std = { workspace = true, features = ["attributes", "default"] }
 http-types = { workspace = true }
 jsonwebtoken = { workspace = true }
 openidconnect = { workspace = true }
-rand = { workspace = true }
 rsa = { workspace = true }
 rustls = { workspace = true }
 rustls-pemfile = { workspace = true }
