@@ -33,7 +33,7 @@ impl FromStr for Context {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (repository, name) = s
-            .rsplit_once(&['/', ':'])
+            .rsplit_once(['/', ':'])
             .ok_or_else(|| anyhow!("'/' or `:` separator not found"))?;
         let repository = repository
             .parse()

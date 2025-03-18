@@ -137,18 +137,18 @@ impl Client<scope::Root> {
     pub fn repository<'a>(
         &'a self,
         RepositoryContext { owner, name }: &'a RepositoryContext,
-    ) -> Repository<'_, scope::Root> {
+    ) -> Repository<'a, scope::Root> {
         self.user(owner).repository(name)
     }
 
     pub fn tag<'a>(
         &'a self,
         TagContext { repository, name }: &'a TagContext,
-    ) -> Tag<'_, scope::Root> {
+    ) -> Tag<'a, scope::Root> {
         self.repository(repository).tag(name)
     }
 
-    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_, scope::Root> {
+    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'a, scope::Root> {
         self.tag(tag).path(path)
     }
 }

@@ -61,15 +61,15 @@ impl Store {
     pub fn repository<'a>(
         &'a self,
         RepositoryContext { owner, name }: &'a RepositoryContext,
-    ) -> Repository<'_> {
+    ) -> Repository<'a> {
         self.user(owner).repository(name)
     }
 
-    pub fn tag<'a>(&'a self, TagContext { repository, name }: &'a TagContext) -> Tag<'_> {
+    pub fn tag<'a>(&'a self, TagContext { repository, name }: &'a TagContext) -> Tag<'a> {
         self.repository(repository).tag(name)
     }
 
-    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'_> {
+    pub fn tree<'a>(&'a self, TreeContext { tag, path }: &'a TreeContext) -> Node<'a> {
         self.tag(tag).node(path)
     }
 }
