@@ -253,10 +253,7 @@ async fn app() {
             let cert = rustls_pemfile::certs(&mut std::io::BufReader::new(
                 include_bytes!("../testdata/client.crt").as_slice(),
             ))
-            .filter_map(|c| match c {
-                Ok(cert) => Some(cert),
-                Err(_) => None,
-            })
+            .filter_map(|c| c.ok())
             .collect::<Vec<CertificateDer>>();
 
             let key = rustls_pemfile::read_one(&mut std::io::BufReader::new(
