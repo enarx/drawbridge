@@ -29,7 +29,7 @@ drawbridge-type = { path = "./crates/type", version = "0.4.3" }
 # External dependencies
 anyhow = { version = "1.0.99", default-features = false }
 async-h1 = { version = "2.3.4", default-features = false }
-async-std = { version = "1.13.0", default-features = false }
+async-std = { version = "1.13.2", default-features = false }
 axum = { version = "0.5.17", default-features = false }
 base64 = { version = "0.22.1", default-features = false }
 camino = { version = "1.1.11", default-features = false }
