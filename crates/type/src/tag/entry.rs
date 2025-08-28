@@ -9,6 +9,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum Entry<E = TreeEntry> {
-    Signed(Jws),
+    Signed(Box<Jws>),
     Unsigned(E),
 }

@@ -57,7 +57,7 @@ pub async fn put(
                 .extract::<BodyStream>()
                 .await
                 .map_err(|e| (StatusCode::BAD_REQUEST, e).into_response())?
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e));
+                .map_err(io::Error::other);
             tag.create_file_node(&cx.path, meta, body.into_async_read())
                 .await
         }

@@ -78,10 +78,7 @@ impl<F> Tree<F> {
         dir: impl Borrow<Directory<E>>,
     ) -> std::io::Result<Entry<Content<F>>> {
         let buf = serde_json::to_vec(dir.borrow()).map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("failed to encode directory to JSON: {e}",),
-            )
+            std::io::Error::other(format!("failed to encode directory to JSON: {e}",))
         })?;
         let (size, hash) = Algorithms::default().read_sync(&buf[..])?;
         Ok(Entry {
